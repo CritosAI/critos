@@ -1,0 +1,31 @@
+<!-- SCAFFOLD:BEGIN target=CLAUDE.md
+     Instantiated by skills/crit-scaffold-project/scaffold.sh, never by hand: it removes this block
+     (BEGIN line to END line, and the blank lines after it) and fills the MECHANICAL placeholders
+     named below. Every other line is the instance, byte for byte.
+     Mechanical: <PROJECT_NAME> = the name of the repo's root folder.
+     SCAFFOLD:END -->
+
+# <PROJECT_NAME>
+
+Auto-loaded into every session. **Routing only — no rules.** The rules live in the system tier; if
+this file starts stating them, it has begun copying a tier and will drift from it.
+
+| | |
+|---|---|
+| **The operating system** | [`.critos/system/`](.critos/system/README.md) — five contracts. Installed, versioned, **not editable here**. Start at `contract-system.md`. |
+| **This project's choices** | [`.critos/project/settings.md`](.critos/project/settings.md) (the user's directives) · [`agents.md`](.critos/project/agents.md) (the roster) |
+| **The work** | [`.critos/memory/`](.critos/memory/) (one folder per agent) · [`.critos/shared/`](.critos/shared/) (inbox · roadmap · contracts) · [`MEMORY-INDEX.md`](MEMORY-INDEX.md) (the generated atlas: where every decision and lesson is) |
+
+**Are you an agent?** Read `.critos/system/contract-session.md § 1` and follow it — the boot
+order lives there and **only** there: a routing file points, it never copies.
+
+**System version:** see `.critos/system/VERSION` — **point at the file, never copy the number**. A
+change to it is an **upgrade**, not an edit — released upstream by the CritOS maintainers and
+applied here by **the steward**. Neither `.critos/system/` nor the steward's definition
+(`.claude/agents/agent-1.md`) is edited in this repo: both are installed and derived. The rest of
+`.claude/` is this project's own — its settings, its hooks, its skills.
+
+**Toolchain dependency.** The method's controls — the skills and the guard hook — are **not in this
+repo**: they are shared from the machine (`~/.claude/`, junctioned from a CritOS checkout). A
+clone on a machine without CritOS installed carries its contracts but not its tools, and should
+fail legibly, not mysteriously — see `docs/guide-install.md` in the CritOS repository.

@@ -1,0 +1,86 @@
+# CONTRACTS — the map, never the copy
+
+A **contract** is an iron rule that must never be violated except by an explicit human decision.
+Contracts are scattered *by necessity* — each is enforced where it lives (a DB constraint, a code
+module, a `contract-*` doc) — so this register is the **single map**: it **links** to each
+contract's source and **never copies its text**. A contract with no row here is invisible; a row
+that restates its source is a copy that will drift.
+
+Curated by the steward; agents propose rows. Establishing a contract = **enforce it at its source**
+*and* add one row. Changing a contract = change its **source** — and **a `contract-*` document is
+changed only by the user**: the class is in the name, agents propose (the five system contracts in
+`.critos/system/` are the same class one tier up — installed, changed only by a release).
+
+**What earns a row — the placement test** (`contract-shared § 3` holds the full form): only a
+contract **mandatory at project level or binding more than one agent across a boundary**. Split a
+compound statement into atoms first, then per atom: already covered by a law above (check its
+**scope**, not its subject) → cite the law, no row · the user's **choice** → `settings.md` keeps it ·
+an enforced rule → the row maps the **enforcement source** (never a definition, never the owner's
+own memory), and a single-domain rule stays in its owner's docs. Both will *and* enforced → the
+source holds the operative text, this register maps it, settings keeps the choice.
+
+**Sections are named for the DOMAIN, never for an actor** — who owns a domain is the roster's
+business. **A row that leaves, leaves a TOMBSTONE** in its own section naming where the rule now
+lives — the rule still binds; only its tier moved. Tombstones get cited: a wrong departure reason
+teaches wrong law forever.
+
+## Legend
+
+**Level** — where the rule bites, strongest first: `DB` (the schema refuses) · `build` (a build
+step refuses to ship) · `code` (a module of record refuses or encodes it) · `run` (the pipeline
+stamps or flags at run time) · `doc` (a named `contract-*` doc or convention — **tier 3**:
+enforced by being read; the linked source is the home).
+
+**Override** — `No` (structural) · `User` (only the user, usually a migration) · `Yes` (a
+documented opt-out exists).
+
+**Blocks / flags** (guards only) — a guard's **teeth**, never implied by its Level: `BLOCKS` (the
+violation cannot proceed) · `FLAGS` (it proceeds and announces itself). A banner followed by exit
+`0` is `FLAGS`.
+
+---
+
+## <TODO: domain name — one `##` section per domain; this section is the pattern>
+
+| Contract (one line) | Level | Enforced at (the SOURCE — link) | Override |
+|---|---|---|---|
+
+<!-- Row shape, kept as a COMMENT — a live example row ships a broken link into every scaffolded repo:
+| the invariant, stated once, briefly | DB | a LINK to the constraint / module / contract-* doc | No |
+-->
+
+## <TODO: a surface too dense to row> — a POINTER, not rows
+
+*(the pattern for a schema, a diagnostics battery, any surface whose rules are counted by a tool:
+ONE section that says where the list lives and what computes it — **no counts here**
+(`contract-shared § 3`): run the thing that counts, never this file. Delete this section until the
+first such surface exists.)*
+
+## Guards — what we PREVENT (the twin of detection)
+
+A guard is **not a separate object from a contract — it is the enforcement of one**, so it lives
+here, never in a second register. **Register the TEETH** — the `Blocks / flags` cell is the
+difference between a gate and a poster, and it is invisible from the code's tone. **Register the
+DEFECT too**: a rule enforced by hand-copied snippets with no module of record gets the honest
+cell *"no module of record"* — a register whose rows all look healthy is a register nobody fixes.
+
+| Guard (what it prevents) | Level | Blocks / flags | Owner | Source (index, not copy) |
+|---|---|---|---|---|
+
+<!-- | what it checks | build | BLOCKS | A6 | a LINK to the script / hook / CI step | -->
+
+## Detection — what we DETECT (after the fact)
+
+The twin of the guards: checks that find a violation *after* it happened. Same rule — link the
+source, never copy the query.
+
+| Check | Watches | Source (link) | Cadence |
+|---|---|---|---|
+
+<!-- | what it reports | the §-row or invariant it watches | a LINK to the check | nightly | -->
+
+---
+
+**Adding a guard:** build it, then propose one row via the inbox (the steward places it). State its
+Level and its teeth honestly — exit `0` is `FLAGS`, whatever the banner says. A guard not in this
+table is invisible; one whose teeth are mis-stated is worse, because it buys false confidence.

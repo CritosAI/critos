@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Criticaldrop Entertainment s.r.l.
+blank_issues_enabled: false
+contact_links:
+  - name: A vulnerability
+    url: https://github.com/CritosAI/critos/security/advisories/new
+    about: Report it privately through GitHub - never as an issue.

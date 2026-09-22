@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Criticaldrop Entertainment s.r.l.
+# The deterministic tests, on the platforms the release declares. One command, the same one a
+# contributor runs: bash tests/run.sh. Every check is seen firing before its zero is believed.
+name: tests
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+jobs:
+  run:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: versions
+        run: |
+          bash --version | head -1
+          git --version
+          node --version
+      - name: tests
+        run: bash tests/run.sh

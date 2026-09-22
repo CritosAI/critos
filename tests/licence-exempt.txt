@@ -1,0 +1,13 @@
+# Files that carry NO licence header, and why. One per line: <path or glob><TAB><why>.
+# tests/licence.sh fails on any tracked file that has neither a header nor a line here.
+LICENSE	the licence itself
+NOTICE	the notice itself
+releases.manifest	parsed by position: a comment line would be read as a release row
+system/*	the pinned tier: copied into every project, and read by an agent at every boot
+agents/*	the steward's definition: copied into every project, read at every boot
+global/*	merged into the user's own CLAUDE.md
+templates/*	instantiated into the user's own files: a header here would land in their memory and registers
+tests/expected-*.txt	compared byte for byte with a program's output
+tests/expected-scaffold/*	the expected output of a scaffold: instances of the templates, byte for byte
+.gitattributes	parsed by git: one pattern per line
+tests/licence-exempt.txt	this list

@@ -1,0 +1,49 @@
+# Roadmap — the single shared forward register
+
+The **one** place a shared or cross-domain effort is named and tracked. A development *vertical to
+one domain* stays in that domain's memory; this register holds only what spans domains or outlives a
+session. Curated by the steward; **the lead proposes and flips their own rows.**
+
+> ⚠️ **The table shape below is LOAD-BEARING.** `/crit-status-check` axis 3 (the `[SHARED]` tier of every
+> agent's plan) and `/crit-doc-lint [6]` (STALE-Rx) both parse it **by column position**. Keep four columns
+> in this order — `Rx | What | Lead | Status` — or an agent's own roadmap items stop appearing in
+> their plan.
+
+## Rules
+
+- **`Rx` cell holds the id alone** (`R7`), nothing else. A struck row (`~~R7~~`) is skipped.
+- **`Lead` names the owning agent(s)** as `A<n>` or `AGENT <n>` (`A5 + A1` for a shared lead) — this
+  is matched against the agent asking "what's on my plan".
+- **`Status` starts with its verdict word**, because the parsers read the *first* word of that cell:
+  `open …` · `✅ done …` · `⏸ parked …` · `⏸ deferred …` · `closed …` · `superseded …`.
+  A status may *mention* a settled leg while being open (`open (L1 shipped · L2 deferred)`) — that is
+  why the verdict must come **first** and why the parsers anchor on it.
+- **The row body links, it does not restate.** A row is a *pointer* with enough context to know what
+  it is: the design lives in the owning domain's `DECISIONS.md` / a design doc, cited by ID. A row
+  that grows into a full design is a copy that will drift from its source.
+- **Closure is the lead's, in the same round** the work lands (`contract-shared § 2`) — with proof, or as a
+  one-line flip proposal to the steward. A landed effort whose row stays open re-litigates as "still
+  to do".
+- **Re-verifying a row touches it**, which resets its staleness clock: add
+  `⟳ re-verified YYYY-MM-DD` to the Status cell when you confirm a row is genuinely still open.
+
+## Open
+
+| Rx | What | Lead | Status |
+|---|---|---|---|
+
+<!--
+Row shape, kept as a COMMENT: a live example row would go STALE-Rx (`/crit-doc-lint [6]`) ten days after
+scaffolding and would appear in a real agent's [SHARED] plan as work that does not exist. Copy this
+shape for the first real row and delete nothing else.
+
+| R<n> | <one-line effort, linking its design by ID — not restating it> | A<n> | open |
+-->
+
+## Closed
+
+| Rx | What | Lead | Status |
+|---|---|---|---|
+
+<!-- | ~~R<n>~~ | <a landed row — struck and KEPT, never deleted: the register is a readable history> | A<n> | ✅ done (<date>, `<proof ref>`) | -->
+

@@ -1,0 +1,111 @@
+<!-- SCAFFOLD:BEGIN target=.critos/shared/HANDOFFS.md
+     Instantiated by skills/crit-scaffold-project/scaffold.sh, never by hand: it removes this block
+     (BEGIN line to END line, and the blank lines after it) and fills the MECHANICAL placeholders
+     named below. Every other line is the instance, byte for byte.
+     Mechanical: nothing. A register is BORN EMPTY; the shape of a row is kept as a comment, written so
+     that no control can read it as a row.
+     SCAFFOLD:END -->
+
+# Cross-agent handoffs (the shared inbox)
+
+One place where a change in **one** domain that affects **other** domains is announced — so the other
+agents learn it by *pull* (reading), not by being told in chat. Skim it at the start of every session
+(it is in the universal onboarding protocol). Curated by the steward; **substance is written by the
+domain agent** (the steward routes and keeps lifecycle, it does not author).
+
+> ⚠️ **The entry grammar below is LOAD-BEARING.** Three deterministic parsers read this file
+> (`/crit-status-check`'s owed-counter, `/crit-doc-lint [5]` inbox hygiene, `/crit-doc-lint [7]` token vocabulary).
+> An entry that deviates is not "slightly off" — it is **invisible to the counter that tells an agent
+> what it owes**. Keep the shape exactly.
+
+## Entry grammar
+
+```
+- YYYY-MM-DD — AGENT <N> → AGENT <M> (+AGENT <K> FYI): **[<TOKEN> — … Done when: <observable>]** <what changed → what the recipient must do>. [`ref`]
+```
+
+Each part earns its place:
+
+| Part | Rule | Why (what breaks otherwise) |
+|---|---|---|
+| `- YYYY-MM-DD ` | line starts with `- `, then an absolute date | the parsers split entries on this; no date = no entry |
+| ` — ` | em-dash between date and participants | delimiter |
+| `AGENT N → AGENT M` | real arrow `→` (U+2192), **not** `->` | the counter splits on it to find sender/recipient |
+| `(+AGENT K FYI)` | optional; extra readers only | **one owner per entry** — shared responsibility is held by nobody |
+| `:` | one colon closing the participants | the token is read at the FIRST colon; a colon *before* the arrow breaks the parse |
+| `**[TOKEN …]**` | bolded, immediately after the colon | the token is read at its syntactic *position*, never searched for |
+| `Done when: <observable>` | mandatory on `[OPEN]` | without it the recipient cannot know when to flip the token → stale `[OPEN]` |
+| the body | ONE line (the file is line-oriented) | a multi-line entry is truncated at the first newline |
+
+## Lifecycle tokens — a CLOSED vocabulary
+
+Live (the recipient still owes something):
+
+- `[OPEN — … Done when: <observable>]` — awaiting the recipient's action/ACK.
+- `[PARKED-OWNED <date> by A<n> — … Park-trigger: <what un-parks it>]` — owned but deliberately
+  deferred; stays visible until its owner closes it.
+
+Settled (a record; may be rotated to the archive):
+`[ABSORBED <date> by A<n> — …]` · `[ACK — …]` · `[CLOSED — …]` · `[SUPERSEDED by <ref>]` ·
+`[RETRACTED — …]`. A pure FYI (no action for anyone) needs no token.
+
+**An invented token is invisible.** The owed-counter recognizes only `OPEN` and `PARKED-OWNED` as
+live and treats **everything else as settled** — so an ask under a made-up token
+(`[GREEN-LIT …]`, `[CONFIRMED …]`, `[URGENT …]`) is *owed by someone and counted by nobody*, and the
+next rotation buries it unread. `/crit-doc-lint [7]` flags any token outside this list.
+
+## Rules the linter enforces (`/crit-doc-lint [5]`)
+
+- **`Done when:` on every `[OPEN]`** — the measured cause of the stale-token class.
+- **One owner per entry** — address exactly one agent; the rest are `(+… FYI)`.
+- **PING-PONG detection** — a topic with ≥3 hops and ≥2 reversals is flagged. That signals an unclear
+  boundary or an undecided question: **another handoff will not settle it.** Name the owner, or
+  escalate to the user.
+
+## How to read it
+
+**Top-down, newest-first, IN FULL — never `grep`-snippeted.** A search renders long single-line
+entries as `[Omitted long matching line]`, silently hiding exactly the entries you must act on.
+Address the newest `[OPEN]` entries addressed to you **before** re-touching older ones.
+
+**Absorb-or-ACK.** When you act on an entry addressed to you: either land the work **and** post a
+one-line ACK at the top, or flip its token to `[ABSORBED <date> by A<n> — <what you did>]` in place.
+
+**Not a backlog, not a changelog.** Only what another agent must *act on or not undo*. Durable
+rationale goes in the relevant `DECISIONS.md`; this file is the short pointer.
+
+**A handoff is a request for ACTION, never a receipt.** If you only changed your own domain's logic
+inside a file another agent owns, **the commit is the record** — the owner does not revert an
+in-domain edit, so you owe no entry. (This single rule removes most inbox traffic.) Who holds the
+pen on each write surface is named in the roster.
+
+## Rotation
+
+The steward moves settled traffic to a dated archive under `archive/` so the live inbox stays
+readable. **Two classes never rotate:** live tokens (`OPEN` / `PARKED-OWNED`), and any entry whose
+token is **not in the vocabulary above** — an unrecognized value must be found late, never lost.
+**Rotating REBASES relative links** (the archive sits one directory deeper): re-run `/crit-doc-lint [1]`
+after every rotation and read its output.
+
+**Retiring the whole channel** (the inbox itself stops existing as a channel — e.g. its actor left,
+or the register moved): do **not** delete the file — a missing file cannot warn anyone, and the
+channel gets resurrected by the next writer. Mark the **first line** with `⚰ RETIRED <date>` and
+state where the live register is. The controls read the marker: the owed-counter prints *"not a
+channel"* instead of a clean zero, and the layout detector stops counting the file as evidence of
+an agentic layer.
+
+Archives: _(none yet — list them here as they are created)_
+
+---
+
+<!--
+Newest entry on top. The shape of a real entry, kept as a COMMENT on purpose: a live example row
+would be a phantom [OPEN] that the owed-counter reports to a real agent on day one, and whose
+example date would sit under the linter's grandfather cutoff forever. A template must not ship
+work-shaped noise into the controls it exists to satisfy.
+
+- YYYY-MM-DD — AGENT 1 → AGENT 2 (+AGENT 3 FYI): **[OPEN — Done when: <observable a third party
+  could check>]** <what changed in my domain → what you must do about it>. [`path/to/ref`]
+-->
+
+*(No entries yet.)*

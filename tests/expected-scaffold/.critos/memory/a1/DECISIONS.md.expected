@@ -1,0 +1,34 @@
+# Steward — Decisions (AGENT 1)
+
+Append-only log of the architectural decisions that bind this domain. **Never delete an ADR** —
+supersede it; the log is a readable history, not a current-state document (that is `STATUS.md`).
+
+**When an ADR is owed** — *could the next agent, in good faith, redo this differently?* If yes, write
+it. A choice with one obvious answer, or one that only a commit can be wrong about, is a commit
+message, not an ADR.
+
+**ID scheme for this log:** `ADR-A1-###` — the prefix carries this agent's number, so the ID names
+its owner, and therefore this log, **by construction** (`contract-memory § 2`). If this log carries
+older IDs under another scheme (a subject prefix, a bare `ADR-NNN`), grandfather them: their
+sequence closes, the `A1` sequence opens at `001`, and **nothing is ever renamed** — old IDs are
+cited from commits and archives that must not change.
+
+**Rotation — aging is managed** (`contract-memory § 2`): mark what landed or was superseded, then
+move the marked entries to `archive/DECISIONS-archive-<period>.md` with a pointer left behind — on
+either trigger: an entry fully settled, or the log past its skimmable budget (`/crit-doc-lint [12]`).
+**Nothing is archived unmarked**, and the atlas is regenerated in the same round, so every archived
+ID keeps resolving — relocated for legibility, never trimmed away.
+
+**The shape of an entry** — copy it under the rule below, fill it, never leave a slot empty:
+
+```
+    ## ADR-A1-### — the decision, as a one-line imperative — the date, absolute
+    **Status:** accepted            (later, when it ages: superseded by its successor's id, or completed + date)
+    **Context.**   what forced a choice: the constraint, the incident, the request. 1–3 lines.
+    **Decision.**  what we do now, unambiguously. One line if it fits.
+    **Why.**       the reason a future reader needs in order NOT to redo this differently. This is the
+                   field that makes the log worth keeping — an ADR without a why is a changelog entry.
+    **Consequences / blind spot.**  what this costs, and what it deliberately does NOT cover.
+```
+
+---

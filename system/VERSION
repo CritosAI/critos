@@ -1,0 +1,14 @@
+{
+  "system": "1.0.0",
+  "released": "2026-09-22",
+  "contracts": [
+    "contract-system.md",
+    "contract-agent.md",
+    "contract-session.md",
+    "contract-memory.md",
+    "contract-shared.md"
+  ],
+  "delivery": "HYBRID - pin what fails silently, share what fails loudly: the CONTRACTS and the steward's definition are PINNED into a project (copied, frozen); the CONTROLS and the guard hook are SHARED from the machine (~/.claude/skills/crit-*, ~/.claude/hooks/critos).",
+  "integrity": "releases.manifest records every release's file hashes at release time; /crit-doc-lint [14] PIN-DRIFT compares a project's pinned copy against its DECLARED version's entries - never against HEAD.",
+  "note": "This file is the migration marker, not a pin. A change to the system tier is an upgrade: released upstream, applied to a project by its steward. See contract-system.md, Versioning and migration."
+}

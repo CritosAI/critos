@@ -1,0 +1,59 @@
+# expected-project — settings
+
+**The user's standing directives for this project.** This is the one file in the agentic layer whose
+author is the **user**: an agent may propose a change and must not decide one.
+
+> These are **choices**, not rules. The rules are in `.critos/system/` and do not vary between
+> projects. If something here contradicts a system contract, the contract wins — except where the
+> contract explicitly says a project may specialize it.
+
+---
+
+## Language
+
+**Everything written and persisted is English** — repo content (code, comments, docs, UI strings,
+migration and SQL headers), git history (commit messages, branch names, tags), and strings the
+system emits (logs, errors, UI copy). Two carve-outs, and only these:
+
+- **Live chat with the user**: any language.
+- **Data is not an artifact**: observed/captured values (names, labels, scraped text) stay as
+  captured — a foreign-language value is a fact, not prose.
+
+> ⚠️ **This setting does not reach inside `.critos/`.** Everything in the agentic layer is **English,
+> always**, whatever this says — it is not an editorial preference but the format of the substrate the
+> method itself reads, parses and migrates (`contract-system § Substrate invariants`). The same holds
+> for UTC and absolute dates.
+
+## Time
+
+**Storage, comparison, keys, logs, scheduling**: UTC — fixed by the system tier, not settable here.
+
+**Display timezone** (human-facing output only): `<TODO: e.g. Europe/Rome>`
+
+## What this project is
+
+`<TODO: two or three lines. What it delivers, to whom. An agent reads this to know whether a change
+it is about to make serves the point of the project.>`
+
+## Mandatory reading
+
+*(optional — whoever fills this file removes the section if it is still empty then; it comes back the
+day the first document earns it)*
+
+The reading this file makes mandatory at boot — `contract-session § 1` names settings "the
+induction", and this is the induction's third leg: project documents every agent must open after
+this file, one line each, linked. A document listed here is boot cost for **every agent, every
+session** — list only what earns it.
+
+- `<TODO: e.g. a link to the project's conventions/shape doc>`
+
+## Standing directives
+
+Durable instructions the user has given that bind every agent. One per line, dated, in the
+imperative. Not a task list — a task belongs in the inbox or on the roadmap.
+
+- `<YYYY-MM-DD>` — `<TODO: e.g. "never touch production data without asking, even for a read">`
+
+> **When a directive stops being true, delete it.** This file is a snapshot of what binds *now*: it is
+> overwritten like a `STATUS`, not appended like a log. A retired directive that stays here is a rule
+> nobody meant and everybody obeys.

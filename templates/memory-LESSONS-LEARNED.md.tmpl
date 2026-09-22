@@ -1,0 +1,51 @@
+<!-- SCAFFOLD:BEGIN target=.critos/memory/a<N>/LESSONS-LEARNED.md
+     Instantiated by skills/crit-scaffold-project/scaffold.sh, never by hand: it removes this block
+     (BEGIN line to END line, and the blank lines after it) and fills the MECHANICAL placeholders
+     named below. Every other line is the instance, byte for byte.
+     Mechanical: <N> = the agent's number; <Domain> = the one-line name of its domain (the steward's
+     is "Steward"); <TODAY> = the UTC date. A log is BORN EMPTY: the shape of an entry is described
+     in the head, indented inside a fence, so that no control can read it as an entry.
+     SCAFFOLD:END -->
+
+# <Domain> — Lessons learned (AGENT <N>)
+
+Append-only log of what this domain learned the expensive way. The filename is
+**`LESSONS-LEARNED.md`** — exactly this, in every project; a fork in this name silently splits a
+domain's memory in two.
+
+**The bar — when a lesson is owed.** An incident earns an entry when it **cost real time or produced
+a wrong claim**. Not "something happened". Not a restatement of a rule that already exists — link
+that one instead. A near-twin of an existing lesson supersedes it; it does not sit beside it.
+
+**Taxonomy.** `observation` (first sighting) → `candidate_rule` (2nd independent occurrence) →
+`accepted_rule` (recurred across actors, or the user confirmed it) → `deprecated`. Only an
+`accepted_rule` binds this domain without re-asking.
+
+**If a lesson is universal** — it would be true on any project, not just this one — it does not
+belong here in the long run: it is a **proposal to change the method itself**. Write it here with
+its evidence, then raise it; the method is amended deliberately, versioned, and migrated in. A
+lesson parked as "universal" in a domain log is a rule that never became one.
+
+**Every `accepted_rule` names its ENFORCEMENT TIER** — and if it is tier 3, says why no detector
+exists. This is the field that keeps this file from becoming the place where good rules go to be
+ignored: *the method's worst governance failure was a lesson that had been written and left at
+tier 3 — writing it down a second time would have changed nothing.*
+Tiers: **1 = impossible** (the violation cannot be expressed) · **2 = detected deterministically** (a
+script finds it whether or not anyone remembered) · **3 = written down and hoped for**.
+
+**Rotation:** the same aging process as `DECISIONS.md` (`contract-memory § 2`) — mark, then move to
+`archive/LESSONS-LEARNED-archive-<period>.md` on either trigger; the atlas keeps every archived id
+resolving.
+
+**The shape of an entry** — copy it under the rule below, fill it:
+
+```
+    ## L-A<N>-### (observation | candidate_rule | accepted_rule, the date) — the lesson as a one-line title
+    **What happened.**  the incident, concretely: what was done, what broke, how it was found. 1–2 lines.
+    **The rule.**       one imperative line — what to do instead, next time. If it does not fit in one
+                        line, you have an observation, not a rule.
+    **Enforcement:**    tier-N + the detector that enforces it — or, for tier 3, why none is possible.
+    **Why it generalizes** (optional; fill it when promoting) — what makes this true beyond this incident.
+```
+
+---

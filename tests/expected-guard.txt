@@ -1,0 +1,46 @@
+ASK:STOP     git push
+ASK:STOP     git push origin master
+ASK:STOP     git -C "/c/some path/with spaces/repo" push
+ASK:STOP     git.exe --no-pager push origin
+ASK:STOP     git -c user.name=x push
+ASK:STOP     cd sub && git push
+ASK:STOP     bash -c "git push"
+ASK:STOP     sh -c 'git push origin'
+PASS         git push --help
+PASS         grep -rn "git push" doc/
+PASS         git log --grep="git push"
+PASS         git commit -m "guard: catch 'git push'" -- a.txt
+PASS         echo "git push is user-driven"
+ASK:DANGER   git stash
+ASK:DANGER   git stash pop
+ASK:CAREFUL  git add -A
+ASK:CAREFUL  git add --all
+ASK:CAREFUL  git add .
+PASS         git add src/x.js
+ASK:CAREFUL  git commit -am "x"
+ASK:CAREFUL  git commit --all -m "x"
+PASS         git commit -m "x" -- src/x.js
+ASK:DANGER   git checkout .
+ASK:DANGER   git restore -- .
+PASS         git checkout main
+PASS         git restore src/x.js
+ASK:DANGER   git clean -fd
+ASK:DANGER   git clean -fx
+PASS         git clean -nd
+PASS         git clean --dry-run -fd
+PASS         git status
+ASK:STOP     echo start; git push
+ASK:STOP     echo "deploying" && git push origin main
+ASK:DANGER   cat notes.txt; git stash
+ASK:CAREFUL  grep -q x f && git add -A
+ASK:STOP     ls -h; git push
+ASK:STOP     git push -h && git push origin
+ASK:DANGER   printf 'x' | cat; git clean -fd
+PASS         echo one; echo two
+PASS         grep -rn "git push" doc/ | head -3
+PASS         cat notes.txt | grep push
+ASK:STOP     git push 2>&1 | tail -1
+ASK:CAREFUL  git commit -m "two folders, from the index"
+ASK:CAREFUL  git commit -m "two folders, by pathspec" -- .critos/memory/a2/STATUS.md .critos/memory/a3/STATUS.md
+PASS         git commit -m "one folder, by pathspec" -- .critos/memory/a2/STATUS.md
+PASS         git commit -m "one folder, from the index"

@@ -1,0 +1,70 @@
+<!-- SCAFFOLD:BEGIN target=.critos/project/agents.md
+     Instantiated by skills/crit-scaffold-project/scaffold.sh, never by hand: it removes this block
+     (BEGIN line to END line, and the blank lines after it) and fills the MECHANICAL placeholders
+     named below. Every other line is the instance, byte for byte.
+     Mechanical: <PROJECT_NAME>. The roster is BORN WITH ONE ROW, the steward's. The shape of every
+     other row is kept below as a comment: a row is added the day the user decides an agent exists.
+     STANDING TEXT - everything that is not a row - survives VERBATIM: it is the file's own reference
+     for the day the next agent is born or a row is disputed.
+     SCAFFOLD:END -->
+
+# <PROJECT_NAME> — roster
+
+The register of actors. It answers the one question no single definition can: **is the partition
+whole?** A definition is a claim seen from inside; this is the arbitration seen from above.
+
+> **An index, never the definitions.** Full rules: `.critos/system/contract-agent.md § 3`. A roster
+> that grows a "per-agent detail" section is absorbing definitions — a real one reached 503 lines for
+> six agents that way. Each row **links** to its definition; it does not restate it.
+
+## Actors
+
+| # | Role (one line) | Form | Domain | Memory | Shelf — where my documents are | Definition |
+|---|---|---|---|---|---|---|
+| A1 | Steward — executor of the method | native | ↑ `system §A1` — the organisation of this project; owns no domain content | `.critos/memory/a1/` | — | [`agent-1.md`](../../.claude/agents/agent-1.md) — **installed**, not editable here |
+
+<!-- The shape of every other row, kept as a COMMENT until the user decides an agent exists:
+| A\<N\> | \<TODO role\> | session | \<TODO what it owns\> | `.critos/memory/a<N>/` | — *(a LINK to the domain's index, once one exists)* | `agents/agent-<N>.md` |
+-->
+
+**The A1 row is inherited with the tier, not authored here** (`contract-agent § 3`). It arrives
+precompiled, in citing form, and this project writes exactly **one** of its cells — **Shelf**. Every
+other cell is the projection of `system §A1`: rewriting it is self-scoping through the roster, and
+restating the section instead of citing it is a copy that will drift. **`AGENT 0` never appears
+here** — it is the reserved inbox address for *upstream*, not an actor (`contract-agent § 5`).
+
+**The Shelf column is an ADDRESS, not a guarantee** — the boot's awareness step
+(`contract-session § 1`) opens it, so a **definition never has to name a document**. Its cell is a
+**markdown link to the domain's index** (an empty shelf is `—`, legal): a shelf written in prose
+cannot be verified, and the check that watches this column reads links only. Where the index is the
+folder's `README.md`, list-completeness is machine-checked; any other entry point is legal, and its
+completeness is the owner's.
+
+**The `Form` column decides how an agent is reached**, and getting it wrong is silent: a `native`
+agent is **invoked**; a `session` agent is **written to via the inbox**, because it is not running.
+
+## Write surfaces — who holds the pen
+
+The register of file-level pen-holding: where more than one domain's **work meets on one surface**,
+the ruling that says whose hand writes. Naming this removes most inbox traffic on its own — on a
+real project, 27% of all entries were "I touched your file, do not revert".
+
+Rows come in **two kinds**, and the third column answers both honestly: **sole-hand** — exclusive
+by ruling; *When a handoff is NOT needed* answers **never** — and **genuinely shared** — several
+hands, the split stated. **Not an inventory:** a file nobody contests has its owner by domain
+perimeter and no row here; a row exists only where a ruling was needed.
+
+| Surface | Owner | When a handoff is NOT needed |
+|---|---|---|
+
+<!-- Born empty. The shape of a row, kept as a COMMENT until a ruling is needed:
+| \<file / table / service\> | A\<N\> | an in-domain edit: **the commit is the record** |
+-->
+
+---
+
+**Adding an agent** (`contract-agent § 4`) — standing text, the reference for the day it happens:
+the **user** decides it exists and picks its `Form` → write its definition from the agent-definition
+template, all six fields including *what you do NOT do* → add its row here → create
+`.critos/memory/a<N>/`. A1 may **propose** an agent and must then stop: a steward that could mint
+agents would be appointing its own board.

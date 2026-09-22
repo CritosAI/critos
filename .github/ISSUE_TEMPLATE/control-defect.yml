@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Criticaldrop Entertainment s.r.l.
+name: Control defect
+description: A check, the guard, the installer or a template does not do what it says.
+title: "defect: "
+labels: [defect]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        A fix is welcome as a pull request with a new case in tests/. If you only have the
+        symptom, this form is the place.
+  - type: input
+    id: control
+    attributes:
+      label: Which control
+      placeholder: e.g. /crit-doc-lint [14], the guard, install.ps1, the STATUS template
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What it printed or did
+      description: Paste the output. A check's zero and its finding lines are both evidence.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What it should have done
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and shell
+      placeholder: e.g. Windows 11, Git Bash - or Ubuntu 24.04, bash
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: CritOS release
+      description: The line /crit-status-check prints first ("controls:"), or system/VERSION.
+    validations:
+      required: true

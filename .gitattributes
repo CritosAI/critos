@@ -1,0 +1,10 @@
+# Line endings are part of the product. Git for Windows defaults to core.autocrlf=true, which
+# would hand every Windows user CRLF scripts: most shells then fail on them without saying why.
+# A script, a hook and a byte-compared expectation are LF on every machine; the installer is a
+# PowerShell 5.1 file and stays CRLF.
+*.sh   text eol=lf
+*.mjs  text eol=lf
+*.js   text eol=lf
+*.ps1  text eol=crlf
+tests/expected-*          text eol=lf
+tests/expected-scaffold/** text eol=lf

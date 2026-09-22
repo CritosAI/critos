@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Criticaldrop Entertainment s.r.l.
+name: Raise - a method amendment
+description: A lesson that would be true on any project, carried here from a project's inbox.
+title: "raise: "
+labels: [raise]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        A raise is evaluated, never merged: what is adopted ships in a release, with its
+        migration stated. Say what happened, what it cost, and what should change - not how to
+        patch it.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The situation, as the agent or you met it. No project internals needed.
+    validations:
+      required: true
+  - type: textarea
+    id: cost
+    attributes:
+      label: What it cost
+      description: Real time lost, a wrong claim made, a rule crossed in good faith.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Which contract, control or template it concerns
+      placeholder: e.g. contract-session, the boot order - or /crit-doc-lint check [3]
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you believe should change
+      description: The rule or the control as you would state it. Optional.
+  - type: input
+    id: version
+    attributes:
+      label: CritOS release
+      description: The line /crit-status-check prints first ("controls:"), or system/VERSION.
+    validations:
+      required: true

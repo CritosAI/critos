@@ -1,0 +1,51 @@
+# Steward — Status (AGENT 1)
+
+**Last updated:** 2026-01-01 — scaffolded; not yet written by its agent.
+
+> **This file answers exactly one question: what is TRUE NOW.** It is *overwritten*, never prepended
+> — the previous answer is not history worth keeping, it is a **wrong answer**; git holds the
+> history. Budget ~200 lines (`/crit-doc-lint [8]` warns past it, or on a second dated "as of" section).
+> Full contract: `.critos/system/contract-memory.md § 1`.
+
+## Now true
+
+`<The current state of this domain, in the present tense. What is live, what the real numbers are,
+what is deployed, what is broken. No dates-as-narrative: a fact that needs a date carries it inline
+(2026-01-01), but this section is not a timeline.>`
+
+## Next (my domain)
+
+`<Vertical micro-steps that are mine alone — COMMITTED work only: if nobody says yes, it still has
+to happen. A parked item lives here WITH its un-park trigger. Shared/cross-domain efforts do NOT
+live here — they are ROADMAP rows.>`
+
+### ⛔ This file does not list what is OPEN across agents. Ask the inbox.
+
+```
+bash ~/.claude/skills/crit-status-check/status-check.sh --me 1 .critos/memory/a1 --domain <code-path>
+```
+
+Cross-agent obligations live in `HANDOFFS.md`, which **outranks this snapshot**. A file that may not
+*assert* what is open cannot assert it *stalely* — that is the rule at enforcement tier 1, and it is
+why "what do I owe?" is a **query, not a recall**.
+
+## Proposals
+
+*(optional — the agent omits this section while it has no proposal)*
+
+`<What I noticed and would do on the user's yes — never mixed into Next. Each line carries its
+MEASURE (how many cases, what it costs): a proposal that cannot be decided from its own line is a
+wish. A yes moves it to Next; a no deletes it.>`
+
+## Cleanup pending
+
+`<Temporaries you created and owe the tree: _tmp_ files, parked branches, half-migrations. Drain
+this list at checkpoints — an empty section is the goal, not a missing one.>`
+
+---
+
+**Write moments (both mandatory):**
+1. **Overwrite** at checkpoint, so the next session inherits real state.
+2. **Fact-flip on the spot** — the moment evidence disproves a line here, correct it *that session*
+   with the date and the proof reference. Do not report "already fixed, STATUS doesn't know yet" and
+   leave the lie in the file.
