@@ -15,4 +15,5 @@ the law now says, what stops conforming, what to do. Every release answers two f
 
 | Version | Date | Law — what changed | Impact on existing data | Migration |
 |---|---|---|---|---|
+| 1.0.1-rc.1 | 2026-09-25 | the perimeter (`contract-system § 0`): CritOS governs the builders — whoever advances the mainline, however it is invoked; a program the project runs is code owned by a domain, never an agent; what is not a builder's own work enters only as its owner's own entry | none detectable — an entry that relayed outside content as it came now reads against the membrane; no check finds it, and its owner restates it when the work next touches it | `mechanical` — re-copy the tier; the steward's definition and the controls are unchanged, nothing to re-install |
 | 1.0.0 | 2026-09-22 | first release | none | `none` |
