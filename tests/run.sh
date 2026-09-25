@@ -18,6 +18,9 @@
 #   6. the installer  the platform's installer, into a sandbox home: installs, is idempotent,
 #                    keeps what is yours, uninstalls only its own, refuses a linked folder
 #                    (tests/install.sh) - install.ps1 under Git Bash on Windows, install.sh elsewhere.
+#   7. the commit format  every rule of the public subject line fires in both directions
+#                    (tests/commit-format.sh); the same checker reads a pull request's
+#                    subjects in CI.
 # To change an expectation on purpose: run with --update, review the diff, commit it WITH the
 # change that caused it.
 set -uo pipefail
@@ -43,4 +46,5 @@ bash "$here/licence.sh" || fail=1
 if [ "$update" = 1 ]; then bash "$here/scaffold.sh" --update || fail=1; else bash "$here/scaffold.sh" || fail=1; fi
 bash "$here/wrong-place.sh" || fail=1
 bash "$here/install.sh" || fail=1
+bash "$here/commit-format.sh" || fail=1
 exit $fail

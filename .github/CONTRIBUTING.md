@@ -35,7 +35,11 @@ change is evaluated, and if adopted it ships in a release, versioned, with its m
 ## Conventions
 
 - Everything in the repository is **English**; dates are absolute (`2026-09-22`); time is UTC.
-- A commit message says what changed and one line of why; the subject fits in 72 characters.
+- A commit subject is `type(scope): subject`, imperative, within 72 characters, and the type
+  is one of `feat` `fix` `docs` `test` `ci` `chore` `refactor` `release` - the scope names the
+  product area. A body only when the why does not fit. The version commit is
+  `release: X.Y.Z[-rc.N]`. Every pull request's subjects are read against this in CI
+  (`tests/commit-format.sh`, the same checker you can run locally).
 - A script is LF, the installer is CRLF — `.gitattributes` enforces it; do not fight it.
 - Nothing here carries a story: a rule states itself and one line of why. Evidence and
   incident history stay out of the product.

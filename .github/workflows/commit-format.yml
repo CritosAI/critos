@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Criticaldrop Entertainment s.r.l.
+# The public commit format, read on every pull request by the same checker a contributor runs
+# locally: bash tests/commit-format.sh --check. Merge commits are not read - they are written by
+# the platform, not by a contributor. The subjects read are printed before the verdict, so a
+# refusal says what was looked at.
+name: commit-format
+on:
+  pull_request:
+jobs:
+  subjects:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: the subjects this pull request adds
+        run: |
+          git fetch --quiet origin "${{ github.base_ref }}"
+          git log --no-merges --format=%s FETCH_HEAD..HEAD > "$RUNNER_TEMP/subjects.txt"
+          cat "$RUNNER_TEMP/subjects.txt"
+          bash tests/commit-format.sh --check < "$RUNNER_TEMP/subjects.txt"
