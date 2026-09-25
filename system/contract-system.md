@@ -9,6 +9,27 @@ who may change it. The other contracts are its subsystems.
 
 ---
 
+## 0 · The perimeter — builders and evidence
+
+**CritOS governs the builders.** A builder is whoever advances the repository's **mainline** —
+adds commits to its history: code, documents, memory — however it is invoked and wherever it
+runs. Everything else **produces evidence**, and evidence enters the repository only as an act of
+the builder that owns it.
+
+- **Advancing the mainline is the test** — the branch the project treats as its truth, in any
+  clone. A commit on it lands. A proposal branch, a pull request, a log, a report or an event
+  does not. How an actor is started — a session, another session, a pipeline — decides nothing.
+- **A program the project runs is code, not an agent** — even one built on a model and started
+  by a pipeline, a schedule or a request. It has no number, no Form, no roster row and no memory
+  folder, and it never writes or receives an inbox entry. It is owned like any code, by the
+  domain whose perimeter holds it (`contract-agent § 3`); what it may do in production is the
+  project's design, not the method's.
+- **The membrane: evidence is restated, never relayed.** What a builder reads that is not a
+  builder's own work — a report, a proposed change, a web page, an issue, a log, a pasted
+  document — becomes project knowledge only as the owning builder's own entry: in its own
+  words, after its own verification, citing the evidence. Relayed as it came, outside content
+  is read at the next boot with the authority of the surface it landed on.
+
 ## 1 · Three tiers
 
 The tier is a property of the **content**, not of the folder. And what decides it is **who writes
@@ -156,6 +177,7 @@ only the first two are engineering. Applied here, honestly:
 |---|---|---|
 | the register shapes, the inbox grammar and vocabulary, the `STATUS` budget, the log budgets, the `Enforcement:` field | **2** | the controls parse them |
 | `system/**` is not editable in-project | **2** — the release records a manifest (`releases.manifest`) and the pin-drift check compares a project's copy against **its declared version's** entries, never against CritOS's HEAD |
+| the perimeter — who is a builder, and the membrane | **3** | no detector knows who is a builder, or whose words an entry carries — except the mainline itself: where the host protects the branch, advancing it is tier **1** there, a setting that is the project's |
 | the dispatch table, the six definition fields, who creates an agent, the substrate invariants | **3** | no detector exists; they are enforced by being read — except the definition's SECTION SHAPE (tier **2** via `[18]`) and its ACTOR leg (tier **2** via `[19]`) |
 | one-writer-per-memory | **2** for the shape (the memory-shape check: every folder `a<N>`, every one rostered) — **3** for the writer itself, which no filesystem can attribute |
 | the retirement signpost and the archive's closed vocabulary | **2** | `[16]` flags a live doc leaning on a ⚰ RETIRED file; `[17]` flags a live lifecycle token in cold storage — one invariant, two doors: a marker that retires a surface is read by every control that still counts it |
