@@ -1,6 +1,6 @@
 {
-  "system": "1.0.1-rc.1",
-  "released": "2026-09-25",
+  "system": "1.0.1",
+  "released": "2026-10-04",
   "contracts": [
     "contract-system.md",
     "contract-agent.md",
