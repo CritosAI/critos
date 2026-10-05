@@ -10,7 +10,9 @@ An agent is a named owner of a slice of the system, with its own memory and a st
 (`contract-agent § 1`). What makes a team of agents work is the same thing that makes a team of
 people work: everyone knows what is theirs, and where the neighbour begins. The load-bearing
 field of a definition is ***what I do NOT do*** — a boundary stated only as "what I own" has no
-edge. How to find the slices: [cutting a project into domains](guide-domains.md).
+edge. And a domain is a **place**: its roots in the tree are written in the roster, and a check
+reads every tracked file against them — a domain nobody can point at in the repository is a
+dispute, not an owner. How to find the slices: [cutting a project into domains](guide-domains.md).
 
 ## 2 · Every session starts from zero — so the boot is a contract
 

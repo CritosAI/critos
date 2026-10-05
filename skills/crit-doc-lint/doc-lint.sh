@@ -35,6 +35,9 @@
 #                         shelf folder holding tracked .md its index chain never links
 #  [21] CITED-ID          a decision or lesson id cited in a doc, a register or code that no
 #                         DECISIONS / LESSONS-LEARNED log declares, archives included
+#  [22] ROOTS             the roster's Roots column vs the tracked tree: UNROOTED (a file under no
+#                         domain's root and no ruled surface) · OVERLAP (one root, two actors) ·
+#                         DANGLING (a root matching nothing); a roster without the column: SKIPPED
 #
 # A project that spans several repos registers them in `.claude/repos`; the whole battery is then
 # repeated in each (one level, read-only).
@@ -776,6 +779,75 @@ else
   [ "$any21" = 0 ] && echo "(none — every cited id resolves to a log entry)"
 fi
 rm -f "$declared21" "$prefixes21"
+
+echo
+echo "### doc-lint [22] — ROOTS: every tracked file under a domain's root or a ruled surface; no root declared twice; none matching nothing"
+# The roster's Roots column (contract-agent § 1, § 3): backticked paths — a trailing `/` is a
+# folder root, any other a file root, `/` alone the whole repo. The most specific path wins, so a
+# file root inside another actor's folder is legal and only the SAME root under two actors is an
+# OVERLAP. Rooted by construction, never declared: `.critos/system/` (installed),
+# `.critos/memory/a<N>/` (the memory invariant), the generated atlas. A ruled surface is a
+# backticked path in the write-surface table's first column (a row whose Owner cell names an
+# actor); a table or a service named there is not in the tree and is simply never matched.
+# Files are read tracked + untracked-not-ignored, like [1]: a new file is read while its author
+# is looking, and a newborn scaffold is not DANGLING before its first commit.
+# UNROOTED is listed per top-level folder, three names each: the count is the finding.
+if [ -z "$ROSTER" ]; then
+  echo "(no roster in this repo — skipped)"
+else
+  roots_col=$(awk -F'|' '$2 ~ /^[[:space:]]*#[[:space:]]*$/ { for(i=1;i<=NF;i++) if (tolower($i) ~ /roots/) {print i; exit} }' "$ROSTER" | head -1)
+  if [ -z "$roots_col" ]; then
+    echo "SKIPPED  the roster has no Roots column — every domain's place in the tree is unknown to the battery (contract-agent § 3). The column arrives with the migration; each domain's cells with the user's ruling."
+  else
+    roots22=$(mktemp); surf22=$(mktemp); un22=$(mktemp); any22=0
+    while IFS= read -r row22; do
+      c2=$(printf '%s' "$row22" | awk -F'|' '{gsub(/[^A-Za-z0-9]/,"",$2); print $2}')
+      case "$c2" in
+        A[0-9]|A[0-9][0-9])   # an actor row: its Roots cell
+          printf '%s' "$row22" | awk -F'|' -v c="$roots_col" 'NF>c {print $c}' | grep -oE '`[^`]+`' | tr -d '`' \
+            | sed -E 's#^\./##' | awk -v a="$c2" 'NF {print $0 "\t" a}' >> "$roots22" ;;
+        *)                     # a write-surface row: Owner names an actor, Surface may be a path
+          own22=$(printf '%s' "$row22" | awk -F'|' '{gsub(/^[[:space:]]+|[[:space:]]+$/,"",$3); print $3}')
+          case "$own22" in A[0-9]*) ;; *) continue ;; esac
+          printf '%s' "$row22" | awk -F'|' '{print $2}' | grep -oE '`[^`]+`' | tr -d '`' | sed -E 's#^\./##' | awk 'NF' >> "$surf22" ;;
+      esac
+    done < <(grep -E '^\|' "$ROSTER")
+    # OVERLAP — the same root under two actors
+    while IFS=$'\t' read -r r22 who22; do
+      [ -z "$r22" ] && continue
+      echo "OVERLAP  $r22 — declared by $who22: one root, one owner (the most specific path wins only between DIFFERENT paths; the same path twice is a collision the roster exists to show)"
+      any22=1
+    done < <(awk -F'\t' '{ if (!($1 in a)) a[$1]=$2; else if (index(a[$1],$2)==0) a[$1]=a[$1] " + " $2 } END { for (r in a) if (index(a[r]," + ")) print r "\t" a[r] }' "$roots22" | sort)
+    # DANGLING — a root matching nothing in the tracked tree
+    while IFS=$'\t' read -r r22 who22; do
+      [ -z "$r22" ] && continue
+      case "$r22" in
+        /) continue ;;
+        */) [ -n "$(git ls-files --cached --others --exclude-standard -- "$r22" 2>/dev/null | head -1)" ] || { echo "DANGLING  $r22 ($who22) — a folder root matching no file: moved, renamed, or never there"; any22=1; } ;;
+        *)  git ls-files --cached --others --exclude-standard -- "$r22" 2>/dev/null | grep -qxF "$r22" || { echo "DANGLING  $r22 ($who22) — a file root matching no file: moved, renamed, or never there"; any22=1; } ;;
+      esac
+    done < <(sort -u "$roots22")
+    # UNROOTED — a tracked file under no root and no ruled surface, grouped by top-level folder
+    git ls-files --cached --others --exclude-standard | awk -F'\t' -v R="$roots22" -v S="$surf22" '
+      function add(p) { if (p == "/") all = 1; else if (p ~ /\/$/) dirs[p] = 1; else files[p] = 1 }
+      BEGIN { while ((getline l < R) > 0) { split(l, parts, "\t"); add(parts[1]) }
+              while ((getline l < S) > 0) add(l) }
+      { f = $0
+        if (all) next
+        if (f ~ /^\.critos\/system\//) next
+        if (f ~ /^\.critos\/memory\/a[0-9]+\//) next
+        if (f == "MEMORY-INDEX.md") next
+        if (f in files) next
+        hit = 0; for (d in dirs) if (index(f, d) == 1) { hit = 1; break }
+        if (!hit) print f }' \
+    | awk -F'/' '{ top = (NF > 1) ? $1 "/" : "(the repo root)"; n[top]++; if (n[top] <= 3) ex[top] = ex[top] (ex[top] ? ", " : "") $0 }
+                 END { for (t in n) printf "UNROOTED  %d file(s) under no root and no ruled surface — %s: %s%s\n", n[t], t, ex[t], (n[t] > 3 ? ", …" : "") }' \
+    | sort > "$un22"
+    if [ -s "$un22" ]; then cat "$un22"; any22=1; fi
+    [ "$any22" = 0 ] && echo "(none — every tracked file sits under a domain's root or a ruled surface; no root is declared twice, none matches nothing)"
+    rm -f "$roots22" "$surf22" "$un22"
+  fi
+fi
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
 # `.claude/repos`: one path per line, relative to this repo's root ('#' comments). One level only:

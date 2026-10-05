@@ -177,6 +177,7 @@ only the first two are engineering. Applied here, honestly:
 |---|---|---|
 | the register shapes, the inbox grammar and vocabulary, the `STATUS` budget, the log budgets, the `Enforcement:` field | **2** | the controls parse them |
 | `system/**` is not editable in-project | **2** — the release records a manifest (`releases.manifest`) and the pin-drift check compares a project's copy against **its declared version's** entries, never against CritOS's HEAD |
+| a domain has a physical root, and the roster is the authority on ownership in the tree | **2** for the map — `[22]` reads every tracked file against the roster's `Roots` and the ruled surfaces, and flags a roster without the column — **3** for what a root should be: a ruling |
 | the perimeter — who is a builder, and the membrane | **3** | no detector knows who is a builder, or whose words an entry carries — except the mainline itself: where the host protects the branch, advancing it is tier **1** there, a setting that is the project's |
 | the dispatch table, the six definition fields, who creates an agent, the substrate invariants | **3** | no detector exists; they are enforced by being read — except the definition's SECTION SHAPE (tier **2** via `[18]`) and its ACTOR leg (tier **2** via `[19]`) |
 | one-writer-per-memory | **2** for the shape (the memory-shape check: every folder `a<N>`, every one rostered) — **3** for the writer itself, which no filesystem can attribute |

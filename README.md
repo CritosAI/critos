@@ -43,7 +43,7 @@ tomorrow: what the agent knows is still there — in files you can read, diff, r
 Nothing is hidden in a vector store or in a vendor's cloud.
 
 **And the team stays honest.** A shared inbox where every request has one owner and stays
-counted until it is closed. Twenty-one deterministic checks that tell you what is actually true.
+counted until it is closed. Twenty-two deterministic checks that tell you what is actually true.
 A guard before the irreversible. A steward that proposes — and you decide.
 
 ## What you get
@@ -59,7 +59,7 @@ A guard before the irreversible. A steward that proposes — and you decide.
   finds every decision — so it is still worth reading a year in.
 - **Work that is handed over, never lost.** A shared inbox where a request has one owner and a
   closure criterion, and stays counted until it is closed.
-- **Checks that tell you what is actually true.** Twenty-one deterministic checks: broken links
+- **Checks that tell you what is actually true.** Twenty-two deterministic checks: broken links
   and orphan docs, stale status, debts nobody is counting, decisions cited that no longer
   exist, a pinned rulebook that someone edited.
 - **A guard.** It asks you before a `git push`, and before any git command that would sweep
@@ -84,7 +84,7 @@ Four things, each one there because of the one before it.
 flowchart LR
     D["<b>DOMAIN</b><br/>an agent owns a part of the project,<br/>with a boundary: what I do NOT do"]
     M["<b>MEMORY</b><br/>of that domain, in three tenses:<br/>what is true · what was decided · what went wrong"]
-    G["<b>GOVERNANCE</b><br/>inbox · 21 checks · guard · steward<br/>keeps the growing memory honest"]
+    G["<b>GOVERNANCE</b><br/>inbox · 22 checks · guard · steward<br/>keeps the growing memory honest"]
     R["<b>RULES</b><br/>five contracts, pinned at a release,<br/>never edited locally, migrated deliberately"]
     D --> M --> G --> R
 ```

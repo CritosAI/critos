@@ -63,6 +63,11 @@ Pick the mode from what the user asked; if unclear, ask.
      (each output line is one commit that touched more than one area).
    - *Operational surfaces* — deploy, schema, secrets and config files, and who has been
      editing them: `git log --format=%s -- <file>`. They are usually a border, not a domain.
+   - *Where the files SIT* — the tracked tree by area, beside where the work has been:
+     `git ls-files | cut -d/ -f1-2 | sort | uniq -c | sort -nr | head -30`. Activity says who
+     works on something; this says where it lives. A domain you propose must be writable as
+     roots (`contract-agent § 1`) — if its files all sit inside folders another domain would
+     own, say so: that is a border to rule or a move to propose, not a domain yet.
    - *What the history cannot tell you* — a repo whose commits all sit on a few days has no
      rhythm to measure: say that the window is the whole history, and weigh it as such.
 3. **Propose a partition.** As few domains as the evidence supports — **one is a legitimate
@@ -71,9 +76,11 @@ Pick the mode from what the user asked; if unclear, ask.
    (`contract-memory`, the invariant), so two sessions open at once are two agents — or one of
    them is writing where it must not. Propose the next free agent numbers; the user confirms
    them. For each domain: its name · what it owns,
-   as a place · its border with each neighbour · why it deserves an owner (life of its own,
-   decisions that accumulate) · `session` or `native`, and why. Then the things that sit ON a
-   border, each assigned to one side. Quote your numbers.
+   as a place · **its roots** — the paths that are its own, a folder (`x/`) or a file, the
+   most specific path winning · its border with each neighbour · why it deserves an owner (life
+   of its own, decisions that accumulate) · `session` or `native`, and why. Then the things that
+   sit ON a border, each assigned to one side — a surface shared by nature gets a write-surface
+   row, never a root. Quote your numbers. A proposal without roots is not complete.
 4. **Wait for the ruling.** The user keeps, changes or rejects each domain.
 5. **Draft, for approval.** For each agent the user approved: a definition from
    `agent-definition.md.tmpl`, all six fields, *What I do NOT do* first in your attention — the
@@ -87,14 +94,19 @@ Pick the mode from what the user asked; if unclear, ask.
    ask for a read-over afterwards: a directive that is committed before it is approved is a
    directive the agent gave itself. A directive the user DICTATES in so many words is
    transcribed as dictated, dated — that is writing on his word, not deciding.
-   Then: the roster rows and write-surface rows, the memory folders —
-   `scaffold.sh --agent-memory <N> "<domain>"` of `/crit-scaffold-project`, never by hand — `/crit-memory-index`, `/crit-doc-lint`, one local commit.
+   Then: the roster rows with the roots the user ruled, the write-surface rows, the memory
+   folders — `scaffold.sh --agent-memory <N> "<domain>"` of `/crit-scaffold-project`, never by
+   hand — `/crit-memory-index`, `/crit-doc-lint` (its `[22]` must read every tracked file under
+   a root or a ruled surface; what it still lists is a root to register or a border to bring
+   back), one local commit.
 
 ## Mode 2 · Does the partition still fit?
 
 1. For each rostered agent, take the signals of `guide-domains § 4` — commit share per area
    inside its domain, the shape of its `STATUS`, its logs against budget and by topic, the inbox
-   traffic to and from it, the borders where it bounces. Quote each number with its command.
+   traffic to and from it, the borders where it bounces, and **where its files sit** against its
+   roots (`/crit-doc-lint [22]`: an UNROOTED area, a root declared twice, a root matching
+   nothing). Quote each number with its command.
 2. **Conclude per agent:** *keep* · *split* (which slice, along which border) · *merge* (into
    whom) · *move a border* · *add a write-surface row*. One signal is an observation; two or
    three pointing the same way are a case. Say which it is.
@@ -108,8 +120,9 @@ Only after the user has ruled. Tell each actor its move, in order, and do only y
 
 **A split** (`contract-memory § 7`):
 1. *The user* — decides the agent exists, its number and form, and approves its definition.
-2. *You* — roster row, write-surface rows for the new border, the memory folder (the same
-   script), the atlas; one inbox line telling every correspondent who the new addressee is.
+2. *You* — roster row with the roots the user ruled, write-surface rows for the new border, the
+   memory folder (the same script), the atlas; one inbox line telling every correspondent who
+   the new addressee is. A split that leaves the new domain without roots is not done.
 3. *The previous owner* — hands over: one inbox entry to the new agent listing the ids of the
    domain's decisions and lessons that are still law, plus the `STATUS` section it cedes.
 4. *The new agent*, first session — writes its founding block (its first ADRs consolidate that

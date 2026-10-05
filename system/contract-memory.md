@@ -194,9 +194,12 @@ is this.
   false, so who keeps it does not matter.
 - **Split at a closed boundary of work**, never inside an open activity: a founding block
   consolidates living law, and law still being written is not yet law.
-- **The steward's part is structure** (`contract-agent § A1`): the roster row, the write-surface
-  rows for the new border, the memory folder, the atlas, and one inbox line telling every
-  correspondent who the new addressee is. It writes none of the three moves.
+- **A split ends in a place.** The new domain has its roots (`contract-agent § 1`) the day its
+  row exists; a split that produces only write-surface rows inside the old owner's folders is
+  not a split — it is a dispute, and it will grow back into rulings written in register cells.
+- **The steward's part is structure** (`contract-agent § A1`): the roster row with its roots,
+  the write-surface rows for the new border, the memory folder, the atlas, and one inbox line
+  telling every correspondent who the new addressee is. It writes none of the three moves.
 
 Tier 3 for the procedure — no detector reads a handover; tier 2 for its result: every id a
 founding block names must resolve (`/crit-doc-lint [21]`).

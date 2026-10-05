@@ -45,17 +45,27 @@ printf '// see doc/guide-something.md for the rule\nexport const x = 1;\n' > src
 printf '# routing\nRun `/no-such-skill` first.\n' > CLAUDE.md
 
 # [20] SHELF-INDEX: unlisted doc (A2) · address that does not resolve (A3) · prose address (A4)
+# [22] ROOTS: a root matching nothing (A2, DANGLING) · one root under two actors (A3 + A4,
+#      OVERLAP) · tracked files under no root and no ruled surface (UNROOTED: README.md at the
+#      root, sat/, the notes/ folder under memory) — a ruled surface (src/schema.sql) is covered
 printf '# shelf\n- [a](a.md)\n' > docs/shelf/README.md
 printf '# a\n' > docs/shelf/a.md; printf '# b — never listed\n' > docs/shelf/b.md
+printf -- '-- schema\n' > src/schema.sql
 cat > "$L/project/agents.md" <<EOF
 # roster
 ## Actors
-| # | Role (one line) | Form | Domain | Memory | Shelf | Definition |
-|---|---|---|---|---|---|---|
-| A1 | Steward | native | governance | \`$L/memory/a1/\` | — | system |
-| A2 | Builder | session | code | \`$L/memory/a2/\` | [shelf](../../docs/shelf/README.md) | [def](agents/agent-2.md) |
-| A3 | Tester | session | tests | \`$L/memory/a3/\` | [gone](../../docs/nowhere/README.md) | — |
-| A4 | Writer | session | docs | \`$L/memory/a4/\` | the docs folder, somewhere | — |
+| # | Role (one line) | Form | Domain | Roots | Memory | Shelf | Definition |
+|---|---|---|---|---|---|---|---|
+| A1 | Steward | native | governance | \`$L/project/\` · \`$L/shared/\` · \`.claude/\` · \`CLAUDE.md\` | \`$L/memory/a1/\` | — | system |
+| A2 | Builder | session | code | \`src/\` · \`nowhere/\` | \`$L/memory/a2/\` | [shelf](../../docs/shelf/README.md) | [def](agents/agent-2.md) |
+| A3 | Tester | session | tests | \`docs/\` | \`$L/memory/a3/\` | [gone](../../docs/nowhere/README.md) | — |
+| A4 | Writer | session | docs | \`docs/\` | \`$L/memory/a4/\` | the docs folder, somewhere | — |
+
+## Write surfaces — who holds the pen
+| Surface | Owner | When a handoff is NOT needed |
+|---|---|---|
+| \`src/schema.sql\` | A3 | an in-domain edit: the commit is the record |
+| the \`events\` table | A2 | never |
 EOF
 
 # [15] DEFINITION-PATH  [18] DEFINITION-SHAPE  [19] DEFINITION-ACTOR

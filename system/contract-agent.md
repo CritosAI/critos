@@ -56,6 +56,19 @@ true is read from the deployed artifact.** Law is cited by section (`contract-X 
 path; the two law-fixed addresses (the memory folder — `contract-memory § 0`; the shared inbox —
 `contract-shared § 1`) stand.
 
+**A domain is a PLACE, and the place is written down.** Every domain has a **physical root** as
+well as a logical one: one or more paths of the repository — a folder, or a single file — that
+are its own, written in the roster's `Roots` column (§ 3), never in the definition. It is
+**mandatory**, with one exception: a surface **shared by nature** — a schema, a migrations
+folder, a jobs pocket several domains fill — has no root; it is a write-surface row, and the
+roster rules whose hand writes it. A domain that cannot be written as roots is not a domain: it
+is a competence (a native specialist owns no slice, and has no root) or a dispute (work meeting
+on one surface — a row, not an owner). **A new file goes into its owner's root, never into a
+folder because a neighbour already lives there.** The reason is one line: activity says who
+works on something, not where it lives — a domain carved by activity alone can be born
+homeless, as rows inside other domains' folders, and nothing finds it until the layout no
+longer says whose anything is.
+
 **A definition names DOMAINS, never ACTORS.** It carries no agent identifier but its own — not in
 prose, not in a boundary, not in its head: an identity wired to another actor breaks the day that
 actor is renamed, retired or split. The roster resolves domain → agent (§ 3); a definition goes
@@ -102,10 +115,10 @@ It carries two tables and nothing else:
 
 ```markdown
 ## Actors
-| # | Role (one line) | Form | Domain | Memory | Shelf | Definition |
-|---|---|---|---|---|---|---|
-| A1 | Steward | native | ↑ `system §A1` — governance, registers | `.critos/memory/a1/` | — | ↑ `system §A1` — not editable here |
-| A2 | <role>  | session | <domain>            | `.critos/memory/a2/` | a link to the domain's index, or `—` | `project/agents/agent-2.md` |
+| # | Role (one line) | Form | Domain | Roots | Memory | Shelf | Definition |
+|---|---|---|---|---|---|---|---|
+| A1 | Steward | native | ↑ `system §A1` — governance, registers | `.critos/project/` · `.critos/shared/` · `.claude/` · `CLAUDE.md` | `.critos/memory/a1/` | — | ↑ `system §A1` — not editable here |
+| A2 | <role>  | session | <domain>            | `packages/billing/` · `db/billing.sql` | `.critos/memory/a2/` | a link to the domain's index, or `—` | `project/agents/agent-2.md` |
 
 ## Write surfaces — who holds the pen
 | Surface | Owner | When a handoff is NOT needed |
@@ -113,8 +126,21 @@ It carries two tables and nothing else:
 | `<file where more than one domain's work meets>` | A6 | an in-domain edit: the commit is the record |
 ```
 
+**The `Roots` column is the domain's address in the tree** (§ 1): backticked paths, each a
+folder (a trailing `/`) or a file; **the most specific path wins**, so a file root inside another
+actor's folder is legal, and only the same root under two actors is a collision. Three things are
+rooted by construction and never declared: `.critos/system/` (installed), every
+`.critos/memory/a<N>/` (`contract-memory § 0`), and the generated atlas. **The map follows the
+ruling, never precedes it:** a root the ruled Domain already covers, the steward registers; a root
+that widens a perimeter or enters another domain's ground is a **border**, and the user rules it
+on the steward's proposal (§ 4 — the steward proposes, never decides the partition). Tier 2: the
+roots check reads every tracked file against this column and the write-surface table — a file
+under no root and no ruled surface, a root declared by two actors, a root matching nothing — and
+a roster without the column is reported as such, never as clean.
+
 The second table is the first one applied to **files** instead of domains. It removes most inbox
-traffic on its own.
+traffic on its own — and it is where a surface **shared by nature** lives (§ 1): a row here is
+what the roots check reads as a ruled surface.
 
 **It is named for the pen, not for sharedness.** Its rows are of two kinds — **sole-hand**
 (exclusive by ruling: the third column answers *never*) and **genuinely shared** (several hands,
@@ -126,7 +152,8 @@ perimeter, and no row.
 
 **The A1 row is inherited with the tier, not authored in the project.** It arrives precompiled from
 the roster template, in citing form (`↑ system §A1`), and the project writes exactly **one** of its
-cells — **Shelf**, which is the project's choice like any other shelf. Every other cell is the
+cells — **Shelf**, which is the project's choice like any other shelf. Every other cell — its
+Roots included: the organisation's surfaces are the same in every project — is the
 projection of § A1: a steward that rewrites the description of its own remit on the surface that
 arbitrates ownership is self-scoping through the roster, and a cell that restates § A1 instead of
 citing it is a copy that will drift. (Tier 3, declared — with the detector named: a check comparing

@@ -34,8 +34,11 @@ A slice of the system earns an owner when all three hold:
 1. **It has a life of its own** — code or data that changes on its own rhythm, for its own reasons.
 2. **Decisions accumulate in it** — choices a newcomer could in good faith redo differently.
    If nothing there would ever earn an ADR, there is nothing to remember.
-3. **Its border can be named as a place** — a repo, a folder, a schema, a file where work
-   meets. A border that can only be described as a list of tasks is not a border.
+3. **Its border can be named as a place — and the place is written as roots.** A repo, a
+   folder, a file: the paths that are the domain's own go into the roster's `Roots` column
+   (`contract-agent § 1`, `§ 3`), and a domain is not complete without them. A border that can
+   only be described as a list of tasks is not a border; a domain that can only be described as
+   rows inside other domains' folders is not a domain yet — it is a dispute.
 
 And what is **not** a domain: a competence (that is a native specialist) · an occasional activity
 (that is a task inside someone's domain) · a slice so small its memory would stay empty (fold
@@ -69,6 +72,15 @@ Every border leaves a few things on it. **Name them explicitly, or they become n
 each contested file or concern, give it to one side, and record it in the roster's write
 surfaces (`contract-agent § 3`).
 
+**The folder is often the wrong CUT — but every cut ends in a place.** Deciding *who decides
+what it means* is not the same as deciding *where the files live*: once the border is ruled,
+each side gets its roots, and what sits on the border gets a write-surface row. A domain born
+from a measurement of activity alone — commits, memories, inbox traffic — can be born homeless:
+carved as four rows inside two folders other domains live in, with no folder of its own. The
+rows hold, then grow into rulings; weeks later the layout no longer says whose anything is, and
+the repair is a restructure by every owner at once. The roots check (`/crit-doc-lint [22]`)
+exists so that this is found on the day of the split, not the month after.
+
 ## 4 · The signals — measure before you propose
 
 A partition is judged by numbers anyone can reproduce, never by impression. Each signal names
@@ -87,6 +99,7 @@ the rest of the evidence is what the user tells you about how they work and what
 | **Two agents bouncing on the same border** | the border is in the wrong place, or undecided: move it, or **merge** | `/crit-doc-lint` [5] PING-PONG |
 | **A memory that stays empty** — no decisions, a `STATUS` that never changes | the slice never was a domain: a **merge** | `/crit-memory-index`, the folder table |
 | **A file several owners keep editing** | a contested surface: a **write-surface row**, not a new agent | `git log --format=%s -- <file>`, against the roster |
+| **Tracked files under no domain's root**, or a domain whose files all sit under other domains' roots | a **homeless** area: a root to register if the ruled Domain covers it, a **border** for the user if it does not | `/crit-doc-lint` [22] UNROOTED, and `git ls-files \| cut -d/ -f1-2 \| sort \| uniq -c \| sort -nr` against the Roots column |
 
 One signal alone is an observation. Two or three pointing the same way are a case.
 
@@ -104,7 +117,8 @@ produces is the living law the new agent will be founded on.
   template, all six fields, *what I do NOT do* included; the steward checks it against
   `contract-agent § 1`, adds the roster row and the memory folder (`contract-agent § 4`).
 - **A split** — the law changes hands by a founding block, in three moves, each by its own
-  writer (`contract-memory § 7`). Nothing is copied and no id is renamed.
+  writer (`contract-memory § 7`). Nothing is copied and no id is renamed — and the split ends in
+  a place: the new domain's roots are in the roster the day its row is.
 - **A merge** — the absorbing agent keeps one folder and folds the other's logs into it; no id
   is lost (`contract-memory § 0`).
 

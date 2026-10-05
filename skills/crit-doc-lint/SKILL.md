@@ -1,8 +1,9 @@
 ---
 name: crit-doc-lint
 description: >-
-  Run the deterministic documentation-hygiene battery — twenty-one checks over links, orphan docs,
-  the inbox, the roadmap, the memory logs, the pinned system tier and the agent definitions.
+  Run the deterministic documentation-hygiene battery — twenty-two checks over links, orphan docs,
+  the inbox, the roadmap, the memory logs, the pinned system tier, the agent definitions and the
+  domains' roots in the tree.
   The steward's cheap mechanical audit pass; use before a governance audit, at a session
   checkpoint, or after the doc tree was reorganised. The interpretive audits (redundancy,
   real drift, taxonomy, the cross-domain rollup) stay with the steward's own reasoning — this
@@ -28,7 +29,7 @@ The output opens with the layout it found and a **provenance stamp** —
 output. `+dirty` means the checkout the controls run from has uncommitted changes, so the output
 may match no release.
 
-## The twenty-one checks
+## The twenty-two checks
 
 1. **BROKEN** — a relative markdown link that does not resolve to an existing file. Code spans
    and fenced blocks are stripped first (a `](…)` fragment inside backticks is prose about
@@ -124,6 +125,19 @@ may match no release.
     templates, archives and the generated atlas. A rotation, a restructure and a split
     (`contract-memory § 7`) are the moments an id gets lost. An id of an unregistered repo is
     flagged: exempt it in `.claude/doc-lint-exempt`, or register the repo.
+22. **ROOTS** — the roster's **`Roots`** column against the tracked tree (`contract-agent § 1`,
+    `§ 3`): **UNROOTED** — files under no domain's root and no ruled surface (listed per
+    top-level folder, a few names each; the count is the finding, the names the lead);
+    **OVERLAP** — the same root declared by two actors (the most specific path wins only
+    between *different* paths); **DANGLING** — a root matching nothing in the tree. A trailing
+    `/` is a folder root, any other path a file root; `/` alone is the whole repo. Rooted by
+    construction and never declared: `.critos/system/`, every `.critos/memory/a<N>/`, the
+    generated atlas. A ruled surface is a backticked path in the write-surface table's first
+    column — a table or a service named there is not in the tree and is not read. Files are
+    read tracked and untracked-not-ignored, like `[1]`. A roster
+    **without the column says `SKIPPED`**: the column arrives with the migration, its cells with
+    the user's ruling. Every finding is the steward's to route: an UNROOTED area is a root to
+    register (the ruled Domain covers it) or a border to bring to the user (it does not).
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one
