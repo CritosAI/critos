@@ -1,9 +1,9 @@
 ---
 name: crit-doc-lint
 description: >-
-  Run the deterministic documentation-hygiene battery — twenty-two checks over links, orphan docs,
-  the inbox, the roadmap, the memory logs, the pinned system tier, the agent definitions and the
-  domains' roots in the tree.
+  Run the deterministic documentation-hygiene battery — twenty-three checks over links, orphan
+  docs, the inbox and its actors, the roadmap, the memory logs, the pinned system tier, the agent
+  definitions and the domains' roots in the tree.
   The steward's cheap mechanical audit pass; use before a governance audit, at a session
   checkpoint, or after the doc tree was reorganised. The interpretive audits (redundancy,
   real drift, taxonomy, the cross-domain rollup) stay with the steward's own reasoning — this
@@ -29,7 +29,7 @@ The output opens with the layout it found and a **provenance stamp** —
 output. `+dirty` means the checkout the controls run from has uncommitted changes, so the output
 may match no release.
 
-## The twenty-two checks
+## The twenty-three checks
 
 1. **BROKEN** — a relative markdown link that does not resolve to an existing file. Code spans
    and fenced blocks are stripped first (a `](…)` fragment inside backticks is prose about
@@ -138,6 +138,13 @@ may match no release.
     **without the column says `SKIPPED`**: the column arrives with the migration, its cells with
     the user's ruling. Every finding is the steward's to route: an UNROOTED area is a root to
     register (the ruled Domain covers it) or a border to bring to the user (it does not).
+23. **INBOX-ACTOR** — a live inbox entry whose **sender** is not a rostered agent, or whose
+    **recipient** is neither rostered nor `AGENT 0`. The membrane (`contract-system § 0`): what
+    enters the inbox is a builder's own entry, so its author must be an actor the roster names.
+    `AGENT 0` is the reserved address of upstream (`contract-agent § 5`): a legal recipient of a
+    raise, never a sender — an answer from upstream is a release, or the user's words. FYI
+    readers are read as recipients. Live inbox only: archives are records, and a retired actor's
+    settled entries are history.
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one

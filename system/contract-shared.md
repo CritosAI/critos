@@ -22,7 +22,7 @@ anyone else's files, nobody is messaged.
 | Part | Rule | What breaks otherwise |
 |---|---|---|
 | `- YYYY-MM-DD ` | line starts with `- `, absolute date | the parsers split entries here; no date, no entry |
-| `AGENT N → AGENT M` | a real arrow `→`, not `->` | sender and recipient are found by splitting on it |
+| `AGENT N → AGENT M` | a real arrow `→`, not `->`; the sender a rostered actor, the recipient a rostered actor or `AGENT 0` | sender and recipient are found by splitting on it — and read against the roster: an unrostered sender is content with no owner, an unrostered recipient a dead address, and `AGENT 0` as a sender is upstream speaking where it never does |
 | `(+AGENT K FYI)` | optional, extra readers only | **one owner per entry** — shared responsibility is held by nobody |
 | `:` | one colon closing the participants | the token is read at the **first** colon; a colon before the arrow breaks the parse |
 | `**[TOKEN …]**` | bolded, immediately after the colon | the token is read **at its position**, never searched for — an entry that merely *quotes* a token in its prose would otherwise count |

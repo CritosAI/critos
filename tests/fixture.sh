@@ -104,8 +104,12 @@ printf '# status
 echo x > "$L/memory/notes/x.md"; echo x > "$L/memory/a9/STATUS.md"
 
 # [5] PING-PONG · NO-DONE-WHEN · MULTI-OWNER   [7] BAD-TOKEN · UNBOLDED-TOKEN
+# [23] INBOX-ACTOR: AGENT 0 as a SENDER (upstream only receives) · AGENT 10, never rostered, as a
+#      sender twice and a recipient once (the volley below) — a raise TO AGENT 0 is legal
 cat > "$L/shared/HANDOFFS.md" <<'EOF'
 # inbox
+- 2026-09-12 — AGENT 0 → AGENT 2: **[ACK]** upstream never writes here [docs/raise.md]
+- 2026-09-11 — AGENT 2 → AGENT 0: **[OPEN — method amendment: a lesson true on any project. Done when: the user has carried it upstream, or declined]** [docs/raise.md]
 - 2026-09-10 — AGENT 2 → AGENT 3: **[OPEN — the schema needs a column]** please add it [src/schema.sql]
 - 2026-09-09 — AGENT 3 → AGENT 2: **[CLOSED — not mine, back to you]** [src/schema.sql]
 - 2026-09-08 — AGENT 2 → AGENT 3: **[CLOSED — yours, I think]** [src/schema.sql]

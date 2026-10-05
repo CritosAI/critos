@@ -38,6 +38,9 @@
 #  [22] ROOTS             the roster's Roots column vs the tracked tree: UNROOTED (a file under no
 #                         domain's root and no ruled surface) · OVERLAP (one root, two actors) ·
 #                         DANGLING (a root matching nothing); a roster without the column: SKIPPED
+#  [23] INBOX-ACTOR       a live inbox entry whose sender is not a rostered agent (AGENT 0 included:
+#                         upstream receives, it never writes), or whose recipient is neither
+#                         rostered nor AGENT 0
 #
 # A project that spans several repos registers them in `.claude/repos`; the whole battery is then
 # repeated in each (one level, read-only).
@@ -847,6 +850,42 @@ else
     [ "$any22" = 0 ] && echo "(none — every tracked file sits under a domain's root or a ruled surface; no root is declared twice, none matches nothing)"
     rm -f "$roots22" "$surf22" "$un22"
   fi
+fi
+
+echo
+echo "### doc-lint [23] — INBOX-ACTOR: a live entry whose sender is not a rostered agent, or whose recipient is neither rostered nor AGENT 0"
+# The membrane (contract-system § 0): what enters the inbox is a builder's own entry, so every
+# sender must be an actor the roster names — AGENT 0 included: it is the reserved address of
+# upstream, a recipient only; nobody in the project writes as it (contract-agent § 5). A
+# recipient must be rostered or AGENT 0: anything else is a dead address, owed by nobody. The
+# participants are read before the first colon, the sender before the arrow, the recipients
+# after it, FYI readers included. Live inbox only: an archive is a record, and a retired actor's
+# settled entries are history.
+if [ -z "$INBOX" ]; then
+  echo "(no live inbox in this repo — skipped)"
+elif [ -z "$ROSTER" ]; then
+  echo "SKIPPED  the inbox has entries but there is no roster to read their actors against"
+else
+  rostered23=$(grep -oE '^\|[[:space:]]*A[0-9]+[[:space:]]*\|' "$ROSTER" | grep -oE 'A[0-9]+' | sort -u)
+  any23=0
+  while IFS= read -r e23; do
+    head23=${e23%%:*}
+    case "$head23" in *→*) ;; *) continue ;; esac
+    date23=$(printf '%s' "$e23" | grep -oE '^- [0-9]{4}-[0-9]{2}-[0-9]{2}' | cut -c3-)
+    from23=$(printf '%s' "${head23%%→*}" | grep -oE 'AGENT [0-9]+' | head -1 | sed 's/^AGENT //')
+    if [ "$from23" = "0" ]; then
+      echo "INBOX-ACTOR  $date23 — sender AGENT 0: the reserved address of upstream RECEIVES a raise, it never writes here (contract-agent § 5); an answer from upstream is a release, or the user's words"
+      any23=1
+    elif [ -n "$from23" ] && ! printf '%s\n' "$rostered23" | grep -qxF "A$from23"; then
+      echo "INBOX-ACTOR  $date23 — sender AGENT $from23 is not in the roster: an entry no rostered actor authored is content with no owner (the membrane, contract-system § 0)"
+      any23=1
+    fi
+    for n23 in $(printf '%s' "${head23#*→}" | grep -oE 'AGENT [0-9]+' | sed 's/^AGENT //' | sort -u); do
+      [ "$n23" = 0 ] && continue
+      printf '%s\n' "$rostered23" | grep -qxF "A$n23" || { echo "INBOX-ACTOR  $date23 — recipient AGENT $n23 is not in the roster: a dead address, owed by nobody"; any23=1; }
+    done
+  done < <(grep -E '^- [0-9]{4}-[0-9]{2}-[0-9]{2}' "$INBOX")
+  [ "$any23" = 0 ] && echo "(none — every live entry's sender is a rostered actor, every recipient rostered or AGENT 0)"
 fi
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
