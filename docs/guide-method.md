@@ -90,7 +90,10 @@ A verification proves what it exercised, when it ran, at the layer it ran — an
 (`contract-session § 6`, eight bounds). The two that pay for themselves first: **a detector's
 zero is not evidence until the detector has been seen firing** on a known positive; and **a
 finding is a symptom, not a diagnosis** — read its shape before acting on its label. CritOS's own
-tests are built this way: every check has a fixture it must fire on (`tests/`).
+tests are built this way: every check has a fixture it must fire on (`tests/`). And when a
+lesson in the field turns out to be one of the eight bounds met again — most are — it says so
+in its `Bound:` field (`contract-memory § 3`): the bounds are the rule, the lessons their
+evidence.
 
 ## 10 · The user's hands
 

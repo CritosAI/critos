@@ -130,7 +130,10 @@ It carries two tables and nothing else:
 folder (a trailing `/`) or a file; **the most specific path wins**, so a file root inside another
 actor's folder is legal, and only the same root under two actors is a collision. Three things are
 rooted by construction and never declared: `.critos/system/` (installed), every
-`.critos/memory/a<N>/` (`contract-memory § 0`), and the generated atlas. **The map follows the
+`.critos/memory/a<N>/` (`contract-memory § 0`), and the generated atlas — and so is **the folder
+of a declared Shelf index**: an actor's shelf is its own, by the Shelf cell, without a Roots
+entry. That is how the steward's one root that varies per project arrives — the project writes
+its Shelf, and the shelf brings the root. **The map follows the
 ruling, never precedes it:** a root the ruled Domain already covers, the steward registers; a root
 that widens a perimeter or enters another domain's ground is a **border**, and the user rules it
 on the steward's proposal (§ 4 — the steward proposes, never decides the partition). Tier 2: the
@@ -153,7 +156,8 @@ perimeter, and no row.
 **The A1 row is inherited with the tier, not authored in the project.** It arrives precompiled from
 the roster template, in citing form (`↑ system §A1`), and the project writes exactly **one** of its
 cells — **Shelf**, which is the project's choice like any other shelf. Every other cell — its
-Roots included: the organisation's surfaces are the same in every project — is the
+Roots included: the organisation's surfaces are the same in every project, and the one that
+varies, its shelf, is a root by the Shelf cell the project writes — is the
 projection of § A1: a steward that rewrites the description of its own remit on the surface that
 arbitrates ownership is self-scoping through the roster, and a cell that restates § A1 instead of
 citing it is a copy that will drift. (Tier 3, declared — with the detector named: a check comparing

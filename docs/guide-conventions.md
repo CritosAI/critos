@@ -11,6 +11,12 @@ Under `.critos/` everything is **English**, every stored or compared time is **U
 date is **absolute** (`2026-03-14`, never "yesterday") — `contract-system § 5`. They are the
 format of the substrate the checks parse. Your project's own documents follow your settings.
 
+**And a stamp comes from `date -u`, at the moment you stamp.** The harness announces the
+machine's local day; on a UTC+2 machine that is tomorrow from 22:00 UTC, and three actors in
+one project stamped nine future dates in one evening off such a notice. The registers are
+ordered by these dates, so a future one sorts above everything written after it. Run `date -u`
+before every stamp, not once at boot; `[24]` flags a stamp later than today.
+
 ## 2 · A file's name says what it is
 
 | Name | What it is | Who changes it |
@@ -38,6 +44,10 @@ in backticks.
   reader can reconstruct from the code.
 - **A lesson's bar:** it cost real time, or produced a wrong claim. It states the rule in one
   imperative line and its **enforcement tier** — and, at tier 3, why no detector is possible.
+- **A lesson that confirms a bound says so** — `Bound: TARGET`, one of the eight of
+  `contract-session § 6`, optional. In the field most lessons are instances of a bound that
+  already exists (eight of ten, in one measured batch): naming it keeps the log reading as
+  evidence rather than as new law, and sorts a raise before it travels.
 - **Never delete, supersede.** Mark what was replaced or completed; archive what is marked, or
   what pushes a log past its budget (`archive/`, with a pointer left behind). Nothing is archived
   unmarked.

@@ -1,9 +1,9 @@
 ---
 name: crit-doc-lint
 description: >-
-  Run the deterministic documentation-hygiene battery — twenty-three checks over links, orphan
-  docs, the inbox and its actors, the roadmap, the memory logs, the pinned system tier, the agent
-  definitions and the domains' roots in the tree.
+  Run the deterministic documentation-hygiene battery — twenty-four checks over links, orphan
+  docs, the inbox and its actors, the roadmap, the memory logs and their stamps, the pinned
+  system tier, the agent definitions and the domains' roots in the tree.
   The steward's cheap mechanical audit pass; use before a governance audit, at a session
   checkpoint, or after the doc tree was reorganised. The interpretive audits (redundancy,
   real drift, taxonomy, the cross-domain rollup) stay with the steward's own reasoning — this
@@ -29,7 +29,7 @@ The output opens with the layout it found and a **provenance stamp** —
 output. `+dirty` means the checkout the controls run from has uncommitted changes, so the output
 may match no release.
 
-## The twenty-three checks
+## The twenty-four checks
 
 1. **BROKEN** — a relative markdown link that does not resolve to an existing file. Code spans
    and fenced blocks are stripped first (a `](…)` fragment inside backticks is prose about
@@ -73,7 +73,9 @@ may match no release.
 11. **TIER-3-LESSON** — an `accepted_rule` in a lessons log with no **`Enforcement: tier-N`**
     field. The field is read at its syntactic position — a line that starts with it, list marker
     and bold admitted. A rule about controls that is itself enforced by hope is the failure this
-    check exists for.
+    check exists for. Its second leg, **BAD-BOUND**: a lesson's optional `Bound:` field
+    (`contract-memory § 3`) whose value is not one of the eight bounds of `contract-session § 6`
+    — the field is optional, its value is not free.
 12. **UNROTATED-LOG (WARN)** — a `DECISIONS.md` or `LESSONS-LEARNED.md` past the skimmable budget
     (1,200 lines; override in `.claude/doc-lint-log-lines`). The remedy is **rotation, never
     deletion**: move the oldest entries to `archive/<NAME>-archive-<period>.md` and leave a
@@ -132,9 +134,13 @@ may match no release.
     between *different* paths); **DANGLING** — a root matching nothing in the tree. A trailing
     `/` is a folder root, any other path a file root; `/` alone is the whole repo. Rooted by
     construction and never declared: `.critos/system/`, every `.critos/memory/a<N>/`, the
-    generated atlas. A ruled surface is a backticked path in the write-surface table's first
-    column — a table or a service named there is not in the tree and is not read. Files are
-    read tracked and untracked-not-ignored, like `[1]`. A roster
+    generated atlas, and **the folder of each actor's Shelf index** (the first link of the
+    Shelf cell, resolved from the roster's folder; a shelf at the repo root roots the whole
+    repo) — the steward's one root that varies per project arrives that way. A ruled surface
+    is a backticked path in the write-surface table's first column, on a row whose Owner cell
+    names an actor **anywhere** (`applied by A6`, `**A6 — …**`) — a table or a service named
+    there is not in the tree and is not read. Files are read tracked and
+    untracked-not-ignored, like `[1]`. A roster
     **without the column says `SKIPPED`**: the column arrives with the migration, its cells with
     the user's ruling. Every finding is the steward's to route: an UNROOTED area is a root to
     register (the ruled Domain covers it) or a border to bring to the user (it does not).
@@ -143,8 +149,15 @@ may match no release.
     enters the inbox is a builder's own entry, so its author must be an actor the roster names.
     `AGENT 0` is the reserved address of upstream (`contract-agent § 5`): a legal recipient of a
     raise, never a sender — an answer from upstream is a release, or the user's words. FYI
-    readers are read as recipients. Live inbox only: archives are records, and a retired actor's
-    settled entries are history.
+    readers are read as recipients. Live inbox only, **settled entries included**: a settled
+    entry from such a sender still in the live inbox is history to rotate (the finding is the
+    nudge); archives are records and are not read.
+24. **FUTURE-DATE** — a `YYYY-MM-DD` later than today (UTC) in a memory log, a `STATUS`, a
+    register or their archives (`contract-system § 5`: a stamp is taken from `date -u` at the
+    moment of stamping; the harness announces the machine's LOCAL day, which after 22:00 UTC is
+    tomorrow). Those files record the past and the present, so a future date is a wrong stamp,
+    never a plan — and the registers sort by it. Bound, declared: every date token in those
+    files is read, a date in prose included.
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one

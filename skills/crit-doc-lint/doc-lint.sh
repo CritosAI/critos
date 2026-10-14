@@ -40,7 +40,9 @@
 #                         DANGLING (a root matching nothing); a roster without the column: SKIPPED
 #  [23] INBOX-ACTOR       a live inbox entry whose sender is not a rostered agent (AGENT 0 included:
 #                         upstream receives, it never writes), or whose recipient is neither
-#                         rostered nor AGENT 0
+#                         rostered nor AGENT 0 — settled entries included
+#  [24] FUTURE-DATE       a YYYY-MM-DD later than today (UTC) in a memory log, a STATUS, a register
+#                         or their archives: a stamp taken from the harness's local day
 #
 # A project that spans several repos registers them in `.claude/repos`; the whole battery is then
 # repeated in each (one level, read-only).
@@ -391,7 +393,16 @@ tier3_out=$(
           d = (match($0, /[0-9]{4}-[0-9]{2}-[0-9]{2}/)) ? substr($0, RSTART, RLENGTH) : ""
           next
         }
-        hdr != "" { if ($0 ~ /accepted_rule/) acc = 1; if ($0 ~ /^[[:space:]]*(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement:/) has = 1 }
+        hdr != "" {
+          if ($0 ~ /accepted_rule/) acc = 1
+          if ($0 ~ /^[[:space:]]*(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement:/) has = 1
+          # the optional Bound: field (contract-memory § 3) — read at its position, its value one of the eight
+          if ($0 ~ /^[[:space:]]*(-[[:space:]]+)?[*_]{0,2}[Bb]ound:/) {
+            v = $0; sub(/^[^:]*:[*_]*[[:space:]]*/, "", v); sub(/[^A-Za-z].*$/, "", v)
+            if (v !~ /^(TIME|LAYER|SHAPE|TARGET|INSTRUMENT|ACTION|ABSENCE|BASELINE)$/)
+              printf "BAD-BOUND  %s:%d  Bound: %s — not one of the eight bounds of contract-session § 6 (TIME LAYER SHAPE TARGET INSTRUMENT ACTION ABSENCE BASELINE)\n", f, NR, (v == "" ? "(empty)" : v)
+          }
+        }
         END {
           flush()
           if (undated > 0) printf "UNDATED-LESSON %s — %d accepted_rule entr%s skipped (no date)\n", f, undated, (undated == 1 ? "y" : "ies")
@@ -401,10 +412,12 @@ tier3_out=$(
 )
 if [ -n "$tier3_out" ]; then
   printf '%s\n' "$tier3_out"
-  echo "               → each: add \"Enforcement: tier-N\" (1 impossible · 2 detected deterministically · 3 written-and-hoped),"
-  echo "                 and for tier 3 say why no detector is possible."
+  if printf '%s\n' "$tier3_out" | grep -q '^TIER-3-LESSON'; then
+    echo "               → each: add \"Enforcement: tier-N\" (1 impossible · 2 detected deterministically · 3 written-and-hoped),"
+    echo "                 and for tier 3 say why no detector is possible."
+  fi
 else
-  echo "(none — every accepted_rule names its enforcement tier)"
+  echo "(none — every accepted_rule names its enforcement tier, and every Bound: names one of the eight)"
 fi
 
 echo
@@ -803,15 +816,31 @@ else
     echo "SKIPPED  the roster has no Roots column — every domain's place in the tree is unknown to the battery (contract-agent § 3). The column arrives with the migration; each domain's cells with the user's ruling."
   else
     roots22=$(mktemp); surf22=$(mktemp); un22=$(mktemp); any22=0
+    shelf_col22=$(awk -F'|' '$2 ~ /^[[:space:]]*#[[:space:]]*$/ { for(i=1;i<=NF;i++) if (tolower($i) ~ /shelf/) {print i; exit} }' "$ROSTER" | head -1)
+    rdir22=$(dirname "$ROSTER")
     while IFS= read -r row22; do
       c2=$(printf '%s' "$row22" | awk -F'|' '{gsub(/[^A-Za-z0-9]/,"",$2); print $2}')
       case "$c2" in
-        A[0-9]|A[0-9][0-9])   # an actor row: its Roots cell
+        A[0-9]|A[0-9][0-9])   # an actor row: its Roots cell, and the folder of its Shelf index
           printf '%s' "$row22" | awk -F'|' -v c="$roots_col" 'NF>c {print $c}' | grep -oE '`[^`]+`' | tr -d '`' \
-            | sed -E 's#^\./##' | awk -v a="$c2" 'NF {print $0 "\t" a}' >> "$roots22" ;;
-        *)                     # a write-surface row: Owner names an actor, Surface may be a path
+            | sed -E 's#^\./##' | awk -v a="$c2" 'NF {print $0 "\t" a}' >> "$roots22"
+          # the shelf is a root by construction (contract-agent § 3): the first link of the Shelf cell,
+          # resolved from the roster's folder; a shelf at the repo root roots the whole repo. Only a
+          # shelf whose index EXISTS: an address that does not resolve is [20]'s finding, once.
+          if [ -n "$shelf_col22" ]; then
+            sh22=$(printf '%s' "$row22" | awk -F'|' -v c="$shelf_col22" 'NF>c {print $c}' | grep -oE '\]\([^)]+\)' | head -1 | sed -E 's/^\]\(//; s/\)$//')
+            case "$sh22" in ''|http://*|https://*|mailto:*|\#*) ;; *)
+              sh22=${sh22%%#*}; sh22=${sh22//%20/ }
+              t22=$(realpath -m --relative-to=. "$rdir22/$sh22" 2>/dev/null)
+              if [ -n "$t22" ] && [ -f "$t22" ]; then
+                d22=$(dirname "$t22"); [ "$d22" = "." ] && d22="/" || d22="$d22/"
+                printf '%s\t%s\n' "$d22" "$c2" >> "$roots22"
+              fi ;;
+            esac
+          fi ;;
+        *)                     # a write-surface row: Owner names an actor (anywhere in the cell), Surface may be a path
           own22=$(printf '%s' "$row22" | awk -F'|' '{gsub(/^[[:space:]]+|[[:space:]]+$/,"",$3); print $3}')
-          case "$own22" in A[0-9]*) ;; *) continue ;; esac
+          case "$own22" in *A[0-9]*) ;; *) continue ;; esac
           printf '%s' "$row22" | awk -F'|' '{print $2}' | grep -oE '`[^`]+`' | tr -d '`' | sed -E 's#^\./##' | awk 'NF' >> "$surf22" ;;
       esac
     done < <(grep -E '^\|' "$ROSTER")
@@ -859,8 +888,9 @@ echo "### doc-lint [23] — INBOX-ACTOR: a live entry whose sender is not a rost
 # upstream, a recipient only; nobody in the project writes as it (contract-agent § 5). A
 # recipient must be rostered or AGENT 0: anything else is a dead address, owed by nobody. The
 # participants are read before the first colon, the sender before the arrow, the recipients
-# after it, FYI readers included. Live inbox only: an archive is a record, and a retired actor's
-# settled entries are history.
+# after it, FYI readers included. Live inbox only, SETTLED ENTRIES INCLUDED: an archive is a
+# record, and a settled entry from such a sender still in the live inbox is history to rotate —
+# the finding is the nudge, not an accusation.
 if [ -z "$INBOX" ]; then
   echo "(no live inbox in this repo — skipped)"
 elif [ -z "$ROSTER" ]; then
@@ -886,6 +916,29 @@ else
     done
   done < <(grep -E '^- [0-9]{4}-[0-9]{2}-[0-9]{2}' "$INBOX")
   [ "$any23" = 0 ] && echo "(none — every live entry's sender is a rostered actor, every recipient rostered or AGENT 0)"
+  [ "$any23" = 1 ] && echo "               → a settled entry listed above is history: rotate it to the archive (A1); a live one is content with no owner"
+fi
+
+echo
+echo "### doc-lint [24] — FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a register or their archives"
+# contract-system § 5: a stamp is taken from date -u at the moment of stamping — the harness
+# announces the machine's LOCAL day, which after 22:00 UTC is tomorrow. These files record the
+# past and the present, so a date later than today is a wrong stamp, never a plan; and the
+# registers are ORDERED by these dates, so a future one sorts above everything written after it.
+# Bound, declared: every YYYY-MM-DD token in those files is read — a date in prose is a date too.
+today24=$(date -u +%F)
+files24=$(git ls-files '.critos/memory/*.md' '.critos/shared/*.md' 2>/dev/null | sort -u)
+if [ -z "$files24" ]; then
+  echo "(no memory log, STATUS or register in this repo — skipped)"
+else
+  out24=$(while IFS= read -r f24; do
+    [ -f "$f24" ] || continue
+    grep -noE '\b20[0-9]{2}-[0-9]{2}-[0-9]{2}\b' "$f24" 2>/dev/null | while IFS=: read -r ln24 d24; do
+      [ "$d24" \> "$today24" ] || continue
+      echo "FUTURE-DATE  $f24:$ln24  $d24 — later than today ($today24 UTC): a stamp taken from the harness's local day, not from date -u (contract-system § 5); the registers sort by it"
+    done
+  done <<< "$files24")
+  if [ -n "$out24" ]; then printf '%s\n' "$out24"; else echo "(none — no stamp later than $today24 UTC)"; fi
 fi
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------

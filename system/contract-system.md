@@ -133,7 +133,12 @@ preferences: they are the format of the substrate the method itself reads, parse
 1. **English** — everything under `.critos/`, always, whatever language the project's own documents
    use. `project/settings.md` governs the project's docs; it does not reach in here.
 2. **UTC** for anything stored, compared or keyed. Local time only for human display.
-3. **Absolute dates** (`2026-08-06`), never relative ("yesterday", "last week").
+3. **Absolute dates** (`2026-08-06`), never relative ("yesterday", "last week") — and **a stamp
+   is taken from `date -u` at the moment of stamping**: never from the harness's notice, which
+   announces the machine's LOCAL day (after 22:00 UTC that is tomorrow), and never once at boot
+   for the whole session. The registers are ordered by these dates: a future-dated entry sorts
+   above everything written after it and never leaves the newest window. Tier 2: a stamp later
+   than today is flagged (`[24]`).
 
 ## 6 · Versioning and migration
 
@@ -179,7 +184,7 @@ only the first two are engineering. Applied here, honestly:
 | `system/**` is not editable in-project | **2** — the release records a manifest (`releases.manifest`) and the pin-drift check compares a project's copy against **its declared version's** entries, never against CritOS's HEAD |
 | a domain has a physical root, and the roster is the authority on ownership in the tree | **2** for the map — `[22]` reads every tracked file against the roster's `Roots` and the ruled surfaces, and flags a roster without the column — **3** for what a root should be: a ruling |
 | the perimeter — who is a builder, and the membrane | **3** | no detector knows who is a builder, or whose words an entry carries — with two exceptions: the mainline itself, where a host that protects the branch makes advancing it tier **1**, a setting that is the project's; and the inbox's authorship, tier **2** via `[23]` — every live entry's sender is a rostered actor, never `AGENT 0` |
-| the dispatch table, the six definition fields, who creates an agent, the substrate invariants | **3** | no detector exists; they are enforced by being read — except the definition's SECTION SHAPE (tier **2** via `[18]`) and its ACTOR leg (tier **2** via `[19]`) |
+| the dispatch table, the six definition fields, who creates an agent, the substrate invariants | **3** | no detector exists; they are enforced by being read — except the definition's SECTION SHAPE (tier **2** via `[18]`), its ACTOR leg (tier **2** via `[19]`) and a FUTURE-DATED stamp (tier **2** via `[24]`) |
 | one-writer-per-memory | **2** for the shape (the memory-shape check: every folder `a<N>`, every one rostered) — **3** for the writer itself, which no filesystem can attribute |
 | the retirement signpost and the archive's closed vocabulary | **2** | `[16]` flags a live doc leaning on a ⚰ RETIRED file; `[17]` flags a live lifecycle token in cold storage — one invariant, two doors: a marker that retires a surface is read by every control that still counts it |
 | a decision or lesson id cited anywhere resolves | **2** | `[21]` compares every cited id with the ids the logs declare, archives included — the citations that hold the logs together are checked, not trusted |

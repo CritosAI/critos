@@ -120,6 +120,12 @@ one, not both. Not "something happened"; not a restatement of a rule that exists
 
 - **Minimum fields:** `date · status · what happened (1–2 lines) · the rule (imperative, one line) ·
   Enforcement: tier-N`.
+- **`Bound:` — optional:** the `contract-session § 6` bound this lesson instantiates, if any
+  (`TIME` · `LAYER` · `SHAPE` · `TARGET` · `INSTRUMENT` · `ACTION` · `ABSENCE` · `BASELINE`). Most
+  lessons in the field are instances of a bound that already exists; a lesson that only confirms
+  one says so, and the log then reads as evidence for a rule, not as new law — a raise candidate
+  arrives pre-sorted, and the bounds' field record accumulates. The field is optional; its value,
+  when written, is one of the eight (`[11]`).
 - **IDs: `L-A<N>-NNN`** — the same owner-keyed scheme, grandfathering and sequence rule as § 2.
 - **Taxonomy:** `observation` (first sighting) → `candidate_rule` (second independent occurrence) →
   `accepted_rule` (recurred across actors, or the user confirmed it) → `deprecated`.

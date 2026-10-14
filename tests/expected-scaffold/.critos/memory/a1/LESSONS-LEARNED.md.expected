@@ -36,6 +36,9 @@ resolving.
     **The rule.**       one imperative line — what to do instead, next time. If it does not fit in one
                         line, you have an observation, not a rule.
     **Enforcement:**    tier-N + the detector that enforces it — or, for tier 3, why none is possible.
+    **Bound:**          (optional) the contract-session § 6 bound this instantiates — TIME · LAYER · SHAPE ·
+                        TARGET · INSTRUMENT · ACTION · ABSENCE · BASELINE — when the lesson confirms one
+                        rather than stating new law.
     **Why it generalizes** (optional; fill it when promoting) — what makes this true beyond this incident.
 ```
 

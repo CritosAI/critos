@@ -47,10 +47,15 @@ printf '# routing\nRun `/no-such-skill` first.\n' > CLAUDE.md
 # [20] SHELF-INDEX: unlisted doc (A2) · address that does not resolve (A3) · prose address (A4)
 # [22] ROOTS: a root matching nothing (A2, DANGLING) · one root under two actors (A3 + A4,
 #      OVERLAP) · tracked files under no root and no ruled surface (UNROOTED: README.md at the
-#      root, sat/, the notes/ folder under memory) — a ruled surface (src/schema.sql) is covered
+#      root, sat/, the notes/ folder under memory) — covered, and must stay covered: a ruled
+#      surface (src/schema.sql); a ruled surface whose Owner cell names the actor in PROSE
+#      (shared/jobs.yml — "applied by A3"); a shelf with no Roots cell (A5's guides/ — the shelf
+#      is a root by construction)
 printf '# shelf\n- [a](a.md)\n' > docs/shelf/README.md
 printf '# a\n' > docs/shelf/a.md; printf '# b — never listed\n' > docs/shelf/b.md
 printf -- '-- schema\n' > src/schema.sql
+mkdir -p shared guides; printf 'jobs: []\n' > shared/jobs.yml
+printf '# guides\n- [x](x.md)\n' > guides/README.md; printf '# x\n' > guides/x.md
 cat > "$L/project/agents.md" <<EOF
 # roster
 ## Actors
@@ -60,11 +65,13 @@ cat > "$L/project/agents.md" <<EOF
 | A2 | Builder | session | code | \`src/\` · \`nowhere/\` | \`$L/memory/a2/\` | [shelf](../../docs/shelf/README.md) | [def](agents/agent-2.md) |
 | A3 | Tester | session | tests | \`docs/\` | \`$L/memory/a3/\` | [gone](../../docs/nowhere/README.md) | — |
 | A4 | Writer | session | docs | \`docs/\` | \`$L/memory/a4/\` | the docs folder, somewhere | — |
+| A5 | Keeper | session | the guides | — | \`$L/memory/a5/\` | [guides](../../guides/README.md) | — |
 
 ## Write surfaces — who holds the pen
 | Surface | Owner | When a handoff is NOT needed |
 |---|---|---|
 | \`src/schema.sql\` | A3 | an in-domain edit: the commit is the record |
+| \`shared/jobs.yml\` | authored by the domain · applied by A3 | never |
 | the \`events\` table | A2 | never |
 EOF
 
@@ -84,11 +91,16 @@ EOF
 # [8] STATUS-CHRONICLE (over the line budget)   [9] STALE-STATUS (the old commit date below)
 { echo "# status"; for i in $(seq 1 215); do echo "line $i"; done; } > "$L/memory/a2/STATUS.md"
 
-# [11] TIER-3-LESSON   [10] DANGLING-WIKI-LINK
+# [11] TIER-3-LESSON · BAD-BOUND (a Bound: outside the eight)   [10] DANGLING-WIKI-LINK
+# [24] FUTURE-DATE (a lesson stamped 2099-01-01, with a legal Bound: TARGET beside it)
 cat > "$L/memory/a2/LESSONS-LEARNED.md" <<EOF
 # lessons
 ## L-A2-001 — 2026-09-01 — accepted_rule — always check twice
 no enforcement field here; see [[no-such-slug]]
+**Bound:** NOWHERE
+## L-A2-002 — 2099-01-01 — observation — stamped from the harness's notice
+**What happened.** the date came from the notice, not from date -u
+**Bound:** TARGET
 EOF
 
 # [12] UNROTATED-LOG + ARCHIVABLE (a2)  ·  DECLARED-OVER (a3)
