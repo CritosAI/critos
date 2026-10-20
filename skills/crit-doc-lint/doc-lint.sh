@@ -943,16 +943,22 @@ if [ -z "$files24" ]; then
 else
   out24=$(while IFS= read -r f24; do
     [ -f "$f24" ] || continue
+    # The leg patterns are STRINGS, not regexp constants: a `/…/` passed as a function argument
+    # is evaluated by gawk as `$0 ~ /…/` and arrives as 0 or 1 — three legs once searched a digit
+    # and could not go red. Each leg has its own positive in the fixture; `Last updated:` is read
+    # only at a line's start, so an entry that QUOTES the phrase is not read.
     awk -v today="$today24" -v f="$f24" '
+      BEGIN { D = "20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
+              RE_TOKEN = "\\[(ABSORBED|PARKED-OWNED)[[:space:]]+" D
+              RE_VERDICT = "(done|closed|parked|superseded|re-verified|DONE|CLOSED|PARKED|SUPERSEDED)[[:space:]]+" D
+              RE_MARK = "\\*\\*(Marked|Rotated|FACT-FLIP)[[:space:]]+" D }
       function chk(d) { if (d > today && !seen[NR SUBSEP d]++) printf "FUTURE-DATE  %s:%d  %s — a stamp later than today (%s UTC): taken from the harness'"'"'s local day, not from date -u (contract-system § 5); the registers sort by it\n", f, NR, d, today }
-      function all(s) { while (match(s, /20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)) { chk(substr(s, RSTART, RLENGTH)); s = substr(s, RSTART + RLENGTH) } }
-      function after(s, re,   m) { if (match(s, re)) { m = substr(s, RSTART, RLENGTH); if (match(m, /20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)) chk(substr(m, RSTART, RLENGTH)) } }
+      function all(s) { while (match(s, D)) { chk(substr(s, RSTART, RLENGTH)); s = substr(s, RSTART + RLENGTH) } }
+      function after(s, re,   m) { if (match(s, re)) { m = substr(s, RSTART, RLENGTH); if (match(m, D)) chk(substr(m, RSTART, RLENGTH)) } }
       /^- 20[0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { chk(substr($0, 3, 10)) }
       /^#{1,4}[[:space:]]/ && /(ADR|L)-[A-Za-z0-9]+-[0-9]/ { all($0) }
-      /[Ll]ast updated:/ { all($0) }
-      { after($0, /\[(ABSORBED|PARKED-OWNED)[[:space:]]+20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)
-        after($0, /(done|closed|parked|superseded|re-verified|DONE|CLOSED|PARKED|SUPERSEDED)[[:space:]]+20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)
-        after($0, /\*\*(Marked|Rotated|FACT-FLIP)[[:space:]]+20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/) }
+      /^[*_[:space:]]*[Ll]ast updated:/ { all($0) }
+      { after($0, RE_TOKEN); after($0, RE_VERDICT); after($0, RE_MARK) }
     ' "$f24"
   done <<< "$files24")
   if [ -n "$out24" ]; then printf '%s\n' "$out24"; else echo "(none — no stamp later than $today24 UTC in a stamp position; dates in prose are not read)"; fi

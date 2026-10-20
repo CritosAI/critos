@@ -100,6 +100,7 @@ no enforcement field here; see [[no-such-slug]]
 **Bound:** NOWHERE
 ## L-A2-002 — 2099-01-01 — observation — stamped from the harness's notice
 **What happened.** the date came from the notice, not from date -u
+**Marked 2099-05-05** — an aging mark stamped the same way
 **Bound:** TARGET
 EOF
 
@@ -120,8 +121,13 @@ echo x > "$L/memory/notes/x.md"; echo x > "$L/memory/a9/STATUS.md"
 # [5] PING-PONG · NO-DONE-WHEN · MULTI-OWNER   [7] BAD-TOKEN · UNBOLDED-TOKEN
 # [23] INBOX-ACTOR: AGENT 0 as a SENDER (upstream only receives) · AGENT 10, never rostered, as a
 #      sender twice and a recipient once (the volley below) — a raise TO AGENT 0 is legal
+# [24] FUTURE-DATE, one positive PER LEG: a token's date (the [ABSORBED 2099-… entry) · a register
+#      verdict (ROADMAP, below) · an aging mark (the a2 lessons) · an id heading (the a2 lessons);
+#      and a negative: an entry that QUOTES "Last updated:" with a future date must NOT fire
 cat > "$L/shared/HANDOFFS.md" <<'EOF'
 # inbox
+- 2026-09-14 — AGENT 2 → AGENT 3: **[ABSORBED 2099-03-03 by A3 — a token stamped from the harness]** [docs/t.md]
+- 2026-09-13 — AGENT 2 → AGENT 3: **[ACK]** my report names a `Last updated:` line dated 2099-02-02 — quoted, not a stamp [docs/r.md]
 - 2026-09-12 — AGENT 0 → AGENT 2: **[ACK]** upstream never writes here [docs/raise.md]
 - 2026-09-11 — AGENT 2 → AGENT 0: **[OPEN — method amendment: a lesson true on any project. Done when: the user has carried it upstream, or declined]** [docs/raise.md]
 - 2026-09-10 — AGENT 2 → AGENT 3: **[OPEN — the schema needs a column]** please add it [src/schema.sql]
@@ -145,6 +151,7 @@ cat > "$L/shared/ROADMAP.md" <<EOF
 |---|---|---|---|
 | R1 | a thing nobody touched | A2 | 🟡 open |
 | R2 | a settled thing | A2 | ✅ done 2026-08-01 |
+| R3 | a thing closed from the harness's day | A2 | closed 2099-04-04 |
 EOF
 printf '# contracts\n' > "$L/shared/CONTRACTS.md"
 

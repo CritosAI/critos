@@ -31,9 +31,17 @@ fail=0
 
 bash "$here/fixture.sh" "$tmp/fx" "$repo/system" >/dev/null 2>&1 || { echo "FAIL  the fixture could not be built"; exit 1; }
 
-( cd "$tmp/fx" && DOC_LINT_NO_CONSTELLATION=1 bash "$repo/skills/crit-doc-lint/doc-lint.sh" 2>&1 ) \
-  | grep -E '^[A-Z][A-Za-z0-9-]+ ' | cut -d' ' -f1 | sort | uniq -c \
+( cd "$tmp/fx" && DOC_LINT_NO_CONSTELLATION=1 bash "$repo/skills/crit-doc-lint/doc-lint.sh" 2>&1 ) > "$tmp/battery.txt"
+grep -E '^[A-Z][A-Za-z0-9-]+ ' "$tmp/battery.txt" | cut -d' ' -f1 | sort | uniq -c \
   | awk '$2 == "PIN-DRIFT" { print "present PIN-DRIFT"; next } { print $1, $2 }' > "$tmp/findings.txt"
+# An interpreter diagnostic in the battery's output is a check reading something other than
+# what its text says (a gawk warning once meant three legs compared a boolean): the tally above
+# cannot see it, because a diagnostic starts in lowercase. Known positive: `awk: cmd. line:…`.
+if grep -qE '^(awk|gawk|sed|grep|bash|realpath|node): ' "$tmp/battery.txt"; then
+  echo "FAIL  battery stderr — an interpreter diagnostic in the battery's output:"
+  grep -E '^(awk|gawk|sed|grep|bash|realpath|node): ' "$tmp/battery.txt" | sort | uniq -c | head -5 | sed 's/^/        /'
+  fail=1
+else echo "ok    battery stderr (no interpreter diagnostic in $(grep -c . "$tmp/battery.txt") lines)"; fi
 bash "$here/guard-cases.sh" "$repo/hooks/guard-user-driven-actions.sh" "$tmp/fx" 2>/dev/null > "$tmp/guard.txt"
 
 for t in findings guard; do
