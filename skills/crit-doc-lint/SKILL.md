@@ -152,12 +152,17 @@ may match no release.
     readers are read as recipients. Live inbox only, **settled entries included**: a settled
     entry from such a sender still in the live inbox is history to rotate (the finding is the
     nudge); archives are records and are not read.
-24. **FUTURE-DATE** — a `YYYY-MM-DD` later than today (UTC) in a memory log, a `STATUS`, a
-    register or their archives (`contract-system § 5`: a stamp is taken from `date -u` at the
-    moment of stamping; the harness announces the machine's LOCAL day, which after 22:00 UTC is
-    tomorrow). Those files record the past and the present, so a future date is a wrong stamp,
-    never a plan — and the registers sort by it. Bound, declared: every date token in those
-    files is read, a date in prose included.
+24. **FUTURE-DATE** — a stamp later than today (UTC) in a **stamp position** of a memory log,
+    a `STATUS`, a register or their archives (`contract-system § 5`: a stamp is taken from
+    `date -u` at the moment of stamping; the harness announces the machine's LOCAL day, which
+    after 22:00 UTC is tomorrow; the registers sort by it). The positions: an inbox entry's
+    head (`- YYYY-MM-DD —`), a lifecycle token's date (`[ABSORBED YYYY-MM-DD`,
+    `[PARKED-OWNED YYYY-MM-DD`), every date on a heading that carries an id, every date on a
+    `Last updated:` line, a register verdict (`done|closed|parked|superseded|re-verified
+    YYYY-MM-DD`), an aging mark (`**Marked`, `**Rotated`, `**FACT-FLIP YYYY-MM-DD`). **Dates in
+    prose are not read**: a live project carries the future on purpose — expiries, schedules,
+    deadlines, reminders — and a check that read every date token cried wolf thirty times on
+    zero wrong stamps. Bound, declared: a wrong stamp written anywhere else is not seen.
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one

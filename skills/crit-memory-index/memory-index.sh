@@ -68,6 +68,9 @@ owner_of() {
   echo "## Decisions — every ADR, by ID"
   echo
   echo "Cite an ADR **by ID**, never by path (the ID is stable; paths move)."
+  # A title is copied as TEXT: a markdown link inside a heading (a rotation stub's pointer) is
+  # de-linked, because a relative link copied one folder up breaks, and the atlas is generated —
+  # nobody may hand-fix it. The atlas holds addresses by LINE, never links inside titles.
   echo
   while IFS= read -r f; do
     [ -z "$f" ] && continue
@@ -77,6 +80,7 @@ owner_of() {
     echo
     grep -nE '^#{1,4}[[:space:]]*(ADR|D)-' "$f" \
       | sed -E 's/^([0-9]+):#+[[:space:]]*/- L\1 · /' \
+      | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g' \
       | sed -E 's/[[:space:]]+$//' | cut -c1-160
     echo
   done < <(tracked_and_new '*DECISIONS*.md')
@@ -91,6 +95,7 @@ owner_of() {
     echo
     grep -nE '^#{1,4}[[:space:]]*L-' "$f" \
       | sed -E 's/^([0-9]+):#+[[:space:]]*/- L\1 · /' \
+      | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g' \
       | sed -E 's/[[:space:]]+$//' | cut -c1-160
     echo
   done < <(tracked_and_new '*LESSONS*.md')

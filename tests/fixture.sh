@@ -108,8 +108,10 @@ EOF
 { echo "# decisions"; echo "> DECLARED EXEMPTION — ACTIVE: every entry here is cited"; echo "> alias: ADR-OLD-005 -> ADR-A3-001"; echo "> a retired sequence: ADR-LEG-NNN -> ADR-A3-NNN"; for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a3/DECISIONS.md"
 
 # status-check axis 1: a dated STATUS beside a DECISIONS log (a3)
+# [24] negative: a future date in PROSE is a plan, not a stamp — it must NOT fire
 printf '# status
 **Last updated:** 2026-07-01
+The certificate is valid to 2099-12-31 and the monthly run is scheduled after 2099-01-15.
 ' > "$L/memory/a3/STATUS.md"
 
 # [13] MEMORY-SHAPE: a folder that is not a<N> (notes/) and an unrostered a<N> (a9/)

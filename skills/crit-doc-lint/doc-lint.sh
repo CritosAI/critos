@@ -41,8 +41,10 @@
 #  [23] INBOX-ACTOR       a live inbox entry whose sender is not a rostered agent (AGENT 0 included:
 #                         upstream receives, it never writes), or whose recipient is neither
 #                         rostered nor AGENT 0 — settled entries included
-#  [24] FUTURE-DATE       a YYYY-MM-DD later than today (UTC) in a memory log, a STATUS, a register
-#                         or their archives: a stamp taken from the harness's local day
+#  [24] FUTURE-DATE       a stamp later than today (UTC) in a STAMP POSITION of a memory log, a
+#                         STATUS, a register or their archives (an entry head, a token, an id
+#                         heading, Last updated, a verdict, an aging mark) — dates in prose are
+#                         plans and are not read
 #
 # A project that spans several repos registers them in `.claude/repos`; the whole battery is then
 # repeated in each (one level, read-only).
@@ -922,10 +924,18 @@ fi
 echo
 echo "### doc-lint [24] — FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a register or their archives"
 # contract-system § 5: a stamp is taken from date -u at the moment of stamping — the harness
-# announces the machine's LOCAL day, which after 22:00 UTC is tomorrow. These files record the
-# past and the present, so a date later than today is a wrong stamp, never a plan; and the
-# registers are ORDERED by these dates, so a future one sorts above everything written after it.
-# Bound, declared: every YYYY-MM-DD token in those files is read — a date in prose is a date too.
+# announces the machine's LOCAL day, which after 22:00 UTC is tomorrow. The registers are
+# ORDERED by these dates, so a future one sorts above everything written after it.
+# A STAMP lives in a STAMP POSITION, and only those are read — a live project carries the
+# future on purpose elsewhere (an expiry, a schedule, a deadline, a reminder), and a check that
+# read every date token cried wolf thirty times on zero wrong stamps. The positions, declared:
+#   - an inbox entry's head            `- YYYY-MM-DD —`
+#   - a lifecycle token's date         `[ABSORBED YYYY-MM-DD` · `[PARKED-OWNED YYYY-MM-DD`
+#   - a heading that carries an id     `## ADR-… — … YYYY-MM-DD` · `## L-… (…, YYYY-MM-DD)` — every date on it
+#   - a `Last updated:` line           every date on it
+#   - a register verdict               `done|closed|parked|superseded|re-verified YYYY-MM-DD`
+#   - an aging mark                    `**Marked YYYY-MM-DD` · `**Rotated YYYY-MM-DD` · `**FACT-FLIP YYYY-MM-DD`
+# Bound, declared: a wrong stamp written anywhere else (prose, a cell) is not seen.
 today24=$(date -u +%F)
 files24=$(git ls-files '.critos/memory/*.md' '.critos/shared/*.md' 2>/dev/null | sort -u)
 if [ -z "$files24" ]; then
@@ -933,12 +943,19 @@ if [ -z "$files24" ]; then
 else
   out24=$(while IFS= read -r f24; do
     [ -f "$f24" ] || continue
-    grep -noE '\b20[0-9]{2}-[0-9]{2}-[0-9]{2}\b' "$f24" 2>/dev/null | while IFS=: read -r ln24 d24; do
-      [ "$d24" \> "$today24" ] || continue
-      echo "FUTURE-DATE  $f24:$ln24  $d24 — later than today ($today24 UTC): a stamp taken from the harness's local day, not from date -u (contract-system § 5); the registers sort by it"
-    done
+    awk -v today="$today24" -v f="$f24" '
+      function chk(d) { if (d > today && !seen[NR SUBSEP d]++) printf "FUTURE-DATE  %s:%d  %s — a stamp later than today (%s UTC): taken from the harness'"'"'s local day, not from date -u (contract-system § 5); the registers sort by it\n", f, NR, d, today }
+      function all(s) { while (match(s, /20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)) { chk(substr(s, RSTART, RLENGTH)); s = substr(s, RSTART + RLENGTH) } }
+      function after(s, re,   m) { if (match(s, re)) { m = substr(s, RSTART, RLENGTH); if (match(m, /20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)) chk(substr(m, RSTART, RLENGTH)) } }
+      /^- 20[0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { chk(substr($0, 3, 10)) }
+      /^#{1,4}[[:space:]]/ && /(ADR|L)-[A-Za-z0-9]+-[0-9]/ { all($0) }
+      /[Ll]ast updated:/ { all($0) }
+      { after($0, /\[(ABSORBED|PARKED-OWNED)[[:space:]]+20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)
+        after($0, /(done|closed|parked|superseded|re-verified|DONE|CLOSED|PARKED|SUPERSEDED)[[:space:]]+20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)
+        after($0, /\*\*(Marked|Rotated|FACT-FLIP)[[:space:]]+20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/) }
+    ' "$f24"
   done <<< "$files24")
-  if [ -n "$out24" ]; then printf '%s\n' "$out24"; else echo "(none — no stamp later than $today24 UTC)"; fi
+  if [ -n "$out24" ]; then printf '%s\n' "$out24"; else echo "(none — no stamp later than $today24 UTC in a stamp position; dates in prose are not read)"; fi
 fi
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
