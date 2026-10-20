@@ -21,6 +21,9 @@
 #   7. the commit format  every rule of the public subject line fires in both directions
 #                    (tests/commit-format.sh); the same checker reads a pull request's
 #                    subjects in CI.
+#   8. the version cited  every install line of the README and the install guide names the
+#                    release system/VERSION declares (tests/version-cited.sh): a page that
+#                    sends a newcomer to an older tag cannot be cut.
 # To change an expectation on purpose: run with --update, review the diff, commit it WITH the
 # change that caused it.
 set -uo pipefail
@@ -55,4 +58,5 @@ if [ "$update" = 1 ]; then bash "$here/scaffold.sh" --update || fail=1; else bas
 bash "$here/wrong-place.sh" || fail=1
 bash "$here/install.sh" || fail=1
 bash "$here/commit-format.sh" || fail=1
+bash "$here/version-cited.sh" || fail=1
 exit $fail

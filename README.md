@@ -124,7 +124,7 @@ your-repo/
 **1 · The machine, once.** On Windows:
 
 ```powershell
-git clone --branch v1.0.0 https://github.com/CritosAI/critos.git C:\tools\CritOS
+git clone --branch v1.1.0 https://github.com/CritosAI/critos.git C:\tools\CritOS
 cd C:\tools\CritOS
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
@@ -132,7 +132,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 On Linux:
 
 ```bash
-git clone --branch v1.0.0 https://github.com/CritosAI/critos.git ~/tools/CritOS
+git clone --branch v1.1.0 https://github.com/CritosAI/critos.git ~/tools/CritOS
 cd ~/tools/CritOS
 bash install.sh
 ```

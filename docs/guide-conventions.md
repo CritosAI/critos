@@ -15,7 +15,10 @@ format of the substrate the checks parse. Your project's own documents follow yo
 machine's local day; on a UTC+2 machine that is tomorrow from 22:00 UTC, and three actors in
 one project stamped nine future dates in one evening off such a notice. The registers are
 ordered by these dates, so a future one sorts above everything written after it. Run `date -u`
-before every stamp, not once at boot; `[24]` flags a stamp later than today.
+before every stamp, not once at boot; `[24]` flags a stamp later than today. **And an example
+stamp is a placeholder, never a date**: a token, a verdict or a mark quoted verbatim in a log
+or an inbox entry has a stamp's shape and is read as one — write `YYYY-MM-DD` where you mean
+*a date goes here*.
 
 ## 2 · A file's name says what it is
 
