@@ -1,5 +1,5 @@
 {
-  "system": "1.1.0-rc.3",
+  "system": "1.1.0-rc.4",
   "released": "2026-10-20",
   "contracts": [
     "contract-system.md",
