@@ -124,7 +124,7 @@ your-repo/
 **1 · The machine, once.** On Windows:
 
 ```powershell
-git clone --branch v1.1.0 https://github.com/CritosAI/critos.git C:\tools\CritOS
+git clone --branch v1.1.1 https://github.com/CritosAI/critos.git C:\tools\CritOS
 cd C:\tools\CritOS
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
@@ -132,7 +132,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 On Linux:
 
 ```bash
-git clone --branch v1.1.0 https://github.com/CritosAI/critos.git ~/tools/CritOS
+git clone --branch v1.1.1 https://github.com/CritosAI/critos.git ~/tools/CritOS
 cd ~/tools/CritOS
 bash install.sh
 ```
@@ -232,10 +232,10 @@ once — and gets fixed.
 ## Updating
 
 ```powershell
-cd C:\tools\CritOS ; git fetch ; git checkout v1.1.0 ; .\install.ps1
+cd C:\tools\CritOS ; git fetch ; git checkout v1.1.1 ; .\install.ps1
 ```
 
-(on Linux: `cd ~/tools/CritOS && git fetch && git checkout v1.1.0 && bash install.sh`).
+(on Linux: `cd ~/tools/CritOS && git fetch && git checkout v1.1.1 && bash install.sh`).
 
 The checks are new at once. Then, in each repo, tell the steward to migrate: every release
 states **what stops conforming** and **how to migrate it** (`system/CHANGELOG.md`), and the

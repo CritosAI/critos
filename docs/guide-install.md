@@ -20,7 +20,7 @@ git, Node.js.
 On Windows:
 
 ```powershell
-git clone --branch v1.1.0 https://github.com/CritosAI/critos.git C:\tools\CritOS
+git clone --branch v1.1.1 https://github.com/CritosAI/critos.git C:\tools\CritOS
 cd C:\tools\CritOS
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
@@ -28,7 +28,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 On Linux:
 
 ```bash
-git clone --branch v1.1.0 https://github.com/CritosAI/critos.git ~/tools/CritOS
+git clone --branch v1.1.1 https://github.com/CritosAI/critos.git ~/tools/CritOS
 cd ~/tools/CritOS
 bash install.sh
 ```
@@ -98,10 +98,10 @@ the machine half there.
 ## 3 · Updating
 
 ```powershell
-cd C:\tools\CritOS ; git fetch ; git checkout v1.1.0 ; .\install.ps1
+cd C:\tools\CritOS ; git fetch ; git checkout v1.1.1 ; .\install.ps1
 ```
 
-(on Linux: `cd ~/tools/CritOS && git fetch && git checkout v1.1.0 && bash install.sh`).
+(on Linux: `cd ~/tools/CritOS && git fetch && git checkout v1.1.1 && bash install.sh`).
 
 The checks are new immediately, in every repo on the machine. The **rules** in each repo are
 not: each stays pinned at the release it declares until you ask the steward to **migrate** it.
