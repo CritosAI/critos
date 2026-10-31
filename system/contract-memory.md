@@ -88,7 +88,11 @@ code.
   cited from commit messages and archives that cannot or must not change: it stays valid as
   history and its sequence closes. (A bare `ADR-NNN` stays what it always was — ambiguous;
   grandfather it too.) The ID is self-locating **within its project**; across repos, cite it with
-  the repo name (`<repo> ADR-A2-NNN`).
+  the repo name (`<repo> ADR-A2-NNN`). **A family the method's grammar does not read is
+  declared:** `.critos/project/id-families`, one extended regex per line (`^D-[0-9]{3}$`), and
+  every control that reads an id — the citations, the pointers, the carriers, the index — reads
+  those families as ids. A declared family is grammar, never an exemption: its ids must resolve
+  like any other (`[21]`).
 - **The one legal rename is a RETIREMENT MIGRATION.** A repo may retire a legacy sequence by
   renaming it to the owner scheme, only under all four conditions at once: it is **versioned** (a
   release, user-approved); it is **one repo in one commit** (a half-renamed repo is worse than an
@@ -101,10 +105,20 @@ code.
 - **Append-only, aged — and AGING IS MANAGED**, because this file sits in a boot read-path and
   everything ages: never delete; supersede, and **mark** what landed or was superseded so the log
   reads as history. Then **act on the marks**:
-  - **The archive address is `.critos/memory/a<N>/archive/`** — files
-    `DECISIONS-archive-<period>.md` (lessons likewise), moved with a pointer left behind. The atlas
-    indexes archives exactly like live logs, so **an archived ID keeps resolving**; regenerate it
-    in the same round.
+  - **The archive address is `.critos/memory/a<N>/archive/`** — the files
+    `DECISIONS-archive-YYYY-MM.md` and `LESSONS-LEARNED-archive-YYYY-MM.md`: the log's own name as
+    the prefix, **one file per month of the entry's date** — never a day file, never a range; a
+    `STATUS` is never archived. A file under `archive/` outside the two names is a finding
+    (`[25]`). The atlas indexes archives exactly like live logs, so **an archived ID keeps
+    resolving**; regenerate it in the same round.
+  - **The pointer left behind is one list line per rotated id, in one list at the head of the
+    live log, in one shape:**
+    `- <id> — ROTATED YYYY-MM-DD to archive/<file> (<state>)`, the id in backticks, the state one
+    of a closed set of three: `done` · `superseded by <id>` · `consolidated in <id>`. There is no fourth state
+    *still in force*: an entry in force leaves only consolidated, and `consolidated in <id>` names
+    the live entry that carries it. **The pointer is the live carrier of a settled id.** A pointer
+    outside the shape, or a state outside the three, is a finding (`[25]`); a heading is not a
+    pointer.
   - **Two triggers, either suffices:** an entry **fully** superseded or completed (its Status says
     so — *superseded in part* stays live: its surviving half is still law to its owner) is
     archivable the round it is marked; and a log past the skimmable budget rotates its oldest
@@ -119,7 +133,11 @@ code.
 one, not both. Not "something happened"; not a restatement of a rule that exists — link that one.
 
 - **Minimum fields:** `date · status · what happened (1–2 lines) · the rule (imperative, one line) ·
-  Enforcement: tier-N`.
+  Enforcement: tier N`. **The field has one written form** — the bold label, a space, `tier N`
+  with a space and the digit, then nothing or an em dash and the detector (or, at tier 3, why
+  none is possible): `**Enforcement:** tier 2 — the roots check`. The same form in a decision.
+  `[11]` reads it at its position, and reports every variant — `tier-2`, `Tier 2`, a split *tier
+  2 for X, tier 3 for Y* — as a WARN of form: what the check reads, the method writes.
 - **`Bound:` — optional:** the `contract-session § 6` bound this lesson instantiates, if any
   (`TIME` · `LAYER` · `SHAPE` · `TARGET` · `INSTRUMENT` · `ACTION` · `ABSENCE` · `BASELINE`). Most
   lessons in the field are instances of a bound that already exists; a lesson that only confirms

@@ -17,7 +17,9 @@
 #   [8] STATUS-CHRONICLE  (WARN) a STATUS.md over the line budget or stacking dated AS-OF sections
 #   [9] STALE-STATUS      a STATUS.md whose last commit is >=14 days old
 #  [10] DANGLING-WIKI-LINK (WARN) a [[slug]] that resolves nowhere the repo can reach
-#  [11] TIER-3-LESSON     an accepted_rule that does not name its "Enforcement: tier-N"
+#  [11] TIER-3-LESSON     an accepted_rule that does not name its "Enforcement: tier N";
+#       BAD-BOUND         a Bound: outside the eight; ENFORCEMENT-FORM (WARN) the field outside
+#                         its one written form
 #  [12] UNROTATED-LOG     (WARN) an append-only memory log past the skimmable budget
 #  [13] MEMORY-SHAPE      a `.critos/memory/` child that is not `a<N>`, or an `a<N>` folder that
 #                         no roster row maps (contract-memory § 0)
@@ -45,6 +47,13 @@
 #                         STATUS, a register or their archives (an entry head, a token, an id
 #                         heading, Last updated, a verdict, an aging mark) — dates in prose are
 #                         plans and are not read
+#  [25] POINTER-FORM      a rotation pointer in a live log outside its one shape, or with a state
+#                         outside the three (done · superseded by <id> · consolidated in <id>);
+#       ARCHIVE-NAME      a file under a memory archive/ outside DECISIONS-archive-YYYY-MM.md and
+#                         LESSONS-LEARNED-archive-YYYY-MM.md
+#
+# Ids: the method's grammar (`ADR-<scope>-NNN`, `L-<scope>-NNN`) plus the families a project
+# declares in `.critos/project/id-families` — grammar, never an exemption.
 #
 # A project that spans several repos registers them in `.claude/repos`; the whole battery is then
 # repeated in each (one level, read-only).
@@ -114,6 +123,19 @@ constellation() {
   done < "$f"
 }
 decode() { local u="$1"; u=${u//%20/ }; u=${u//%28/(}; u=${u//%29/)}; u=${u//%26/&}; u=${u//%27/\'}; printf '%s' "$u"; }
+
+# ---- the id grammar -----------------------------------------------------------------------------
+# A decision or lesson id is `ADR-<scope>-NNN` or `L-<scope>-NNN` (contract-memory § 2, § 3). A
+# project whose history carries ids under earlier schemes declares them in
+# `.critos/project/id-families` — one extended regex per line, '#' comments — and every reader of
+# an id in this battery (the citations, the pointers, the carriers) reads those families as ids
+# too. A declared family is grammar, never an exemption: its ids must resolve like any other.
+id_core='(ADR|L)-[A-Za-z0-9]+-[0-9]{3,}'
+if [ -f .critos/project/id-families ]; then
+  fam=$(grep -vE '^[[:space:]]*(#|$)' .critos/project/id-families | sed -E 's/^\^//; s/\$$//' | paste -sd'|' -)
+  [ -n "$fam" ] && id_core="$id_core|$fam"
+fi
+id_re="\\b($id_core)\\b"
 
 echo "### doc-lint [1] — broken relative links in .md (existence-checked per link; tracked + untracked)"
 any_broken=0
@@ -415,11 +437,28 @@ tier3_out=$(
 if [ -n "$tier3_out" ]; then
   printf '%s\n' "$tier3_out"
   if printf '%s\n' "$tier3_out" | grep -q '^TIER-3-LESSON'; then
-    echo "               → each: add \"Enforcement: tier-N\" (1 impossible · 2 detected deterministically · 3 written-and-hoped),"
+    echo "               → each: add \"**Enforcement:** tier N — <detector>\" (1 impossible · 2 detected deterministically · 3 written-and-hoped),"
     echo "                 and for tier 3 say why no detector is possible."
   fi
 else
   echo "(none — every accepted_rule names its enforcement tier, and every Bound: names one of the eight)"
+fi
+# The third leg, ENFORCEMENT-FORM (WARN): the field in ONE written form — the bold label, a
+# space, `tier N` with a space and the digit, then nothing or an em dash and the detector
+# (contract-memory § 3). Read in both logs at the line's start, fenced blocks skipped (a log's
+# head shows the shape inside a fence); a variant is reported, never gated.
+form11=$( { mem_files DECISIONS.md; mem_files LESSONS-LEARNED.md; } | while IFS= read -r lf; do
+  [ -f "$lf" ] || continue
+  awk '/^[[:space:]]*```/{f=!f;next} !f{print NR ":" $0}' "$lf" \
+    | grep -E '^[0-9]+:(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:' \
+    | grep -vE '^[0-9]+:\*\*Enforcement:\*\* tier [123]( — .*)?$' \
+    | sed -E "s|^([0-9]+):(.{0,70}).*|ENFORCEMENT-FORM  $lf:\1  \2|"
+done)
+if [ -n "$form11" ]; then
+  printf '%s\n' "$form11"
+  echo "               → one written form: **Enforcement:** tier N — <the detector, or why none is possible>; a split tier is two Carries lines"
+else
+  echo "(no Enforcement: line outside the one written form)"
 fi
 
 echo
@@ -753,10 +792,10 @@ echo "### doc-lint [21] — CITED-ID: a decision or lesson id cited somewhere an
 #   then resolves.
 # CITED: every id in a tracked file, except where an id is not a citation: the pinned tier and
 #   the skills (they quote examples), templates, archives (records), and the generated atlas.
-# Declared bound: only the standard shape is seen (`ADR-<scope>-NNN`, `L-<scope>-NNN`); a range
-# written in prose is seen at its two ends. An id of an UNREGISTERED repo is flagged: silence it
-# in `.claude/doc-lint-exempt`, or register the repo.
-id_re='\b(ADR|L)-[A-Za-z0-9]+-[0-9]{3,}\b'
+# Declared bound: only the standard shape is seen (`ADR-<scope>-NNN`, `L-<scope>-NNN`), plus the
+# families the project declares in `.critos/project/id-families`; a range written in prose is
+# seen at its two ends. An id of an UNREGISTERED repo is flagged: silence it in
+# `.claude/doc-lint-exempt`, or register the repo.
 declared21=$(mktemp); prefixes21=$(mktemp)
 { printf '%s\n' "$root"; constellation "$root"; } | while IFS= read -r r21; do
   [ -d "$r21" ] || continue
@@ -963,6 +1002,37 @@ else
   done <<< "$files24")
   if [ -n "$out24" ]; then printf '%s\n' "$out24"; else echo "(none — no stamp later than $today24 UTC in a stamp position; dates in prose are not read)"; fi
 fi
+
+echo
+echo "### doc-lint [25] — FORMS: the rotation pointer and the archive's name, as the method writes them"
+# contract-memory § 2 fixes two forms the controls read. POINTER-FORM: a line of a live memory
+# log that marks a rotation — it carries the word ROTATED, outside a fence — in any shape but
+#   - `<id>` — ROTATED YYYY-MM-DD to archive/<file> (<state>)
+# with the state one of `done` · `superseded by <id>` · `consolidated in <id>`; a heading is not a
+# pointer, a fourth state is not a state. ARCHIVE-NAME: a file under `.critos/memory/a<N>/archive/`
+# outside the two names, DECISIONS-archive-YYYY-MM.md and LESSONS-LEARNED-archive-YYYY-MM.md —
+# a day file, a range, an older prefix, a STATUS (never archived).
+any25=0
+idtok="\`?($id_core)\`?"
+ptr_ok="^- $idtok — ROTATED 20[0-9]{2}-[0-9]{2}-[0-9]{2} to archive/(DECISIONS|LESSONS-LEARNED)-archive-20[0-9]{2}-[0-9]{2}\.md \((done|superseded by $idtok|consolidated in $idtok)\)$"
+while IFS= read -r lg; do
+  [ -f "$lg" ] || continue
+  case "$lg" in *-archive-*|*/archive/*) continue ;; esac
+  while IFS= read -r hit; do
+    [ -z "$hit" ] && continue
+    ln25=${hit%%:*}; line25=${hit#*:}
+    printf '%s' "$line25" | grep -Eq "$ptr_ok" && continue
+    echo "POINTER-FORM  $lg:$ln25  $(printf '%s' "$line25" | cut -c1-90)"
+    any25=1
+  done < <(awk '/^[[:space:]]*```/{f=!f;next} !f && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/{print NR ":" $0}' "$lg")
+done < <(logs12)
+while IFS= read -r af; do
+  [ -z "$af" ] && continue
+  printf '%s' "$(basename "$af")" | grep -Eq '^(DECISIONS|LESSONS-LEARNED)-archive-20[0-9]{2}-[0-9]{2}\.md$' && continue
+  echo "ARCHIVE-NAME  $af  (the archive is the log's own name, one file per month: DECISIONS-archive-YYYY-MM.md · LESSONS-LEARNED-archive-YYYY-MM.md; a STATUS is never archived)"
+  any25=1
+done < <(git ls-files '.critos/memory/a*/archive/*' 2>/dev/null)
+[ "$any25" = 0 ] && echo "(none — every pointer in shape with a state of the three, every archive under the log's name by month)"
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
 # `.claude/repos`: one path per line, relative to this repo's root ('#' comments). One level only:

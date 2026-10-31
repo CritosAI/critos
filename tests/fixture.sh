@@ -36,7 +36,10 @@ printf '# orphan\nnobody links here\n' > docs/orphan.md
 # archived entry, a retired id kept alive by the alias table in a log's head
 printf '\nDecided in ADR-A2-001, earlier in ADR-A2-000, once known as ADR-OLD-005, and ADR-LEG-042 of a retired sequence; lost: ADR-A2-777; lost too, in the LIVE sequence an alias line points at: ADR-A3-888.\n' >> README.md
 mkdir -p "$L/memory/a2/archive"
-printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
+printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
+# a declared id family: `D-NNN` is grammar, so D-007 (headed above) resolves and D-099 is lost
+printf '# ids of the scheme before the method\n^D-[0-9]{3}$\n' > "$L/project/id-families"
+printf 'Under the old scheme: D-007 holds, D-099 was never written.\n' >> README.md
 
 # [2] PATH-IN-CODE
 printf '// see doc/guide-something.md for the rule\nexport const x = 1;\n' > src/x.js
@@ -102,10 +105,21 @@ no enforcement field here; see [[no-such-slug]]
 **What happened.** the date came from the notice, not from date -u
 **Marked 2099-05-05** — an aging mark stamped the same way
 **Bound:** TARGET
+Enforcement: tier-2 (a variant of the one written form)
 EOF
 
 # [12] UNROTATED-LOG + ARCHIVABLE (a2)  ·  DECLARED-OVER (a3)
-{ echo "# decisions"; echo "## ADR-A2-001 — first"; echo "**Status:** superseded by ADR-A2-002"; echo "## ADR-A2-002 — second"; for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a2/DECISIONS.md"
+# [25] POINTER-FORM: a pointer in shape (not a finding), one as a heading, one with a fourth state
+# [11] ENFORCEMENT-FORM: a variant in a decision (`Tier 2 by design`) beside the one form
+{ echo "# decisions"
+  echo '- `ADR-A2-000` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (done)'
+  echo '### ADR-A2-000 — ROTATED 2026-08-01 to the archive (still in force)'
+  echo '- `ADR-A2-000` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (still in force)'
+  echo "## ADR-A2-001 — first"; echo "**Status:** superseded by ADR-A2-002"; echo "**Enforcement:** tier 2 — the atlas"
+  echo "## ADR-A2-002 — second"; echo "**Enforcement:** Tier 2 by design"
+  for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a2/DECISIONS.md"
+# [25] ARCHIVE-NAME: a day file under an older prefix
+printf '# archive\nnothing headed here\n' > "$L/memory/a2/archive/LESSONS-archive-2026-08-01.md"
 { echo "# decisions"; echo "> DECLARED EXEMPTION — ACTIVE: every entry here is cited"; echo "> alias: ADR-OLD-005 -> ADR-A3-001"; echo "> a retired sequence: ADR-LEG-NNN -> ADR-A3-NNN"; for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a3/DECISIONS.md"
 
 # status-check axis 1: a dated STATUS beside a DECISIONS log (a3)

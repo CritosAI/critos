@@ -14,10 +14,18 @@ sequence closes, the `A1` sequence opens at `001`, and **nothing is ever renamed
 cited from commits and archives that must not change.
 
 **Rotation — aging is managed** (`contract-memory § 2`): mark what landed or was superseded, then
-move the marked entries to `archive/DECISIONS-archive-<period>.md` with a pointer left behind — on
-either trigger: an entry fully settled, or the log past its skimmable budget (`/crit-doc-lint [12]`).
+move the marked entries to `archive/DECISIONS-archive-YYYY-MM.md` — one file per month of the
+entry's date — and leave a pointer behind, one list line per rotated id in the list below, in the
+one shape the controls read (`/crit-doc-lint [25]`), its state one of three — on either trigger:
+an entry fully settled, or the log past its skimmable budget (`/crit-doc-lint [12]`).
 **Nothing is archived unmarked**, and the atlas is regenerated in the same round, so every archived
 ID keeps resolving — relocated for legibility, never trimmed away.
+
+```
+    - `ADR-A1-###` — ROTATED YYYY-MM-DD to archive/DECISIONS-archive-YYYY-MM.md (done | superseded by <id> | consolidated in <id>)
+```
+
+**Rotated (the pointers):**
 
 **The shape of an entry** — copy it under the rule below, fill it, never leave a slot empty:
 

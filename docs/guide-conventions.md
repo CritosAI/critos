@@ -51,9 +51,19 @@ in backticks.
   `contract-session § 6`, optional. In the field most lessons are instances of a bound that
   already exists (eight of ten, in one measured batch): naming it keeps the log reading as
   evidence rather than as new law, and sorts a raise before it travels.
+- **The enforcement field has one written form** — `**Enforcement:** tier 2 — the roots check`:
+  the bold label, `tier N`, then nothing or an em dash and the detector. Check `[11]` reports a
+  variant (`tier-2`, `Tier 2`, a split *tier 2 for X, tier 3 for Y*) as a WARN of form; a split
+  tier is two carried rules, each with its own.
 - **Never delete, supersede.** Mark what was replaced or completed; archive what is marked, or
-  what pushes a log past its budget (`archive/`, with a pointer left behind). Nothing is archived
-  unmarked.
+  what pushes a log past its budget — into `archive/DECISIONS-archive-YYYY-MM.md` or
+  `archive/LESSONS-LEARNED-archive-YYYY-MM.md`, one file per month of the entry's date, never a
+  day file or a range — with a pointer left in the list at the head of the live log, one line per
+  rotated id in one shape, its state one of `done` · `superseded by <id>` · `consolidated in <id>`
+  (`contract-memory § 2`; check `[25]`). Nothing is archived unmarked.
+- **An id of an earlier scheme is declared, never renamed:** `.critos/project/id-families`, one
+  regex per line (`^D-[0-9]{3}$`). The checks then read that family as ids — and expect each one
+  to resolve, like any other.
 
 ## 4 · Commits
 

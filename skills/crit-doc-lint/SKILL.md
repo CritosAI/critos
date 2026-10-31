@@ -70,12 +70,15 @@ may match no release.
     resolves against a heading in a tracked `.md`, a tracked doc's basename, a table row id, a
     machine-local auto-memory note name, or `.claude/doc-lint-exempt`. WARN, because one of those
     namespaces lives outside the repo.
-11. **TIER-3-LESSON** — an `accepted_rule` in a lessons log with no **`Enforcement: tier-N`**
+11. **TIER-3-LESSON** — an `accepted_rule` in a lessons log with no **`Enforcement: tier N`**
     field. The field is read at its syntactic position — a line that starts with it, list marker
     and bold admitted. A rule about controls that is itself enforced by hope is the failure this
     check exists for. Its second leg, **BAD-BOUND**: a lesson's optional `Bound:` field
     (`contract-memory § 3`) whose value is not one of the eight bounds of `contract-session § 6`
-    — the field is optional, its value is not free.
+    — the field is optional, its value is not free. Its third leg, **ENFORCEMENT-FORM (WARN)**:
+    the field outside its one written form — `**Enforcement:** tier N`, then nothing or an em
+    dash and the detector — in a decision or a lesson; `tier-2`, `Tier 2`, a split *tier 2 for
+    X, tier 3 for Y* are variants, reported and never gated (a split tier is two carried rules).
 12. **UNROTATED-LOG (WARN)** — a `DECISIONS.md` or `LESSONS-LEARNED.md` past the skimmable budget
     (1,200 lines; override in `.claude/doc-lint-log-lines`). The remedy is **rotation, never
     deletion**: move the oldest entries to `archive/<NAME>-archive-<period>.md` and leave a
@@ -126,7 +129,10 @@ may match no release.
     where a typo must still fire), across every registered repo. Not read as citations: the pinned tier, the skills,
     templates, archives and the generated atlas. A rotation, a restructure and a split
     (`contract-memory § 7`) are the moments an id gets lost. An id of an unregistered repo is
-    flagged: exempt it in `.claude/doc-lint-exempt`, or register the repo.
+    flagged: exempt it in `.claude/doc-lint-exempt`, or register the repo. The ids read are the
+    method's grammar plus the families a project declares in `.critos/project/id-families`
+    (one regex per line) — a declared family is grammar, never an exemption: its ids must
+    resolve too.
 22. **ROOTS** — the roster's **`Roots`** column against the tracked tree (`contract-agent § 1`,
     `§ 3`): **UNROOTED** — files under no domain's root and no ruled surface (listed per
     top-level folder, a few names each; the count is the finding, the names the lead);
@@ -163,6 +169,13 @@ may match no release.
     prose are not read**: a live project carries the future on purpose — expiries, schedules,
     deadlines, reminders — and a check that read every date token cried wolf thirty times on
     zero wrong stamps. Bound, declared: a wrong stamp written anywhere else is not seen.
+25. **POINTER-FORM** — a rotation pointer in a live memory log outside its one shape
+    (`contract-memory § 2`): `- <id> — ROTATED YYYY-MM-DD to archive/<file> (<state>)`, the id
+    in backticks, the state one of `done` · `superseded by <id>` · `consolidated in <id>`. A
+    line carrying ROTATED as a heading, or with a fourth state, is the finding; the fenced
+    shape in a log's head is not read. Its second leg, **ARCHIVE-NAME**: a file under
+    `.critos/memory/a<N>/archive/` outside `DECISIONS-archive-YYYY-MM.md` and
+    `LESSONS-LEARNED-archive-YYYY-MM.md` — a day file, a range, an older prefix, a `STATUS`.
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one
