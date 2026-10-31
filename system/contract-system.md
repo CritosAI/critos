@@ -57,6 +57,7 @@ address.
 | `project/agents.md` | the **user** creates/retires · **A1** maintains integrity | A1 *creating* an agent = self-expansion |
 | `project/agents/agent-N.md` | the **user** authors · **A1** checks it against `contract-agent § 1` and the roster mapping | a definition written by its own agent = self-scoping |
 | `memory/<agent>/` | **exactly one agent** per folder (A1 excepted, **structure only**) | two voices in a memory that reads as one |
+| `memory/<agent>/IN-FORCE.md` | nobody — **derived** from the folder's logs by the in-force control (`contract-memory § 6`) | a hand-edit disappears at the next run, and the boot reads a law nobody wrote |
 | `shared/HANDOFFS.md` | each agent writes its **own** entries · A1 curates lifecycle | A1 authoring substance = a lossy translation hop |
 | `shared/ROADMAP.md` | **A1** places the row · the **lead** flips their own | a row nobody closes re-litigates as "still to do" |
 | `shared/CONTRACTS.md` | **A1** curates · agents propose · the source is elsewhere | a row with no source binds nothing |

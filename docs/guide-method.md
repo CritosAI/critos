@@ -36,6 +36,13 @@ a status claim disproved by evidence is corrected on the spot, with the proof
 The test for a decision record: *could the next agent, in good faith, redo this differently?*
 What an ADR saves is the re-deciding, not the undoing.
 
+The two logs are the chronicle, and a chronicle is not read whole at every boot: what binds an
+agent now is a generated index of the law in force — one line per rule, read from the `Carries`
+block every live entry carries (`contract-memory § 2`, `§ 6`) — and the logs are opened at the
+id that line names. A log at its budget is tens of thousands of tokens; a rule in a log that is
+skimmed is a rule not read, and nothing in force leaves the live log without a line that still
+carries it.
+
 ## 4 · One folder, one writer
 
 Each agent writes exactly one memory folder, and nobody else writes it (`contract-memory § 0`).

@@ -48,6 +48,10 @@ controls read (`/crit-doc-lint [25]`); the atlas keeps every archived id resolvi
                         TARGET · INSTRUMENT · ACTION · ABSENCE · BASELINE — when the lesson confirms one
                         rather than stating new law.
     **Why it generalizes** (optional; fill it when promoting) — what makes this true beyond this incident.
+    **Carries.**        one list line per id — this lesson's own at least. The generated IN-FORCE.md collects
+                        every binds: line; its tier comes from the line, else from Enforcement above:
+                        - `L-A1-###` · <the rule, one imperative line> · binds: <lane>[ · tier N[ — <detector>]]
+                        - `L-A1-###` · <the rule> · settled: done | superseded by <id> | consolidated in <id>[ — <why>]
 ```
 
 ---

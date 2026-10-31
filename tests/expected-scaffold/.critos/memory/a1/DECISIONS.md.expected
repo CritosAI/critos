@@ -37,6 +37,11 @@ ID keeps resolving — relocated for legibility, never trimmed away.
     **Why.**       the reason a future reader needs in order NOT to redo this differently. This is the
                    field that makes the log worth keeping — an ADR without a why is a changelog entry.
     **Consequences / blind spot.**  what this costs, and what it deliberately does NOT cover.
+    **Carries.**   one list line per id — this entry's own at least; an entry that consolidates carries
+                   one line per id it absorbs. The generated IN-FORCE.md collects every binds: line:
+                   - `ADR-A1-###` · <the rule, one imperative line> · binds: <lane>[ · tier N[ — <detector>]]
+                   - `ADR-A1-###` · <the rule> · settled: done | superseded by <id> | consolidated in <id>[ — <why>]
+    **Enforcement:** tier N — <the detector>   (one written form; a tier on a Carries line wins over it)
 ```
 
 ---

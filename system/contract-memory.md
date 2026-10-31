@@ -121,11 +121,33 @@ code.
     pointer.
   - **Two triggers, either suffices:** an entry **fully** superseded or completed (its Status says
     so — *superseded in part* stays live: its surviving half is still law to its owner) is
-    archivable the round it is marked; and a log past the skimmable budget rotates its oldest
-    regardless of status.
+    archivable the round it is marked; and a log past the skimmable budget rotates its oldest —
+    **never an entry in force without a live carrier**: an entry leaves settled, its pointer the
+    carrier, or consolidated into a live entry whose `Carries` block names it. Nothing in force
+    leaves the live log unseen (`[26]`).
   - **Nothing is archived unmarked.** The move follows the mark, so the live log never silently
     loses an entry someone still believes current. The marks are the owner's; the move is
     structure, and the steward may perform it (`contract-agent § A1`).
+- **Every live entry carries its rule — the `Carries` block.** Under a line that is exactly
+  `**Carries.**`, one list line per id, in one of two shapes:
+
+  ```
+  - `<id>` · <the rule in one imperative line> · binds: <lane>[ · tier N[ — <detector>]]
+  - `<id>` · <the rule in one imperative line> · settled: <state>[ — <why>]
+  ```
+
+  An entry carries **at least its own id's line**; an entry that consolidates carries one line per
+  id it absorbs — that line is the archived id's live carrier. `binds: <lane>` says the rule is in
+  force and where (the lane is the owner's word; a lane may be hierarchical, `onboarding/config`);
+  a tier on the line wins over the entry's `Enforcement:` field, and a split field is two lines.
+  `settled: <state>` says it binds nothing — the three states of the pointer: `done` ·
+  `superseded by <id>` · `consolidated in <id>` — with an optional reason after an em dash. Three
+  readers, one shape: the generated law in force (§ 6) collects every `binds:` line; the carrier
+  check holds that every id headed in an archive is carried by a pointer or a `Carries` line of a
+  live entry, and that no id is carried as in force and as settled at once; a reader opening the
+  log at an id finds the rule before the story. Tier 2: a live entry without its own line, a line
+  outside the two shapes, a state outside the three, an archived id with no live carrier, a
+  conflict — each a finding (`[26]`). Tier 3: the quality of the one line, and the lane's word.
 
 ## 3 · LESSONS-LEARNED — when a lesson is owed
 
@@ -181,14 +203,26 @@ what it held turned out to be **copies** — the projects had kept the full text
 The trade is stated plainly: cross-project continuity for craft that is real but not yet ruleable is
 lost. That is intended. **If it is worth carrying to another project, it is worth being a rule.**
 
-## 6 · The index
+## 6 · The two indexes
 
 A generated `MEMORY-INDEX.md` lists every ADR id, lesson id and memory folder as `id → file:line`.
 It holds **addresses, never facts**, so it cannot become a competing truth — and it indexes the ids,
 which are stable, while only *pointing* at the registers, whose rows churn daily.
 
-It is **generated, never written**: a hand-edit disappears at the next run. Whoever appends an ADR or
-a lesson regenerates it in the same round-close; a staleness check makes forgetting detectable.
+**And a generated `IN-FORCE.md` in every memory folder — the law in force of that agent:** one
+line per rule that binds, read from the `Carries` blocks of the live entries of its two logs
+(§ 2), grouped by lane, each with its tier and its detector. The boot reads it in place of the
+logs whole (`contract-session § 1`): a log is the chronicle, opened at the id the index names.
+It holds the rules in force only — a settled rule resolves through the atlas. It lives beside
+the logs it derives from, in the repository that holds the memory, never in a satellite, under
+one name for every project; a view per lane prefix (`IN-FORCE.onboarding.md`, one section per
+sub-lane under a stable anchor) may sit beside it for a skill to read. **Budget 300 lines**, a
+warning of its `--check`: the law in force of one agent is read at every boot, so a long index
+is the signal to consolidate, not to read faster.
+
+Both are **generated, never written**: a hand-edit disappears at the next run. Whoever appends or
+changes an ADR or a lesson regenerates both in the same round-close; a staleness check makes
+forgetting detectable (`[27]`, and the atlas's own `--check`).
 
 **And the discipline is general to every index a project keeps, the hand-written ones included: an
 index points at its target; it never describes it.** A description in an index is a copy that will

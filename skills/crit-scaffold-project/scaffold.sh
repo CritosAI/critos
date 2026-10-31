@@ -83,6 +83,11 @@ if [ "$mode" = memory ]; then
   for f in STATUS DECISIONS LESSONS-LEARNED; do
     instantiate "$critos/templates/memory-$f.md.tmpl" ".critos/memory/a$agent_n/$f.md" "N=$agent_n" "Domain=$agent_domain" "TODAY=$today"
   done
+  # the agent's law in force - generated from its logs, empty at birth, read at every boot
+  if [ ! -e ".critos/memory/a$agent_n/IN-FORCE.md" ]; then
+    bash "$critos/skills/crit-in-force/in-force.sh" ".critos/memory/a$agent_n" >/dev/null 2>&1 && { echo "created  .critos/memory/a$agent_n/IN-FORCE.md  (generated)"; created=$((created+1)); } \
+      || echo "WARNING  the law in force could not be generated: run /crit-in-force"
+  else echo "skipped  .critos/memory/a$agent_n/IN-FORCE.md"; skipped=$((skipped+1)); fi
   echo "done     $created created, $skipped skipped - the roster row and the definition are the steward's, on the user's yes"
   exit 0
 fi
@@ -105,6 +110,12 @@ for f in STATUS DECISIONS LESSONS-LEARNED; do
   instantiate "$critos/templates/memory-$f.md.tmpl" ".critos/memory/a1/$f.md" "N=1" "Domain=Steward" "TODAY=$today"
 done
 for f in HANDOFFS ROADMAP CONTRACTS; do instantiate "$critos/templates/$f.md.tmpl" ".critos/shared/$f.md"; done
+# the steward's law in force - generated from its logs, empty at birth, read at every boot;
+# before the atlas, which lists it
+if [ ! -e .critos/memory/a1/IN-FORCE.md ]; then
+  bash "$critos/skills/crit-in-force/in-force.sh" .critos/memory/a1 >/dev/null 2>&1 && { echo "created  .critos/memory/a1/IN-FORCE.md  (generated)"; created=$((created+1)); } \
+    || echo "WARNING  the law in force could not be generated: run /crit-in-force"
+else echo "skipped  .critos/memory/a1/IN-FORCE.md"; skipped=$((skipped+1)); fi
 # the routing file, then the atlas it links - generated last, so the link resolves from the first commit
 instantiate "$critos/templates/CLAUDE.project.md.tmpl" "CLAUDE.md" "PROJECT_NAME=$project"
 if [ ! -e MEMORY-INDEX.md ]; then

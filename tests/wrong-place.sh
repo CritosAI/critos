@@ -14,6 +14,7 @@ controls=(
   skills/crit-status-check/inbox-check.sh
   skills/crit-doc-lint/doc-lint.sh
   skills/crit-memory-index/memory-index.sh
+  skills/crit-in-force/in-force.sh
 )
 for c in "${controls[@]}"; do
   out="$(cd "$tmp" && GIT_CEILING_DIRECTORIES="$tmp" bash "$repo/$c" --me 1 .critos/memory/a1 2>&1)"; rc=$?

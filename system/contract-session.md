@@ -24,10 +24,12 @@ one will know, it must write before leaving. This contract is that rhythm.
    single-line entries render as `[Omitted long matching line]`, so a search silently hides exactly
    the entries you must act on. Address the newest `[OPEN]` entries addressed to you **before**
    re-touching older ones.
-8. **Your own memory** — `STATUS` always; `DECISIONS` if you are about to touch architecture;
-   `LESSONS-LEARNED` as the lens. The inbox came first on purpose: a snapshot read before the
-   debt gets believed — your `STATUS` is hearsay about what you owe, and one believed snapshot
-   held a false claim for seven days.
+8. **Your own memory** — `STATUS` always; **`IN-FORCE.md` always** — the generated law in force,
+   one line per rule that binds you (`contract-memory § 6`); then `DECISIONS` and
+   `LESSONS-LEARNED` **opened at an id the index names, never read whole**: they are the
+   chronicle, and a log skimmed from the top is a rule not read. The inbox came first on
+   purpose: a snapshot read before the debt gets believed — your `STATUS` is hearsay about what
+   you owe, and one believed snapshot held a false claim for seven days.
 
 **If the project spans more than one repo**, it declares them in `.claude/repos` (one path per line,
 relative to the repo root). The reconcile then asks *what do I owe* in **every** registered repo — an
@@ -56,8 +58,10 @@ symptom in a neighbour's.
    **Same round, not at checkpoint**: a landed effort whose row stays open re-litigates as "still to
    do", and the lead is the only actor who knows it landed.
 4. **Run the deterministic checks** on what you changed, and **fact-flip on the spot** (§4).
-5. **Refresh the generated index** if you appended an ADR or a lesson. An index nobody regenerates is
-   worse than none: it looks like a map and points at the past.
+5. **Refresh the generated indexes** — the atlas and your `IN-FORCE.md` — if you appended or
+   changed an ADR or a lesson. An index nobody regenerates is worse than none: it looks like a
+   map and points at the past; a law in force nobody regenerates binds the next boot to the
+   previous law.
 
 ## 3 · The checkpoint
 

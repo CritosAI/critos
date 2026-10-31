@@ -41,7 +41,7 @@ may match no release.
    I/O target; the annotation states its reason.
 3. **ORPHAN** — a tracked `.md` that no other tracked `.md` links to: the other half of the
    *no floating doc* rule. Docs found by convention are exempt (README / CLAUDE / AGENTS /
-   SKILL, the memory triad, the three registers, per-entity notes under
+   SKILL, the memory triad and the generated `IN-FORCE.md` beside it, the three registers, per-entity notes under
    `.critos/memory/a<N>/notes/`); a repo declares its own families in `.claude/doc-lint-exempt`
    (one regex per line). **An index entry must be a real markdown link** — an index written in
    backticks is reachable by eye and orphaned by graph.
@@ -176,6 +176,19 @@ may match no release.
     shape in a log's head is not read. Its second leg, **ARCHIVE-NAME**: a file under
     `.critos/memory/a<N>/archive/` outside `DECISIONS-archive-YYYY-MM.md` and
     `LESSONS-LEARNED-archive-YYYY-MM.md` — a day file, a range, an older prefix, a `STATUS`.
+26. **CARRIES** — the `Carries` block of every live entry (`contract-memory § 2`), read by the
+    same parser as the law in force (`/crit-in-force --lines`). **NO-CARRIER**: a live entry
+    with no line for its own id. **CARRIES-FORM**: a line under `**Carries.**` outside the two
+    shapes, or a `settled:` state outside `done` · `superseded by <id>` · `consolidated in <id>`.
+    **UNCARRIED**: an id headed in an archive with no live carrier — no pointer in the live log,
+    no `Carries` line of a live entry; a pointer `consolidated in <id>` needs a `binds:` line
+    somewhere live. **CARRIER-CONFLICT**: one id carried as in force and as settled at once.
+    Fenced blocks are not read.
+27. **IN-FORCE** — the generated law in force of every agent (`contract-memory § 6`), through
+    `/crit-in-force --check`: **IN-FORCE-STALE** — `IN-FORCE.md` missing in a memory folder that
+    holds a log, or differing from a fresh generation (a lane view beside it likewise);
+    **IN-FORCE-BUDGET (WARN)** — past 300 lines (`.claude/doc-lint-in-force-lines` overrides):
+    the signal to consolidate.
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one

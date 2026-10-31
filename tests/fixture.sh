@@ -116,11 +116,27 @@ EOF
   echo '### ADR-A2-000 — ROTATED 2026-08-01 to the archive (still in force)'
   echo '- `ADR-A2-000` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (still in force)'
   echo "## ADR-A2-001 — first"; echo "**Status:** superseded by ADR-A2-002"; echo "**Enforcement:** tier 2 — the atlas"
+  # [26] a block in shape (own id, binds), a settled line with a fourth state (CARRIES-FORM), and
+  #      ADR-A2-000 carried as binds: beside its settled pointer (CARRIER-CONFLICT); ADR-A2-001 is
+  #      both binds: and settled: (a second CARRIER-CONFLICT)
+  echo "**Carries.**"
+  echo '- `ADR-A2-001` · keep the first · binds: fixture'
+  echo '- `ADR-A2-001` · the first, once · settled: retired'
+  echo '- `ADR-A2-000` · the oldest, kept alive · binds: fixture · tier 3 — nobody'
+  echo ""
   echo "## ADR-A2-002 — second"; echo "**Enforcement:** Tier 2 by design"
+  # [26] a malformed own line: no disposition (CARRIES-FORM), so the entry has no carrier (NO-CARRIER)
+  echo "**Carries.**"
+  echo '- `ADR-A2-002` · the second, with no disposition'
+  echo ""
   for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a2/DECISIONS.md"
 # [25] ARCHIVE-NAME: a day file under an older prefix
 printf '# archive\nnothing headed here\n' > "$L/memory/a2/archive/LESSONS-archive-2026-08-01.md"
-{ echo "# decisions"; echo "> DECLARED EXEMPTION — ACTIVE: every entry here is cited"; echo "> alias: ADR-OLD-005 -> ADR-A3-001"; echo "> a retired sequence: ADR-LEG-NNN -> ADR-A3-NNN"; for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a3/DECISIONS.md"
+{ echo "# decisions"; echo "> DECLARED EXEMPTION — ACTIVE: every entry here is cited"; echo "> alias: ADR-OLD-005 -> ADR-A3-001"; echo "> a retired sequence: ADR-LEG-NNN -> ADR-A3-NNN"; for i in $(seq 1 1210); do echo "l$i"; done
+  # [27] IN-FORCE-BUDGET: one entry carrying three hundred rules in force; and no IN-FORCE.md in
+  #      a2 nor a3 (IN-FORCE-STALE, twice)
+  echo "## ADR-A3-001 — carries three hundred"; echo "**Carries.**"
+  for i in $(seq 1 300); do echo "- \`ADR-A3-001\` · rule $i · binds: lane-$i"; done; } > "$L/memory/a3/DECISIONS.md"
 
 # status-check axis 1: a dated STATUS beside a DECISIONS log (a3)
 # [24] negative: a future date in PROSE is a plan, not a stamp — it must NOT fire

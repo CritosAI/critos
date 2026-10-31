@@ -51,6 +51,12 @@
 #                         outside the three (done · superseded by <id> · consolidated in <id>);
 #       ARCHIVE-NAME      a file under a memory archive/ outside DECISIONS-archive-YYYY-MM.md and
 #                         LESSONS-LEARNED-archive-YYYY-MM.md
+#  [26] NO-CARRIER        a live entry with no Carries line for its own id; CARRIES-FORM a line
+#                         under **Carries.** outside the two shapes or with a state outside the
+#                         three; UNCARRIED an id headed in an archive with no live carrier;
+#                         CARRIER-CONFLICT an id carried as in force and as settled at once
+#  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
+#                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
 #
 # Ids: the method's grammar (`ADR-<scope>-NNN`, `L-<scope>-NNN`) plus the families a project
 # declares in `.critos/project/id-families` — grammar, never an exemption.
@@ -198,7 +204,7 @@ any_orphan=0
 while IFS= read -r f; do
   case "$(basename "$f")" in
     README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|SKILL.md|MEMORY.md) continue ;;
-    STATUS.md|DECISIONS.md|LESSONS-LEARNED.md) continue ;;
+    STATUS.md|DECISIONS.md|LESSONS-LEARNED.md|IN-FORCE.md|IN-FORCE.*.md) continue ;;
     HANDOFFS.md|ROADMAP.md|CONTRACTS.md|VERSION|CHANGELOG.md) continue ;;
   esac
   case "$f" in .critos/memory/*/notes/*) continue ;; esac
@@ -1033,6 +1039,89 @@ while IFS= read -r af; do
   any25=1
 done < <(git ls-files '.critos/memory/a*/archive/*' 2>/dev/null)
 [ "$any25" = 0 ] && echo "(none — every pointer in shape with a state of the three, every archive under the log's name by month)"
+
+echo
+echo "### doc-lint [26] — CARRIES: every live entry carries its rule; nothing in force left the live log without a live carrier"
+# contract-memory § 2. The `Carries` block of a live entry is read by the in-force control
+# (`in-force.sh --lines`: one parser for the index and for this check). NO-CARRIER — a live entry
+# with no line for its own id; CARRIES-FORM — a line under the block outside the two shapes, or a
+# settled state outside the three; UNCARRIED — an id headed in an archive with no live carrier
+# (no pointer in the live log, no Carries line of a live entry; a pointer `consolidated in <id>`
+# needs a binds: line somewhere live); CARRIER-CONFLICT — one id carried as in force and as
+# settled at once. Fenced blocks are not read: a log's head shows the shape inside a fence.
+inforce="$here/../crit-in-force/in-force.sh"
+if [ ! -f "$inforce" ]; then
+  echo "SKIPPED — the in-force control is not beside this one ($inforce): the Carries blocks cannot be read (NOT a clean none)"
+else
+  lines26=$(mktemp); ptr26=$(mktemp); out26=$(mktemp)
+  bash "$inforce" --lines > "$lines26" 2>/dev/null
+  # the pointers of every live log: id <TAB> settled|consolidated
+  while IFS= read -r lg; do
+    [ -f "$lg" ] || continue
+    case "$lg" in *-archive-*|*/archive/*) continue ;; esac
+    awk -v IDC="$id_core" '/^[[:space:]]*```/{f=!f;next} !f && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print id "\t" st } }' "$lg"
+  done < <(logs12) | sort -u > "$ptr26"
+  # NO-CARRIER, per live entry
+  while IFS= read -r lg; do
+    [ -f "$lg" ] || continue
+    case "$lg" in *-archive-*|*/archive/*) continue ;; esac
+    while IFS= read -r ent; do
+      [ -n "$ent" ] || continue
+      ln26=${ent%%:*}; id26=${ent#*:}
+      awk -F'\t' -v f="$lg" -v e="$id26" '$1 == f && $3 == e && $4 == e && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . \
+        || echo "NO-CARRIER  $lg:$ln26  $id26 — a live entry carries at least its own rule: one line under **Carries.** (binds: <lane>, or settled: <state>)" >> "$out26"
+    done < <(awk -v IDC="$id_core" '/^[[:space:]]*```/{f=!f;next} !f && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print NR ":" substr($0, RSTART, RLENGTH) }' "$lg")
+  done < <(logs12)
+  # (a heading that carries ROTATED is a pointer in the wrong shape — [25]'s finding, not an entry)
+  # CARRIES-FORM, per line read
+  while IFS=$'\t' read -r f26 l26 e26 id26 k26 v26 t26 d26 r26; do
+    case "$k26" in
+      bad) echo "CARRIES-FORM  $f26:$l26  $(printf '%s' "$v26" | cut -c1-80) — the shape: - \`<id>\` · <rule> · binds: <lane>[ · tier N[ — <detector>]]  or  · settled: <state>[ — <why>]" >> "$out26" ;;
+      settled) printf '%s' "$v26" | grep -Eq "^(done|superseded by \`?($id_core)\`?|consolidated in \`?($id_core)\`?)( — .*)?$" \
+                 || echo "CARRIES-FORM  $f26:$l26  settled: $(printf '%s' "$v26" | cut -c1-60) — the state is one of done · superseded by <id> · consolidated in <id>" >> "$out26" ;;
+    esac
+  done < "$lines26"
+  # UNCARRIED, per id headed in an archive
+  while IFS= read -r af; do
+    [ -f "$af" ] || continue
+    while IFS= read -r aid; do
+      [ -n "$aid" ] || continue
+      st26=$(awk -F'\t' -v i="$aid" '$1 == i {print $2; exit}' "$ptr26")
+      [ "$st26" = settled ] && continue
+      if [ "$st26" = consolidated ]; then
+        awk -F'\t' -v i="$aid" '$4 == i && $5 == "binds"' "$lines26" | grep -q . && continue
+        echo "UNCARRIED  $aid — its pointer says consolidated, and no live entry carries a binds: line for it (headed in $af)" >> "$out26"; continue
+      fi
+      awk -F'\t' -v i="$aid" '$4 == i && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . && continue
+      echo "UNCARRIED  $aid — headed in $af and carried by nothing live: no pointer, no Carries line (nothing leaves the live log without a live carrier)" >> "$out26"
+    done < <(awk -v IDC="$id_core" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$af" | sort -u)
+  done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null)
+  # CARRIER-CONFLICT: in force and settled at once
+  { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"; awk -F'\t' '{print $1 "\tsettled"}' "$ptr26"; } | sort -u \
+    | awk -F'\t' '{ s[$1] = s[$1] $2 ";" } END { for (i in s) if (index(s[i], "binds;") && index(s[i], "settled;")) print i }' | sort \
+    | while IFS= read -r cid; do echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id" >> "$out26"; done
+  if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has a live carrier, no id is carried two ways)"; fi
+  rm -f "$lines26" "$ptr26" "$out26"
+fi
+
+echo
+echo "### doc-lint [27] — IN-FORCE: the generated law in force of every agent is fresh, and within its budget"
+# contract-memory § 6: IN-FORCE.md is derived from the folder's logs by the in-force control;
+# its --check compares the file on disk with a fresh generation (the stamp line excepted) and
+# reads the budget. IN-FORCE-STALE — missing, or differs: the boot would read a law that is not
+# the logs'; IN-FORCE-BUDGET (WARN) — past the budget: consolidate.
+if [ ! -f "$inforce" ]; then
+  echo "SKIPPED — the in-force control is not beside this one ($inforce): the indexes cannot be checked (NOT a clean none)"
+else
+  out27=$(bash "$inforce" --check 2>/dev/null)
+  if printf '%s\n' "$out27" | grep -qE '^(STALE|BUDGET)'; then
+    printf '%s\n' "$out27" | sed -nE 's/^STALE  (.*)$/IN-FORCE-STALE  \1/p; s/^BUDGET  (.*)$/IN-FORCE-BUDGET  \1/p'
+  elif printf '%s\n' "$out27" | grep -q '^(no memory folder'; then
+    printf '%s\n' "$out27"
+  else
+    echo "(none — $(printf '%s\n' "$out27" | grep -c '^FRESH') index(es) fresh, within budget)"
+  fi
+fi
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
 # `.claude/repos`: one path per line, relative to this repo's root ('#' comments). One level only:

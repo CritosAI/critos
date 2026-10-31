@@ -7,7 +7,7 @@ this file starts stating them, it has begun copying a tier and will drift from i
 |---|---|
 | **The operating system** | [`.critos/system/`](.critos/system/README.md) — five contracts. Installed, versioned, **not editable here**. Start at `contract-system.md`. |
 | **This project's choices** | [`.critos/project/settings.md`](.critos/project/settings.md) (the user's directives) · [`agents.md`](.critos/project/agents.md) (the roster) |
-| **The work** | [`.critos/memory/`](.critos/memory/) (one folder per agent) · [`.critos/shared/`](.critos/shared/) (inbox · roadmap · contracts) · [`MEMORY-INDEX.md`](MEMORY-INDEX.md) (the generated atlas: where every decision and lesson is) |
+| **The work** | [`.critos/memory/`](.critos/memory/) (one folder per agent; each holds its generated `IN-FORCE.md`, the law in force the boot reads) · [`.critos/shared/`](.critos/shared/) (inbox · roadmap · contracts) · [`MEMORY-INDEX.md`](MEMORY-INDEX.md) (the generated atlas: where every decision and lesson is) |
 
 **Are you an agent?** Read `.critos/system/contract-session.md § 1` and follow it — the boot
 order lives there and **only** there: a routing file points, it never copies.
