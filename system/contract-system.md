@@ -58,6 +58,7 @@ address.
 | `project/agents/agent-N.md` | the **user** authors · **A1** checks it against `contract-agent § 1` and the roster mapping | a definition written by its own agent = self-scoping |
 | `memory/<agent>/` | **exactly one agent** per folder (A1 excepted, **structure only**) | two voices in a memory that reads as one |
 | `memory/<agent>/IN-FORCE.md` | nobody — **derived** from the folder's logs by the in-force control (`contract-memory § 6`) | a hand-edit disappears at the next run, and the boot reads a law nobody wrote |
+| `.critos/checks/a<N>/` | **exactly one agent** per folder — its detectors (`contract-session § 6`) | a detector another agent imports is one address two domains depend on |
 | `shared/HANDOFFS.md` | each agent writes its **own** entries · A1 curates lifecycle | A1 authoring substance = a lossy translation hop |
 | `shared/ROADMAP.md` | **A1** places the row · the **lead** flips their own | a row nobody closes re-litigates as "still to do" |
 | `shared/CONTRACTS.md` | **A1** curates · agents propose · the source is elsewhere | a row with no source binds nothing |
@@ -117,6 +118,9 @@ Named once, because the other contracts invoke them as if they were common knowl
 - **the controls** — the deterministic checks a project installs alongside these contracts. They read
   the shapes defined in `contract-shared` and the budgets in `contract-memory`. A rule with a control
   behind it is *tier 2*; one without is *tier 3* (`contract-session §6`).
+- **the detectors** — a domain's own deterministic checks, the programs a tier-2 rule names:
+  under `.critos/checks/a<N>/`, with an `Enforces:` head and one CLI contract
+  (`contract-session § 6`). The controls are the product's; a detector is the domain's.
 - **the counter** — the control that answers *"what is owed BY ME?"* by parsing the inbox. It is the
   reason a `STATUS` may not assert what is open: the question is a **query**, not a recall.
 - **the reconcile** — the control run before answering *"what is left?"*: it shows what landed in git
@@ -189,6 +193,8 @@ only the first two are engineering. Applied here, honestly:
 | one-writer-per-memory | **2** for the shape (the memory-shape check: every folder `a<N>`, every one rostered) — **3** for the writer itself, which no filesystem can attribute |
 | the retirement signpost and the archive's closed vocabulary | **2** | `[16]` flags a live doc leaning on a ⚰ RETIRED file; `[17]` flags a live lifecycle token in cold storage — one invariant, two doors: a marker that retires a surface is read by every control that still counts it |
 | a decision or lesson id cited anywhere resolves | **2** | `[21]` compares every cited id with the ids the logs declare, archives included — the citations that hold the logs together are checked, not trusted |
+| every live entry carries its rule, nothing in force leaves the live log uncarried, the law in force is read fresh | **2** | `[26]` reads the `Carries` blocks and the archives' ids against them; `[27]` holds each agent's generated `IN-FORCE.md` to a fresh generation |
+| a tier-2 claim names a detector that exists | **2** | `[28]` resolves every tier-2 line against the product's legs and the agent's `.critos/checks/a<N>/` heads — **3** for whether the detector proves anything |
 
 Stating this is not an apology: a contract that pretends to be enforced is worse than one that says
 where it is only hoped for. The tier-3 rows are the roadmap for the next version.

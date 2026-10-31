@@ -64,6 +64,12 @@ in backticks.
 - **An id of an earlier scheme is declared, never renamed:** `.critos/project/id-families`, one
   regex per line (`^D-[0-9]{3}$`). The checks then read that family as ids — and expect each one
   to resolve, like any other.
+- **A tier-2 rule names its detector, and the detector has a place:** a leg of the product's
+  controls by its stable name, or the domain's own under `.critos/checks/a<N>/` — the script, or
+  a thin entry point that runs what enforces (a package test, a query), with `Enforces: <id>` in
+  its first lines and the one CLI contract (`--check`, exit 0 · 1 · 2, `--selftest`;
+  `contract-session § 6`). Start from `templates/detector.sh.tmpl` in the CritOS checkout, in
+  any language that keeps the contract. Check `[28]` reads every tier-2 claim against the two.
 
 ## 4 · Commits
 

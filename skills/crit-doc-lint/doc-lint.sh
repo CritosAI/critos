@@ -57,6 +57,11 @@
 #                         CARRIER-CONFLICT an id carried as in force and as settled at once
 #  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
 #                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
+#  [28] TIER-2-UNDETECTED a tier-2 claim naming no detector that exists — neither a leg of the
+#                         product by its stable name nor a file under .critos/checks/a<N>/ whose
+#                         head says Enforces: <id>; DETECTOR-HEAD a file under .critos/checks/
+#                         outside a<N>/, without the head, or running a machine path;
+#                         DETECTOR-CROSS-IMPORT a detector reaching into another agent's folder
 #
 # Ids: the method's grammar (`ADR-<scope>-NNN`, `L-<scope>-NNN`) plus the families a project
 # declares in `.critos/project/id-families` — grammar, never an exemption.
@@ -915,6 +920,7 @@ else
         if (all) next
         if (f ~ /^\.critos\/system\//) next
         if (f ~ /^\.critos\/memory\/a[0-9]+\//) next
+        if (f ~ /^\.critos\/checks\/a[0-9]+\//) next
         if (f == "MEMORY-INDEX.md") next
         if (f in files) next
         hit = 0; for (d in dirs) if (index(f, d) == 1) { hit = 1; break }
@@ -1122,6 +1128,65 @@ else
     echo "(none — $(printf '%s\n' "$out27" | grep -c '^FRESH') index(es) fresh, within budget)"
   fi
 fi
+
+echo
+echo "### doc-lint [28] — DETECTOR: every tier-2 claim names a detector that exists; every detector is in its agent's folder, with its head"
+# contract-session § 6. A tier-2 claim — an Enforcement line that says tier 2, or a Carries line
+# with tier 2 — resolves either to a leg of the product's controls named by its stable name (the
+# list below: every finding token of this battery, the controls, the guards; a number alone is
+# not a name) or to a file under `.critos/checks/a<N>/` whose head names the id (`Enforces:`).
+# TIER-2-UNDETECTED — a claim neither resolves. DETECTOR-HEAD — a file under `.critos/checks/`
+# outside `a<N>/`, or without `Enforces: <id>` in its first lines, or whose head runs a machine
+# path (a command in another repository names it as `.claude/repos` declares it).
+# DETECTOR-CROSS-IMPORT — a detector that reaches into another agent's folder.
+# (Keep the list in step with the header above when a token is added.)
+product_legs='BROKEN PATH-IN-CODE ORPHAN ORPHAN-BY-USE DANGLING-SKILL PING-PONG NO-DONE-WHEN MULTI-OWNER STALE-Rx BAD-TOKEN UNBOLDED-TOKEN STATUS-CHRONICLE NOTE-CHRONICLE STALE-STATUS DANGLING-WIKI-LINK AUTO-MEMORY-CITED TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX CITED-ID UNROOTED OVERLAP DANGLING INBOX-ACTOR FUTURE-DATE POINTER-FORM ARCHIVE-NAME NO-CARRIER CARRIES-FORM UNCARRIED CARRIER-CONFLICT IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD DETECTOR-CROSS-IMPORT crit-doc-lint doc-lint crit-status-check status-check inbox-check crit-memory-index memory-index the atlas crit-in-force in-force guard-user-driven-actions guard-inbox the push guard the inbox guard the machine guard the guard'
+heads28=$(mktemp); out28=$(mktemp)
+# the detectors: folder, file, the ids its head enforces
+while IFS= read -r df; do
+  [ -n "$df" ] && [ -f "$df" ] || continue
+  case "$df" in
+    .critos/checks/a[0-9]*/*) ;;
+    *) echo "DETECTOR-HEAD  $df — a detector lives in its agent's folder, .critos/checks/a<N>/ (one writer, rooted by construction)" >> "$out28"; continue ;;
+  esac
+  own28=$(printf '%s' "$df" | sed -E 's#^\.critos/checks/a([0-9]+)/.*#\1#')
+  enf28=$(head -n 12 "$df" | grep -oE 'Enforces:[[:space:]]*.*' | head -1 | sed -E 's/^Enforces:[[:space:]]*//')
+  if [ -z "$enf28" ]; then
+    echo "DETECTOR-HEAD  $df — no \`Enforces: <id>, <id>\` in its first lines: the rule it detects is unreadable, so no tier-2 claim resolves to it" >> "$out28"
+  else
+    printf '%s' "$enf28" | grep -oE "$id_re" | sed "s|^|$df\t|" >> "$heads28"
+  fi
+  head -n 12 "$df" | grep -qE '(^|[[:space:]])(Runs|Repo):[[:space:]]*.*([A-Za-z]:[\\/]|/(c|home|Users)/)' \
+    && echo "DETECTOR-HEAD  $df — its head runs a machine path: a command in another repository of the project is named as .claude/repos declares it (TARGET)" >> "$out28"
+  grep -nE "\.critos/checks/a[0-9]+/" "$df" | grep -vE "\.critos/checks/a${own28}/" | head -1 | sed -E "s|^([0-9]+):.*|DETECTOR-CROSS-IMPORT  $df:\1 — reaches into another agent's folder: a detector imports nothing from a neighbour (one address, one owner)|" >> "$out28"
+done < <( { git ls-files '.critos/checks/*'; git ls-files --others --exclude-standard -- '.critos/checks/*'; } 2>/dev/null | sort -u)
+# the tier-2 claims: Enforcement lines and Carries lines (both logs, live entries only)
+claims28=$(mktemp)
+while IFS= read -r lg; do
+  [ -f "$lg" ] || continue
+  case "$lg" in *-archive-*|*/archive/*) continue ;; esac
+  awk -v IDC="$id_core" -v f="$lg" '
+    /^[[:space:]]*```/ { fence = !fence; next }
+    fence { next }
+    $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); entry = substr($0, RSTART, RLENGTH); next }
+    entry != "" && /^(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:/ && /[Tt]ier[ -]?2([^0-9]|$)/ {
+      d = $0; sub(/^.*[Tt]ier[ -]?2[^A-Za-z]*/, "", d); printf "%s\t%d\t%s\t%s\n", f, NR, entry, d }
+  ' "$lg"
+done < <(logs12) > "$claims28"
+[ -f "$inforce" ] && bash "$inforce" --lines 2>/dev/null | awk -F'\t' '$5 == "binds" && $7 == "2" { printf "%s\t%s\t%s\t%s\n", $1, $2, $4, $8 }' >> "$claims28"
+while IFS=$'\t' read -r f28 l28 id28 det28; do
+  [ -n "$id28" ] || continue
+  hit=0
+  for leg in $product_legs; do
+    case "$leg" in the) continue ;; esac
+    printf '%s' "$det28" | grep -qwF -- "$leg" && { hit=1; break; }
+  done
+  [ "$hit" = 1 ] && continue
+  awk -F'\t' -v i="$id28" '$2 == i' "$heads28" | grep -q . && continue
+  echo "TIER-2-UNDETECTED  $f28:$l28  $id28 — claims tier 2 and names no detector that exists: a leg of the product by its stable name, or a file under .critos/checks/a<N>/ whose head says Enforces: $id28 (a number alone is not a name)" >> "$out28"
+done < "$claims28"
+if [ -s "$out28" ]; then sort -u "$out28"; else echo "(none — every tier-2 claim resolves to a detector, every detector in its folder with its head)"; fi
+rm -f "$heads28" "$out28" "$claims28"
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
 # `.claude/repos`: one path per line, relative to this repo's root ('#' comments). One level only:

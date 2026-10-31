@@ -189,6 +189,16 @@ may match no release.
     holds a log, or differing from a fresh generation (a lane view beside it likewise);
     **IN-FORCE-BUDGET (WARN)** — past 300 lines (`.claude/doc-lint-in-force-lines` overrides):
     the signal to consolidate.
+28. **DETECTOR** — a domain's detectors are a class of the method (`contract-session § 6`).
+    **TIER-2-UNDETECTED**: a tier-2 claim — an `Enforcement:` line saying tier 2, or a `Carries`
+    line with tier 2 — that names no detector which exists: neither a leg of the product by its
+    stable name (`STATUS-CHRONICLE`, the inbox guard, the status check; a number alone is not a
+    name) nor a file under `.critos/checks/a<N>/` whose first lines say `Enforces: <id>`.
+    **DETECTOR-HEAD**: a file under `.critos/checks/` outside `a<N>/`, or without the head, or
+    whose head runs a machine path (a command in another repository of the project is named as
+    `.claude/repos` declares it). **DETECTOR-CROSS-IMPORT**: a detector reaching into another
+    agent's folder. The folders `.critos/checks/a<N>/` are rooted by construction for `[22]`;
+    `templates/detector.sh.tmpl` is the contract as a bash skeleton.
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one

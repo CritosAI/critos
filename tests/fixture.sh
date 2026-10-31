@@ -132,6 +132,16 @@ EOF
   for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a2/DECISIONS.md"
 # [25] ARCHIVE-NAME: a day file under an older prefix
 printf '# archive\nnothing headed here\n' > "$L/memory/a2/archive/LESSONS-archive-2026-08-01.md"
+
+# [28] the detectors: one in shape (a2, enforces ADR-A2-000); one outside a<N>/ and one without a
+#      head (DETECTOR-HEAD, twice); one reaching into a neighbour's folder (DETECTOR-CROSS-IMPORT);
+#      two tier-2 claims that name nothing a detector resolves (TIER-2-UNDETECTED: the a2 decision
+#      "Tier 2 by design", the a2 lesson "tier-2 (a variant …)")
+mkdir -p "$L/checks/a2" "$L/checks/a3"
+printf '#!/usr/bin/env bash\n# the rows of the oldest — a detector of AGENT 2\n# Enforces: ADR-A2-000\n# Reads: the rows\nexit 0\n' > "$L/checks/a2/rows-check.sh"
+printf '#!/usr/bin/env bash\n# a neighbour'"'"'s helper, imported — a detector of AGENT 2\n# Enforces: ADR-A2-000\nsource .critos/checks/a3/lib.sh\nexit 0\n' > "$L/checks/a2/cross-check.sh"
+printf '#!/usr/bin/env bash\n# no head here\nexit 0\n' > "$L/checks/a3/no-head.sh"
+printf '#!/usr/bin/env bash\n# Enforces: ADR-A2-000\n# a stray file outside any agent folder\nexit 0\n' > "$L/checks/stray.sh"
 { echo "# decisions"; echo "> DECLARED EXEMPTION — ACTIVE: every entry here is cited"; echo "> alias: ADR-OLD-005 -> ADR-A3-001"; echo "> a retired sequence: ADR-LEG-NNN -> ADR-A3-NNN"; for i in $(seq 1 1210); do echo "l$i"; done
   # [27] IN-FORCE-BUDGET: one entry carrying three hundred rules in force; and no IN-FORCE.md in
   #      a2 nor a3 (IN-FORCE-STALE, twice)

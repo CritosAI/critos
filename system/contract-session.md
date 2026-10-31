@@ -143,6 +143,24 @@ finds it whether or not anyone remembered) · **3 written down and hoped for**. 
 engineering. A tier-3 rule fails silently, and the failure is invisible precisely because everyone
 believes the rule is in place.
 
+**A tier-2 claim resolves to a DETECTOR, and a detector is a class of the method.** The rule's
+`Enforcement:` line, or its `Carries` line, names one of two things. **A leg of the product's
+controls**, by its stable name — `STATUS-CHRONICLE`, the inbox guard, the status check — which the
+battery resolves against its own list; a number alone is not a name. **Or the domain's own**,
+under **`.critos/checks/a<N>/`** — one folder per agent, as the memory folder: one writer, rooted
+by construction, enumerable without the roster. A file there is the detector itself, or a thin
+entry point that runs what enforces (a package test, a query, a satellite's script); either way
+its first lines say `Enforces: <id>, <id>` and what it reads, and the CLI contract binds it:
+`--check` the default — exit 0 clean, 1 with findings, 2 when it cannot answer, never a silent
+zero without data (the INSTRUMENT bound); one line per finding in the battery's form; it
+detects, never repairs; `--selftest` fires it on its own fixture. It imports nothing from another
+agent's folder, and a command in another repository of the project names that repository as
+`.claude/repos` declares it, never by a machine path. The template is the contract as a bash
+skeleton; a project writes it in its own language keeping the contract. Tier 2 (`[28]`): a
+tier-2 claim that no detector resolves, a file under `.critos/checks/` outside `a<N>/` or
+without the head, a cross-import. Whether a detector's `--selftest` proves anything stays tier
+3, its owner's.
+
 **A verification is evidence only within its declared bounds.** Eight bounds, each measured in the
 field:
 

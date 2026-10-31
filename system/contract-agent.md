@@ -128,9 +128,10 @@ It carries two tables and nothing else:
 
 **The `Roots` column is the domain's address in the tree** (§ 1): backticked paths, each a
 folder (a trailing `/`) or a file; **the most specific path wins**, so a file root inside another
-actor's folder is legal, and only the same root under two actors is a collision. Three things are
+actor's folder is legal, and only the same root under two actors is a collision. Four things are
 rooted by construction and never declared: `.critos/system/` (installed), every
-`.critos/memory/a<N>/` (`contract-memory § 0`), and the generated atlas — and so is **the folder
+`.critos/memory/a<N>/` (`contract-memory § 0`), every `.critos/checks/a<N>/` (the agent's
+detectors, `contract-session § 6`), and the generated atlas — and so is **the folder
 of a declared Shelf index**: an actor's shelf is its own, by the Shelf cell, without a Roots
 entry. That is how the steward's one root that varies per project arrives — the project writes
 its Shelf, and the shelf brings the root. **The map follows the
