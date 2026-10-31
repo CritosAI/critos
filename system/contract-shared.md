@@ -29,6 +29,7 @@ anyone else's files, nobody is messaged.
 | `Done when: <observable>` | mandatory on `[OPEN]` | the measured cause of stale tokens: with no closure criterion the recipient **cannot know when to flip it** |
 | the body | **one line** | the file is line-oriented; a multi-line entry is truncated at the first newline |
 | **position** | a new entry is **PREPENDED** | the file is newest-first, and the boot protocol reads it top-down: an appended entry is read last and treated as old |
+| a sub-line | `  - YYYY-MM-DD — AGENT <K>: …` indented under an entry — a served note, a reply in place — written by the agent it names | the inbox guard attributes every changed line to its hand (`contract-session § 5`): a new entry to its sender, a flipped token to its recipient, a sub-line to the agent it names — a sub-line naming another agent is that agent's line under your hand |
 
 ### The token vocabulary is CLOSED
 
@@ -64,7 +65,10 @@ handoffs only document the ambiguity one hop at a time.
 ### Reading, absorbing, rotating
 
 Read **top-down, newest-first, in full, never grep-snippeted**. When you act on an entry addressed to
-you: land the work **and** post a one-line ACK, or flip its token in place.
+you: land the work **and** post a one-line ACK, or flip its token in place. Only the recipient
+flips a token, and only the sender writes an entry: the hand on the inbox is its author's, and a
+write or a commit that would carry two hands is asked about before it lands
+(`contract-session § 5`).
 
 A1 rotates settled traffic to a dated archive. **Two classes never rotate:** live tokens, and any
 entry whose token is **not in the vocabulary** — an unrecognised value must be found late, never

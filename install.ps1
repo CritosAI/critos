@@ -13,7 +13,7 @@
 # What it manages, and nothing beyond it:
 #   <ClaudeHome>\skills\crit-*     one junction per skill (the folder itself stays yours)
 #   <ClaudeHome>\hooks\critos      a junction to this checkout's hooks
-#   <ClaudeHome>\settings.json     ONE PreToolUse entry, the guard (a backup is written first)
+#   <ClaudeHome>\settings.json     ONE PreToolUse entry, the two guards (a backup is written first)
 #   <ClaudeHome>\CLAUDE.md         ONE block, between the CritOS markers
 #
 # Idempotent: what is already correct is left untouched. Restart Claude Code afterward.
@@ -35,8 +35,12 @@ $skillsDst = Join-Path $ClaudeHome "skills"
 $hooksDst  = Join-Path $ClaudeHome "hooks"
 $hookLink  = Join-Path $hooksDst "critos"
 $guardName = "guard-user-driven-actions.sh"
-if ($isDefault) { $hookCmd = "bash ~/.claude/hooks/critos/" + $guardName }
-else            { $hookCmd = 'bash "' + ((Join-Path $hookLink $guardName) -replace "\\", "/") + '"' }
+$inboxName = "guard-inbox.sh"
+if ($isDefault) { $hookCmd = "bash ~/.claude/hooks/critos/" + $guardName; $inboxCmd = "bash ~/.claude/hooks/critos/" + $inboxName }
+else            { $hookCmd = 'bash "' + ((Join-Path $hookLink $guardName) -replace "\\", "/") + '"'; $inboxCmd = 'bash "' + ((Join-Path $hookLink $inboxName) -replace "\\", "/") + '"' }
+# The entry matches the shells and the editing tools: the push guard reads the former, the inbox
+# guard both. An entry from an earlier release (another matcher, one command) is replaced.
+$hookMatcher = "Bash|PowerShell|Edit|Write|MultiEdit"
 
 $beginTag = "<!-- BEGIN CritOS (managed) -->"
 $endTag   = "<!-- END CritOS (managed) -->"
@@ -94,9 +98,15 @@ function Get-PreToolUse($settings) {
     return @($settings.hooks.PreToolUse | Where-Object { $_ })
 }
 
-function Test-GuardEntry($entry) {
-    foreach ($h in @($entry.hooks)) { if ($h -and ($h.command -eq $hookCmd)) { return $true } }
+function Test-GuardEntry($entry) {   # any release's guard entry: one of the two commands
+    foreach ($h in @($entry.hooks)) { if ($h -and (($h.command -eq $hookCmd) -or ($h.command -eq $inboxCmd))) { return $true } }
     return $false
+}
+function Test-GuardCurrent($entry) { # this release's entry: both commands under the matcher
+    if ($entry.matcher -ne $hookMatcher) { return $false }
+    $a = $false; $b = $false
+    foreach ($h in @($entry.hooks)) { if ($h) { if ($h.command -eq $hookCmd) { $a = $true }; if ($h.command -eq $inboxCmd) { $b = $true } } }
+    return ($a -and $b)
 }
 
 function Save-Settings($path, $settings) {
@@ -175,14 +185,15 @@ Set-Junction $hookLink $hooksSrc "hooks\critos"
 # nothing, and looks exactly like one that does.
 $s   = Read-Settings $settingsPath
 $pre = @(Get-PreToolUse $s)
-if (@($pre | Where-Object { Test-GuardEntry $_ }).Count -gt 0) {
+if (@($pre | Where-Object { Test-GuardCurrent $_ }).Count -gt 0) {
     Write-Host "  ok        settings.json (the guard is registered)"
 } else {
     $hook  = New-Object PSObject -Property ([ordered]@{ type = "command"; command = $hookCmd; timeout = 10; statusMessage = "CritOS guard: checking user-driven actions..." })
-    $entry = New-Object PSObject -Property ([ordered]@{ matcher = "Bash|PowerShell"; hooks = @($hook) })
+    $inbox = New-Object PSObject -Property ([ordered]@{ type = "command"; command = $inboxCmd; timeout = 10; statusMessage = "CritOS guard: reading the inbox's hands..." })
+    $entry = New-Object PSObject -Property ([ordered]@{ matcher = $hookMatcher; hooks = @($hook, $inbox) })
     if (-not ($s.PSObject.Properties.Name -contains "hooks")) { $s | Add-Member -NotePropertyName hooks -NotePropertyValue (New-Object PSObject) }
     $all = New-Object System.Collections.ArrayList
-    foreach ($e in $pre) { [void]$all.Add($e) }
+    foreach ($e in $pre) { if (-not (Test-GuardEntry $e)) { [void]$all.Add($e) } }
     [void]$all.Add($entry)
     $s.hooks | Add-Member -Force -NotePropertyName PreToolUse -NotePropertyValue $all.ToArray()
     $had = Test-Path $settingsPath

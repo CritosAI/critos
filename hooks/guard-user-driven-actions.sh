@@ -19,6 +19,11 @@ set -uo pipefail
 
 payload=$(cat)
 
+# The settings entry matches the shells AND the editing tools (the inbox guard, its sibling,
+# needs both); this guard reads shell commands only — an Edit's text is data, never a command.
+tool=$(printf '%s' "$payload" | grep -oE '"tool_name"[[:space:]]*:[[:space:]]*"[A-Za-z]+"' | head -1 | sed -E 's/.*"([A-Za-z]+)"$/\1/')
+case "$tool" in ""|Bash|PowerShell) ;; *) exit 0 ;; esac
+
 cmd=""
 if command -v node >/dev/null 2>&1; then
   cmd=$(printf '%s' "$payload" | node -e '

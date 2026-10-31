@@ -8,7 +8,9 @@ domain agent** (the steward routes and keeps lifecycle, it does not author).
 > ⚠️ **The entry grammar below is LOAD-BEARING.** Three deterministic parsers read this file
 > (`/crit-status-check`'s owed-counter, `/crit-doc-lint [5]` inbox hygiene, `/crit-doc-lint [7]` token vocabulary).
 > An entry that deviates is not "slightly off" — it is **invisible to the counter that tells an agent
-> what it owes**. Keep the shape exactly.
+> what it owes**. Keep the shape exactly. A fourth reader is the inbox guard: it attributes every
+> changed line to its hand — the sender of a new entry, the recipient of a flipped token, the agent
+> a sub-line names — and asks when a write or a commit would carry two (`contract-session § 5`).
 
 ## Entry grammar
 

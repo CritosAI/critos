@@ -107,6 +107,19 @@ effect that reaches other sessions' uncommitted work. After a `git mv`, the path
 paths just committed — git's own `rename (100%)` line states that the content did NOT change,
 which is the defect, not the reassurance.
 
+**A surface several sessions write — the shared inbox — is written and committed only when its
+uncommitted diff is one actor's, yours.** Who the actor is, the inbox's own grammar says: a new
+entry is its sender's, a flipped token its recipient's, a sub-line the agent it names
+(`contract-shared § 1`); no session identity is needed — the line says who writes, the flip
+says who flips. The inbox guard reads the diff by that grammar and asks, never denies, at the
+write and at the commit when the diff would carry two hands: a commit by pathspec takes the file
+from the working tree, a neighbour's uncommitted entry included, and lands it under your
+message. When a neighbour's lines are left uncommitted, stage your own hunk only and commit
+without a pathspec — and with nothing else staged, because a commit without a pathspec carries
+everything the index holds. Tier 2: the guard, shared from the machine like the push guard and
+registered in the project's contracts register; bound declared — entry lines are read, prose
+outside an entry is not, and a flip by a non-recipient reads as the recipient's.
+
 **Shared files, same hazard through the non-git door:** rewrite a shared file **atomically** —
 build the finished bytes before opening the target, write a temporary file, then replace the
 original. Never hold a truncating write handle open across code that can fail: truncation happens

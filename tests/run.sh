@@ -9,7 +9,8 @@
 #                    tally (tests/expected-findings.txt). PIN-DRIFT is checked for PRESENCE only:
 #                    between two releases the tier's bytes legitimately differ from the last
 #                    ledger rows, so its count is not stable.
-#   2. the guard     every verdict of the command table (tests/expected-guard.txt).
+#   2. the guards    every verdict of the command table (tests/expected-guard.txt), and every
+#                    verdict of the inbox guard's situations (tests/expected-guard-inbox.txt).
 #   3. the licence   every file carries the SPDX line, or a declared exemption (tests/licence.sh).
 #   4. the scaffold  a scaffold of an empty repo equals tests/expected-scaffold/ byte for byte, and
 #                    the controls read the newborn project as clean (tests/scaffold.sh).
@@ -46,8 +47,9 @@ if grep -qE '^(awk|gawk|sed|grep|bash|realpath|node): ' "$tmp/battery.txt"; then
   fail=1
 else echo "ok    battery stderr (no interpreter diagnostic in $(grep -c . "$tmp/battery.txt") lines)"; fi
 bash "$here/guard-cases.sh" "$repo/hooks/guard-user-driven-actions.sh" "$tmp/fx" 2>/dev/null > "$tmp/guard.txt"
+bash "$here/guard-inbox-cases.sh" "$repo/hooks/guard-inbox.sh" "$tmp/fx" 2>/dev/null > "$tmp/guard-inbox.txt"
 
-for t in findings guard; do
+for t in findings guard guard-inbox; do
   exp="$here/expected-$t.txt"
   if [ "$update" = 1 ]; then cp "$tmp/$t.txt" "$exp"; echo "updated  $exp"; continue; fi
   if diff "$exp" "$tmp/$t.txt" > "$tmp/$t.diff"; then echo "ok    $t ($(grep -c . "$exp") lines)"

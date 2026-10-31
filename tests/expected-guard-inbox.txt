@@ -1,0 +1,22 @@
+PASS         Edit: a new entry of mine on a clean tree
+PASS         Edit: another file
+ASK:CAREFUL  Edit: my entry while the tree carries a neighbour's uncommitted entry
+ASK:CAREFUL  Write: the whole file, my entry added beside the neighbour's
+PASS         Edit: the head only, beside the neighbour's entry (prose is not read)
+ASK:CAREFUL  Bash: a shell write beside the neighbour's entry (its hand unreadable)
+PASS         Bash: a read of the inbox beside the neighbour's entry
+PASS         Bash: git diff of the inbox beside the neighbour's entry
+ASK:CAREFUL  Bash: a shell write while only my own entry is uncommitted
+PASS         commit by pathspec: one hand
+ASK:CAREFUL  commit by pathspec: two hands in the working tree
+ASK:CAREFUL  commit by pathspec with -C: two hands
+PASS         commit by pathspec of another file while the inbox carries two hands
+PASS         commit by pathspec: one flipped token (the recipient's hand)
+ASK:CAREFUL  commit by pathspec: a flip by the recipient and a new entry by another
+PASS         commit by pathspec: one sub-line
+ASK:CAREFUL  commit by pathspec: a sub-line of one agent and an entry of another
+PASS         commit from the index: my hunk alone staged, the neighbour's left in the tree
+ASK:CAREFUL  commit by pathspec after staging my hunk: the tree still carries two
+ASK:CAREFUL  commit from the index: my hunk staged beside another path
+ASK:CAREFUL  commit from the index: two hands staged
+PASS         commit from the index: nothing of the inbox staged

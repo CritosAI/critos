@@ -14,7 +14,7 @@
 # What it manages, and nothing beyond it (the same four things as install.ps1 on Windows):
 #   <ClaudeHome>/skills/crit-*     one symlink per skill (the folder itself stays yours)
 #   <ClaudeHome>/hooks/critos      a symlink to this checkout's hooks
-#   <ClaudeHome>/settings.json     ONE PreToolUse entry, the guard (a backup is written first)
+#   <ClaudeHome>/settings.json     ONE PreToolUse entry, the two guards (a backup is written first)
 #   <ClaudeHome>/CLAUDE.md         ONE block, between the CritOS markers
 #
 # Idempotent: what is already correct is left untouched. Restart Claude Code afterward.
@@ -39,8 +39,12 @@ skills_dst="$claude_home/skills"
 hooks_dst="$claude_home/hooks"
 hook_link="$hooks_dst/critos"
 guard_name="guard-user-driven-actions.sh"
-if [ "$is_default" = 1 ]; then hook_cmd="bash ~/.claude/hooks/critos/$guard_name"
-else                           hook_cmd="bash \"$hook_link/$guard_name\""; fi
+inbox_name="guard-inbox.sh"
+if [ "$is_default" = 1 ]; then hook_cmd="bash ~/.claude/hooks/critos/$guard_name"; inbox_cmd="bash ~/.claude/hooks/critos/$inbox_name"
+else                           hook_cmd="bash \"$hook_link/$guard_name\"";          inbox_cmd="bash \"$hook_link/$inbox_name\""; fi
+# The entry matches the shells and the editing tools: the push guard reads the former, the inbox
+# guard both. An entry from an earlier release (another matcher, one command) is replaced.
+hook_matcher="Bash|PowerShell|Edit|Write|MultiEdit"
 
 begin_tag="<!-- BEGIN CritOS (managed) -->"
 end_tag="<!-- END CritOS (managed) -->"
@@ -77,23 +81,29 @@ assert_real_folder() {   # $1 = path, $2 = label. A whole-folder link here would
   mkdir -p "$1"
 }
 
-# settings.json through node: $1 = add|remove|has, $2 = the settings path, $3 = the hook command.
-# `has` exits 0 when an entry with that command is registered. `add` and `remove` write a
-# backup first (settings.json.bak-critos) and print nothing.
+# settings.json through node: $1 = add|remove|has, $2 = the settings path, $3 = the push guard's
+# command, $4 = the inbox guard's, $5 = the matcher. `has` exits 0 when the CURRENT entry is
+# registered — both commands under that matcher; an entry of an earlier release holds one of the
+# commands and is replaced by `add`. `add` and `remove` write a backup first
+# (settings.json.bak-critos) and print nothing.
 settings() {
-  node - "$1" "$2" "$3" <<'NODE'
-const [mode, file, cmd] = process.argv.slice(2);
+  node - "$1" "$2" "$3" "$4" "$5" <<'NODE'
+const [mode, file, cmd, inboxCmd, matcher] = process.argv.slice(2);
 const fs = require("fs");
 let s = {};
 if (fs.existsSync(file)) { const raw = fs.readFileSync(file, "utf8"); if (raw.trim()) s = JSON.parse(raw); }
 const pre = (s.hooks && Array.isArray(s.hooks.PreToolUse)) ? s.hooks.PreToolUse.filter(Boolean) : [];
-const isGuard = (e) => Array.isArray(e.hooks) && e.hooks.some((h) => h && h.command === cmd);
-if (mode === "has") process.exit(pre.some(isGuard) ? 0 : 1);
+const has = (e, c) => Array.isArray(e.hooks) && e.hooks.some((h) => h && h.command === c);
+const isGuard = (e) => has(e, cmd) || has(e, inboxCmd);
+const isCurrent = (e) => e.matcher === matcher && has(e, cmd) && has(e, inboxCmd);
+if (mode === "has") process.exit(pre.some(isCurrent) ? 0 : 1);
+if (mode === "any") process.exit(pre.some(isGuard) ? 0 : 1);
 if (mode === "add") {
-  if (pre.some(isGuard)) process.exit(0);
+  if (pre.some(isCurrent)) process.exit(0);
   s.hooks = s.hooks || {};
-  s.hooks.PreToolUse = pre.concat([{ matcher: "Bash|PowerShell",
-    hooks: [{ type: "command", command: cmd, timeout: 10, statusMessage: "CritOS guard: checking user-driven actions..." }] }]);
+  s.hooks.PreToolUse = pre.filter((e) => !isGuard(e)).concat([{ matcher: matcher,
+    hooks: [{ type: "command", command: cmd, timeout: 10, statusMessage: "CritOS guard: checking user-driven actions..." },
+            { type: "command", command: inboxCmd, timeout: 10, statusMessage: "CritOS guard: reading the inbox's hands..." }] }]);
 } else if (mode === "remove") {
   if (!pre.some(isGuard)) process.exit(0);
   s.hooks.PreToolUse = pre.filter((e) => !isGuard(e));
@@ -122,8 +132,8 @@ if [ "$uninstall" = 1 ]; then
     done
   fi
   if [ -L "$hook_link" ]; then rm "$hook_link" && echo "  removed   hooks/critos"; fi
-  if [ -f "$settings_path" ] && settings has "$settings_path" "$hook_cmd"; then
-    settings remove "$settings_path" "$hook_cmd"
+  if [ -f "$settings_path" ] && settings any "$settings_path" "$hook_cmd" "$inbox_cmd" "$hook_matcher"; then
+    settings remove "$settings_path" "$hook_cmd" "$inbox_cmd" "$hook_matcher"
     echo "  removed   the guard entry from settings.json (backup: settings.json.bak-critos)"
   fi
   if [ -f "$claude_md" ] && grep -qF "$begin_tag" "$claude_md" && grep -qF "$end_tag" "$claude_md"; then
@@ -165,11 +175,11 @@ set_link "$hook_link" "$hooks_src" "hooks/critos"
 
 # --- settings.json: register the guard. A guard that is installed and not registered guards
 # nothing, and looks exactly like one that does.
-if settings has "$settings_path" "$hook_cmd"; then
+if settings has "$settings_path" "$hook_cmd" "$inbox_cmd" "$hook_matcher"; then
   echo "  ok        settings.json (the guard is registered)"
 else
   had=0; [ -f "$settings_path" ] && had=1
-  settings add "$settings_path" "$hook_cmd"
+  settings add "$settings_path" "$hook_cmd" "$inbox_cmd" "$hook_matcher"
   if [ "$had" = 1 ]; then echo "  updated   settings.json (the guard registered as a PreToolUse hook; backup: settings.json.bak-critos)"
   else                    echo "  created   settings.json (the guard registered as a PreToolUse hook)"; fi
 fi

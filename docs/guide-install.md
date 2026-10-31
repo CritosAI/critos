@@ -45,8 +45,8 @@ What it manages under `~/.claude` — and nothing else:
 | It creates | Why |
 |---|---|
 | `skills/crit-<name>` — one link per skill (a junction on Windows, a symlink on Linux) | the folder itself stays yours; other tools keep writing there |
-| `hooks/critos` — one link | the guard |
-| one `PreToolUse` entry in `settings.json` (backup: `settings.json.bak-critos`) | a guard that is installed and not registered guards nothing |
+| `hooks/critos` — one link | the two guards: git, and the shared inbox |
+| one `PreToolUse` entry in `settings.json` (backup: `settings.json.bak-critos`) | a guard that is installed and not registered guards nothing; the entry names both guards, and a release that changes it is applied by running the installer again |
 | one block in `CLAUDE.md`, between CritOS markers | the always-on conventions; the rest of the file is untouched |
 
 It is idempotent — run it again at any time. **Restart Claude Code** afterwards, so the skills
@@ -114,8 +114,10 @@ release it declares, not against the latest.
 
 ## 4 · Your own build and deploy commands
 
-The guard covers **git**, which every repo has: it asks before a push, and before a command that
-would sweep another session's uncommitted work. `contract-session § 5` also reserves builds,
+The guards cover **git**, which every repo has, and the **shared inbox**: one asks before a push,
+and before a command that would sweep another session's uncommitted work; the other asks when a
+write or a commit of `.critos/shared/HANDOFFS.md` would carry two hands — a neighbour's
+uncommitted entry under your message (`contract-session § 5`). `contract-session § 5` also reserves builds,
 deploys and remote jobs to you — but those commands belong to your stack, so CritOS does not
 guess them. To have them asked about too, add a hook of your own in the repo's
 `.claude/settings.json`:

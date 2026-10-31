@@ -44,7 +44,7 @@ out="$(run_installer "$home")"; rc=$?
 links=0; for d in "$home"/skills/crit-*; do is_link "$d" && links=$((links+1)); done
 if [ "$rc" = 0 ] && [ "$links" = "$shipped" ]; then ok "one link per shipped skill ($links)"; else bad "install (exit $rc): $links links for $shipped skills"; printf '%s\n' "$out" | sed 's/^/        /'; fi
 if is_link "$home/hooks/critos" && [ -f "$home/hooks/critos/guard-user-driven-actions.sh" ]; then ok "hooks/critos resolves to the guard"; else bad "hooks/critos"; fi
-if grep -q "guard-user-driven-actions.sh" "$home/settings.json"; then ok "the guard is registered"; else bad "the guard is not in settings.json"; fi
+if grep -q "guard-user-driven-actions.sh" "$home/settings.json" && grep -q "guard-inbox.sh" "$home/settings.json" && grep -q '"Bash|PowerShell|Edit|Write|MultiEdit"' "$home/settings.json"; then ok "the two guards are registered under one entry"; else bad "the guards are not both in settings.json under the matcher"; sed 's/^/        /' "$home/settings.json"; fi
 if grep -q '"bash mine.sh"' "$home/settings.json" && grep -q '"theme"' "$home/settings.json"; then ok "your own hook and settings kept"; else bad "settings.json lost your content"; cat "$home/settings.json" | sed 's/^/        /'; fi
 if [ -f "$home/settings.json.bak-critos" ]; then ok "a backup was written first"; else bad "no settings.json.bak-critos"; fi
 if grep -q "BEGIN CritOS (managed)" "$home/CLAUDE.md" && grep -q "END CritOS (managed)" "$home/CLAUDE.md" && grep -q "keep this line" "$home/CLAUDE.md"; then ok "the block merged, your text kept"; else bad "CLAUDE.md"; sed 's/^/        /' "$home/CLAUDE.md"; fi
@@ -63,6 +63,16 @@ if [ "$rc" = 0 ] && [ "$left" = 0 ] && [ ! -e "$home/hooks/critos" ]; then ok "u
 if ! grep -q "guard-user-driven-actions.sh" "$home/settings.json" && grep -q '"bash mine.sh"' "$home/settings.json"; then ok "the guard entry removed, your hook kept"; else bad "settings.json after uninstall"; sed 's/^/        /' "$home/settings.json"; fi
 if ! grep -q "BEGIN CritOS" "$home/CLAUDE.md" && grep -q "keep this line" "$home/CLAUDE.md"; then ok "the block removed, your text kept"; else bad "CLAUDE.md after uninstall"; sed 's/^/        /' "$home/CLAUDE.md"; fi
 [ -d "$repo/skills/crit-doc-lint" ] && ok "the checkout is intact (a link was removed, never its target)" || bad "the checkout lost a skill folder"
+
+# an entry of an earlier release (one command, the old matcher) is replaced, your own hook kept
+home3="$tmp/home3"; mkdir -p "$home3"
+# the command an earlier release registered into THIS sandbox: the quoted link form the installer
+# writes for a home given by hand (mixed slashes on Windows)
+if [ "$win" = 1 ]; then old_home="$(cygpath -m "$home3")"; else old_home="$home3"; fi
+printf '{ "hooks": { "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "bash mine.sh" } ] }, { "matcher": "Bash|PowerShell", "hooks": [ { "type": "command", "command": "bash \\"%s/hooks/critos/guard-user-driven-actions.sh\\"" } ] } ] } }\n' "$old_home" > "$home3/settings.json"
+out="$(run_installer "$home3")"; rc=$?
+n_entries=$(grep -o '"matcher"' "$home3/settings.json" | wc -l | tr -d ' ')
+if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q "updated   settings.json" && [ "$n_entries" = 2 ] && grep -q "guard-inbox.sh" "$home3/settings.json" && ! grep -q '"Bash|PowerShell"' "$home3/settings.json" && grep -q '"bash mine.sh"' "$home3/settings.json"; then ok "an earlier release's guard entry is replaced by the current one"; else bad "the earlier entry was not replaced (exit $rc, $n_entries entries)"; printf '%s\n' "$out" | sed 's/^/        /'; sed 's/^/        /' "$home3/settings.json"; fi
 
 # refuse: a skills folder that is itself a link
 home2="$tmp/home2"; mkdir -p "$home2" "$tmp/elsewhere"; make_link "$home2/skills" "$tmp/elsewhere"
