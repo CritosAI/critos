@@ -21,6 +21,15 @@ them can lie.
 > two real cases: one agent folded two folders, another three, and neither lost an id — because
 > the fix for a multi-domain agent is a merge, not an exception to this rule. (The reverse — a
 > domain that leaves its owner — is § 7.)
+>
+> **The writer is the agent's session, one at a time — and a worker it starts is not a second
+> writer.** A session that runs workers (one per site, one per batch item) stays the one hand:
+> a worker writes no memory folder, `STATUS` included, no shared register, and never advances
+> the mainline; what it produces in a space of its own — a worktree, a proposal branch — is a
+> proposal the session lands as its own act, and what it reports is evidence, restated by the
+> session under the membrane (`contract-system § 0`), the two-hop shape of a raise. Tier 3,
+> declared: no filesystem attributes a write to a worker rather than its session, and a hook
+> sees the tool, not the caller; the mainline half is tier 1 where the host protects the branch.
 
 | | tense | written by | can it become false? |
 |---|---|---|---|

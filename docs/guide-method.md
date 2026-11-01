@@ -49,7 +49,10 @@ Each agent writes exactly one memory folder, and nobody else writes it (`contrac
 Two voices in a memory that reads as one is how a project ends up with a confident, wrong past.
 The consequences reach far: two sessions open at once are two agents; an agent that absorbs a
 domain merges the memories; a domain that leaves its owner is handed over by a founding block,
-not by copying (`contract-memory § 7`).
+not by copying (`contract-memory § 7`). And a worker a session starts — one per site, one per
+batch item — is not a second writer: it writes no memory, no register, no mainline; what it
+makes in its own space is a proposal the session lands, and what it reports is evidence the
+session restates (`contract-system § 0`).
 
 ## 5 · Agents talk by pull, not push
 
