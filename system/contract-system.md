@@ -88,7 +88,7 @@ true** — never a choice between them.
 | An **iron rule** you just established | enforce at its source **+** one `shared/CONTRACTS.md` row | one row, links only |
 | A lesson **true on ANY project** | **not memory** — UPSTREAM, *through* **A1** and **by the user's hand**: a domain agent hands it to its steward, and **only A1 writes the entry**, addressed to `AGENT 0` — the reserved address for *upstream* (`contract-agent § 5`). It is the record, counted like any `[OPEN]`: `[OPEN — method amendment … Done when: the user has carried it upstream, or declined]` | you hand the evidence · A1 raises · the user carries |
 | A user directive binding the whole project | `project/settings.md` | the user writes it |
-| A fact about the **user** (a preference, a correction, an external reference) | the assistant's own auto-memory | one fact per file — **never** a second copy of what a domain's memory holds; on conflict **the repo wins** |
+| A fact about the **user** (a preference, a correction, an external reference) | the assistant's own auto-memory | one fact per file — **never** a second copy of what a domain's memory holds, and **never the only home of a fact a tracked artifact needs**: a fact the repo depends on lives in the repo, and a tracked artifact never cites an auto-memory note — it reads green on the one machine that has it (`[10]`); on conflict **the repo wins** |
 | A big analysis or design artifact | the project's own docs, **registered in their index** | — |
 | A throwaway probe, a dump, a scratch note | nowhere — `_tmp_` prefix, then delete | it does not exist |
 

@@ -8,15 +8,19 @@
 #   [2] PATH-IN-CODE      a top-level `doc/….md` path hard-coded in code (reference by ID or
 #                         concept, never by path)
 #   [3] ORPHAN            a tracked .md that no other tracked .md links to ([1] and [3] are the
-#                         two halves of the "no floating doc" rule)
+#                         two halves of the "no floating doc" rule); ORPHAN-BY-USE (WARN) a doc
+#                         linked only from an index or a history surface — nothing sends a reader
 #   [4] DANGLING-SKILL    a /skill-name referenced in the skill layer that is not installed
 #   [5] INBOX hygiene     ping-pong topics, [OPEN] entries with no "Done when:", diffused
 #                         ownership (inbox-audit.mjs)
 #   [6] STALE-Rx          an open ROADMAP row untouched for >=10 days
 #   [7] BAD-TOKEN         an inbox lifecycle token outside the closed vocabulary (token-audit.mjs)
-#   [8] STATUS-CHRONICLE  (WARN) a STATUS.md over the line budget or stacking dated AS-OF sections
+#   [8] STATUS-CHRONICLE  (WARN) a STATUS.md over the line budget or stacking dated AS-OF sections;
+#       NOTE-CHRONICLE    (WARN) a per-entity note stacking dated headings — a diary, not a photograph
 #   [9] STALE-STATUS      a STATUS.md whose last commit is >=14 days old
-#  [10] DANGLING-WIKI-LINK (WARN) a [[slug]] that resolves nowhere the repo can reach
+#  [10] DANGLING-WIKI-LINK (WARN) a [[slug]] that resolves nowhere the repo can reach — never
+#                         against the auto-memory; AUTO-MEMORY-CITED (WARN) a tracked .md citing
+#                         a note of this machine's auto-memory
 #  [11] TIER-3-LESSON     an accepted_rule that does not name its "Enforcement: tier N";
 #       BAD-BOUND         a Bound: outside the eight; ENFORCEMENT-FORM (WARN) the field outside
 #                         its one written form
@@ -216,8 +220,47 @@ while IFS= read -r f; do
   if [ -n "$exempt_re" ] && printf '%s\n' "$f" | grep -qE "$exempt_re"; then continue; fi
   grep -qxF "$f" "$targets" || { echo "ORPHAN  $f  (no tracked .md points at it — register it in its index, or archive it)"; any_orphan=1; }
 done < <(git ls-files '*.md')
-rm -f "$targets"
 [ "$any_orphan" = 0 ] && echo "(none — every doc is reachable from an index)"
+# The second leg, ORPHAN-BY-USE (WARN): linked is not read. A document earns its place when a
+# surface that DISPATCHES a reader names it — a SKILL.md, an agent definition, the roster, the
+# contracts register, a live non-index document. An index (README.md, CLAUDE.md) lists; it does
+# not send. History surfaces never count as namers: archive/ folders, the memory logs and their
+# archives, the inbox and the roadmap, the generated indexes. One hop, declared: a namer is not
+# itself checked for being read. The pinned tier and the project tier are read by the boot and
+# are not candidates; the same exemptions as ORPHAN apply.
+dispatch=$(mktemp)
+while IFS= read -r f; do
+  case "$f" in
+    */archive/*|archive/*|*-archive-*) continue ;;
+    .critos/memory/*/STATUS.md|.critos/memory/*/DECISIONS.md|.critos/memory/*/LESSONS-LEARNED.md|.critos/memory/*/IN-FORCE*.md) continue ;;
+    .critos/shared/HANDOFFS.md|.critos/shared/ROADMAP.md|MEMORY-INDEX.md|*/MEMORY-INDEX.md) continue ;;
+    .critos/system/*|*.tmpl) continue ;;
+  esac
+  case "$(basename "$f")" in README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|MEMORY.md) continue ;; esac
+  d=$(dirname "$f")
+  while IFS= read -r url; do
+    [ -z "$url" ] && continue
+    case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
+    u=${url%%#*}; [ -z "$u" ] && continue
+    realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
+  done < <(links_of "$f")
+done < <(git ls-files '*.md') | sort -u > "$dispatch"
+any_byuse=0
+while IFS= read -r f; do
+  case "$(basename "$f")" in
+    README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|SKILL.md|MEMORY.md|MEMORY-INDEX.md) continue ;;
+    STATUS.md|DECISIONS.md|LESSONS-LEARNED.md|IN-FORCE.md|IN-FORCE.*.md) continue ;;
+    HANDOFFS.md|ROADMAP.md|CONTRACTS.md|VERSION|CHANGELOG.md) continue ;;
+  esac
+  case "$f" in .critos/memory/*/notes/*|.critos/system/*|.critos/project/*|*/archive/*|archive/*|*-archive-*) continue ;; esac
+  if [ -n "$exempt_re" ] && printf '%s\n' "$f" | grep -qE "$exempt_re"; then continue; fi
+  grep -qxF "$f" "$targets" || continue          # an ORPHAN already, above
+  grep -qxF "$f" "$dispatch" && continue
+  echo "ORPHAN-BY-USE  $f  (linked only from an index or a history surface — no skill, definition, roster, contracts row or live document sends a reader here: a procedure an agent runs is a skill; a guide earns its place by a reader sent to it, or it is archived)"
+  any_byuse=1
+done < <(git ls-files '*.md')
+rm -f "$targets" "$dispatch"
+[ "$any_byuse" = 0 ] && echo "(no document linked only from an index: every reachable doc has a reader sent to it)"
 
 echo
 echo "### doc-lint [4] — DANGLING skill references in the agentic docs"
@@ -340,6 +383,22 @@ any_chronicle=0
   fi
 done <<< "$status_files"
 [ -n "$status_files" ] && [ "$any_chronicle" = 0 ] && echo "(none — every STATUS reads as a snapshot)"
+# The second leg, NOTE-CHRONICLE (WARN): a per-entity note is the photograph of one entity, not
+# its diary (contract-memory § 4). The same fingerprint, read on every file under
+# `.critos/memory/a<N>/notes/`, folders included — dated headings stacking (more than one) — with
+# no line budget, because a note may grow; each folder's README.md is the kind's contract and
+# is not read. A date in prose qualifies evidence and is not a heading.
+any_note=0
+while IFS= read -r nf; do
+  [ -n "$nf" ] && [ -f "$nf" ] || continue
+  [ "$(basename "$nf")" = README.md ] && continue
+  dated=$( { grep -cE '^#{1,4}[[:space:]].*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$nf" || true; } 2>/dev/null)
+  if [ "${dated:-0}" -gt 1 ]; then
+    echo "NOTE-CHRONICLE  $nf — ${dated} dated headings. A note is OVERWRITTEN when its entity is touched: present tense, one photograph; a date only where it qualifies evidence (contract-memory § 4)."
+    any_note=1
+  fi
+done < <(git ls-files '.critos/memory/a*/notes/*' 2>/dev/null | grep -E '\.md$')
+[ "$any_note" = 0 ] && echo "(no per-entity note reads as a diary)"
 
 echo
 echo "### doc-lint [9] — STALE-STATUS: a memory STATUS.md nobody has touched in >=14 days"
@@ -365,9 +424,10 @@ fi
 echo
 echo "### doc-lint [10] — DANGLING-WIKI-LINK (WARN): a [[slug]] that resolves nowhere reachable"
 # A slug resolves if it is (a) a heading or ID declared in a tracked .md, (a2) a tracked doc's
-# basename, (a3) a token-shaped first cell of a table row, (b) a machine-local auto-memory note
-# name, or (c) exempted in `.claude/doc-lint-exempt`. WARN: namespace (b) lives outside the
-# repo. Archives are records and are not scanned; this skill's own docs quote the syntax.
+# basename, (a3) a token-shaped first cell of a table row, or (b) exempted in
+# `.claude/doc-lint-exempt`. Never against the assistant's auto-memory: a link that resolved
+# only there read green on the one machine that has it (contract-system § 3, the auto-memory
+# row). Archives are records and are not scanned; this skill's own docs quote the syntax.
 wl_tmp=$(mktemp); wl_declared=$(mktemp)
 git grep -hoE '\[\[[A-Za-z0-9][A-Za-z0-9._-]*\]\]' -- '*.md' ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' 2>/dev/null \
   | sed -E 's/^\[\[//; s/\]\]$//' | sort -u > "$wl_tmp"
@@ -382,7 +442,6 @@ else
   git ls-files -z '*.md' 2>/dev/null | while IFS= read -r -d '' p; do b=${p##*/}; printf '%s\n' "${b%.md}"; done
   git grep -hoE '^\|[[:space:]]*~{0,2}[A-Za-z][A-Za-z0-9._-]{0,23}~{0,2}[[:space:]]*\|' -- '*.md' 2>/dev/null \
     | sed -E 's/^\|[[:space:]]*//; s/[[:space:]]*\|$//; s/~~//g'
-  ls -1 ~/.claude/projects/*/memory/*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.md$//'
 } | sort -u > "$wl_declared"
 any_wl=0
 while IFS= read -r s; do
@@ -395,6 +454,27 @@ while IFS= read -r s; do
 done < "$wl_tmp"
 rm -f "$wl_tmp" "$wl_declared"
 [ "$any_wl" = 0 ] && echo "(none — every [[slug]] resolves)"
+fi
+# The second leg, AUTO-MEMORY-CITED (WARN): a tracked .md naming, in backticks or a wiki-link,
+# a note of the assistant's auto-memory on this machine — every project folder under
+# `~/.claude/projects/*/memory/` (one project moves and leaves several). A fact a tracked
+# artifact needs lives in the repo (contract-system § 3): the owner moves it in and repoints.
+# Declared bound: a true positive only where the note exists, silent elsewhere; archives are
+# records and are not read, and code files are not read. CRITOS_AUTO_MEMORY names another root
+# (the test suite plants one, so the leg is seen firing on every machine).
+am_root="${CRITOS_AUTO_MEMORY:-$HOME/.claude/projects}"
+am_names=$(ls -1 "$am_root"/*/memory/*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.md$//' | grep -vxE 'MEMORY|README' | sort -u)
+if [ -z "$am_names" ]; then
+  echo "(no auto-memory note on this machine under $am_root — the citation leg cannot fire here; not a clean none elsewhere)"
+else
+  am_re=$(printf '%s\n' "$am_names" | sed -E 's/[.[\*^$|]/\\&/g' | paste -sd'|' -)
+  any_am=0
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    echo "AUTO-MEMORY-CITED  $hit — a note of the assistant's auto-memory, cited from a tracked file: the fact it holds lives in the repo, or the citation lies on every other machine (contract-system § 3)"
+    any_am=1
+  done < <(git grep -noE "(\`|\[\[)($am_re)(\`|\]\])" -- '*.md' ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' ':(exclude).critos/system' ':(exclude)*.tmpl' 2>/dev/null | head -40)
+  [ "$any_am" = 0 ] && echo "(no tracked file cites an auto-memory note of this machine)"
 fi
 
 echo

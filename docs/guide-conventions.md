@@ -38,6 +38,15 @@ commit that creates it — check `[3]` finds the ones that are not. Choose the h
 time; "here for now" is how a pile starts. An index entry is a real markdown link, never a name
 in backticks.
 
+**Linked is not read.** An index lists a document; it does not send anyone to it. A guide earns
+its place when something that dispatches a reader names it — a skill's reading list, an agent
+definition, the roster, a contracts row, another live document — and `[3]` warns about the one
+that only an index or a history surface names (ORPHAN-BY-USE). **A procedure an agent runs is a
+skill, never a document**: a reading order in prose is a skill that nobody executes. The test
+per document: *would the agent decide differently after reading it than after reading the
+code?* No → archive it. A document kept for consultation alone is exempted by family
+(`.claude/doc-lint-exempt`), not kept green by an index.
+
 ## 3 · Decisions and lessons
 
 - **Ids name their owner:** `ADR-A<N>-NNN`, `L-A<N>-NNN`. Cite a decision **by id**, in docs and

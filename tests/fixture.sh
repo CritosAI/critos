@@ -158,6 +158,19 @@ The certificate is valid to 2099-12-31 and the monthly run is scheduled after 20
 # [13] MEMORY-SHAPE: a folder that is not a<N> (notes/) and an unrostered a<N> (a9/)
 echo x > "$L/memory/notes/x.md"; echo x > "$L/memory/a9/STATUS.md"
 
+# [8] NOTE-CHRONICLE: a per-entity note stacking dated headings, in a folder of its kind; the
+#     kind's README.md beside it stacks them too and is not read; a note with one date is a photograph
+mkdir -p "$L/memory/a2/notes/operators"
+printf '# acme — operator\n## 2026-08-01 — first visit\nup\n## 2026-08-02 — second visit\nstill up\n## 2026-08-03 — third\ndown\n' > "$L/memory/a2/notes/operators/acme.md"
+printf '# operators — the kind\n## 2026-08-01 — shape\n## 2026-08-02 — gates\n' > "$L/memory/a2/notes/operators/README.md"
+printf '# beta — operator\nmeasured 2026-08-01: up\n## evidence\nthe capture of 2026-08-02\n' > "$L/memory/a2/notes/operators/beta.md"
+
+# [10] AUTO-MEMORY-CITED: an auto-memory planted BESIDE the fixture (tests/run.sh points the leg at
+#      it with CRITOS_AUTO_MEMORY), one note, cited from a tracked file in backticks
+mkdir -p "$T.auto-memory/some-project/memory"
+printf '# a planted note\n' > "$T.auto-memory/some-project/memory/planted-note.md"
+printf 'The cluster facts are in `planted-note`, nowhere in this repo.\n' >> README.md
+
 # [5] PING-PONG · NO-DONE-WHEN · MULTI-OWNER   [7] BAD-TOKEN · UNBOLDED-TOKEN
 # [23] INBOX-ACTOR: AGENT 0 as a SENDER (upstream only receives) · AGENT 10, never rostered, as a
 #      sender twice and a recipient once (the volley below) — a raise TO AGENT 0 is legal

@@ -182,9 +182,18 @@ A domain that owns many similar things (sources, models, operators) accumulates 
 **true of one of them and useless for the others**. That is not a lesson: a lesson changes how you
 act on the *next* entity, and this does not.
 
-`memory/<agent>/notes/<entity>.md` — one writer (the folder's owner), free shape, dated entries.
-**Not in the boot read-path**: it is opened when you touch that entity, never at boot, which is
-exactly why it may grow without a budget while the three files may not.
+`memory/<agent>/notes/<entity>.md` — one writer (the folder's owner), and **the photograph of one
+entity, not its diary**: present tense, overwritten when the entity is touched and reconciled
+then — the same rule a `STATUS` obeys (§ 1), for the same reason: the previous answer is not
+history, it is a wrong answer, and git holds the history. Its shape is declared by its owner
+**once per kind of entity** (purpose · gates · shape · budget — a kind's own contract, under the
+owner's shelf), and each instance names its kind in its head; folders under `notes/` may group
+the kinds. A date appears only where it qualifies evidence (*measured 2026-03-01*), never to
+organise the file: dated sections stacking in a note are the chronicle fingerprint, and
+`[8]` reads it on the notes as on a `STATUS` (NOTE-CHRONICLE, a warning). **Not in the boot
+read-path**: it is opened when you touch that entity, never at boot, which is exactly why it may
+grow without a line budget while the three files may not — what a kind's contract bounds beyond
+this is its owner's detector (`contract-session § 6`).
 
 The test, once: **would it change how you act on a DIFFERENT entity?** Yes → it is a lesson. No → it
 is a note. If both — the general rule is genuinely separable — write both, and let the lesson cite

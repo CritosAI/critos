@@ -44,7 +44,14 @@ may match no release.
    SKILL, the memory triad and the generated `IN-FORCE.md` beside it, the three registers, per-entity notes under
    `.critos/memory/a<N>/notes/`); a repo declares its own families in `.claude/doc-lint-exempt`
    (one regex per line). **An index entry must be a real markdown link** — an index written in
-   backticks is reachable by eye and orphaned by graph.
+   backticks is reachable by eye and orphaned by graph. Its second leg, **ORPHAN-BY-USE (WARN)**:
+   linked is not read — a document whose inbound links all come from an index (`README.md`,
+   `CLAUDE.md`) or a history surface (an archive, a memory log, the inbox, the roadmap, the
+   generated indexes). A reader is sent by a `SKILL.md`, an agent definition, the roster, the
+   contracts register or a live non-index document; nothing of those naming it, it is read by
+   nobody — a procedure an agent runs is a skill, never a document. One hop, declared: a namer
+   is not itself checked for being read. The pinned and project tiers, read by the boot, are not
+   candidates; the `ORPHAN` exemptions apply.
 4. **DANGLING-SKILL** — a `/skill-name` referenced in the skill layer (`SKILL.md` files and
    `CLAUDE.md`) that is not installed: a dead pointer inside the text the model reads to choose
    a skill.
@@ -63,13 +70,22 @@ may match no release.
    **unbolded** token as a format defect.
 8. **STATUS-CHRONICLE (WARN)** — a `STATUS.md` over the line budget (200; per-repo override in
    `.claude/doc-lint-status-lines`) or stacking more than one dated *as-of* section. A STATUS is
-   overwritten, not prepended; the fix is the owner's next checkpoint.
+   overwritten, not prepended; the fix is the owner's next checkpoint. Its second leg,
+   **NOTE-CHRONICLE (WARN)**: the same fingerprint on every per-entity note under
+   `.critos/memory/a<N>/notes/`, folders included — more than one dated heading. A note is the
+   photograph of one entity, overwritten when it is touched (`contract-memory § 4`); no line
+   budget, and each folder's `README.md` (the kind's contract) is not read.
 9. **STALE-STATUS** — a `STATUS.md` whose last commit is ≥14 days old. It means *re-verify with
    the owner*, never *this is wrong*: a snapshot legitimately rests while its domain is quiet.
 10. **DANGLING-WIKI-LINK (WARN)** — a `[[slug]]` that resolves nowhere reachable. A slug
-    resolves against a heading in a tracked `.md`, a tracked doc's basename, a table row id, a
-    machine-local auto-memory note name, or `.claude/doc-lint-exempt`. WARN, because one of those
-    namespaces lives outside the repo.
+    resolves against a heading in a tracked `.md`, a tracked doc's basename, a table row id, or
+    `.claude/doc-lint-exempt` — never against the assistant's auto-memory: a link that resolved
+    only there read green on the one machine that has it. Its second leg, **AUTO-MEMORY-CITED
+    (WARN)**: a tracked `.md` naming, in backticks or a wiki-link, a note of this machine's
+    auto-memory (every project folder under `~/.claude/projects/*/memory/`). A fact a tracked
+    artifact needs lives in the repo (`contract-system § 3`): move it in and repoint. Declared
+    bound: a true positive only where the note exists, silent elsewhere; archives and code are
+    not read. `CRITOS_AUTO_MEMORY` names another root (the test suite plants one).
 11. **TIER-3-LESSON** — an `accepted_rule` in a lessons log with no **`Enforcement: tier N`**
     field. The field is read at its syntactic position — a line that starts with it, list marker
     and bold admitted. A rule about controls that is itself enforced by hope is the failure this
