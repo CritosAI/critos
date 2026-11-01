@@ -70,6 +70,10 @@
 # Ids: the method's grammar (`ADR-<scope>-NNN`, `L-<scope>-NNN`) plus the families a project
 # declares in `.critos/project/id-families` — grammar, never an exemption.
 #
+# Severity at birth (contract-system § 6): a leg introduced by a release reports as a WARN in a
+# project pinned at that release — its line says so — and as a finding from the next release.
+# Born in 1.2.0: [25] [26] [28] and IN-FORCE-STALE. A leg WARN by a declared bound stays WARN.
+#
 # A project that spans several repos registers them in `.claude/repos`; the whole battery is then
 # repeated in each (one level, read-only).
 #
@@ -95,6 +99,7 @@ if [ -n "$INBOX" ] && head -1 "$INBOX" | grep -qE '⚰|RETIRED'; then
 fi
 mem_files() { git ls-files ".critos/memory/*/$1" 2>/dev/null | sort -u; }
 
+_ver=""
 if [ -d .critos ]; then
   _ver=$(grep -hoE '"system"[^,]*' .critos/system/VERSION 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?' | head -1)
   echo "### layout: .critos/ — system ${_ver:-?}"
@@ -104,6 +109,12 @@ else
   echo "### layout: NONE — no CritOS layer found in this repo (only the repo-wide checks can run)"
 fi
 [ -n "$inbox_retired" ] && echo "### (a ⚰ RETIRED inbox exists: $inbox_retired — a signpost, not a channel; it counts toward nothing)"
+# Severity at birth (contract-system § 6): a leg a release introduces reports as a WARN in a
+# project pinned at that release and as a finding from the next — the leg carries its version,
+# the battery compares it with the pin's base. `born <version>` appends the annotation while the
+# pin is at that release; a leg WARN by a declared bound never calls it.
+pin_base=${_ver%%-rc*}
+born() { [ -n "$pin_base" ] && [ "$pin_base" = "$1" ] && printf ' (WARN — new in %s: a finding from the next release)' "$1"; return 0; }
 
 # ---- which controls ran -----------------------------------------------------------------------
 # The controls are shared from a CritOS checkout: say which revision ran, and whether that
@@ -1114,14 +1125,14 @@ while IFS= read -r lg; do
     [ -z "$hit" ] && continue
     ln25=${hit%%:*}; line25=${hit#*:}
     printf '%s' "$line25" | grep -Eq "$ptr_ok" && continue
-    echo "POINTER-FORM  $lg:$ln25  $(printf '%s' "$line25" | cut -c1-90)"
+    echo "POINTER-FORM  $lg:$ln25  $(printf '%s' "$line25" | cut -c1-90)$(born 1.2.0)"
     any25=1
   done < <(awk '/^[[:space:]]*```/{f=!f;next} !f && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/{print NR ":" $0}' "$lg")
 done < <(logs12)
 while IFS= read -r af; do
   [ -z "$af" ] && continue
   printf '%s' "$(basename "$af")" | grep -Eq '^(DECISIONS|LESSONS-LEARNED)-archive-20[0-9]{2}-[0-9]{2}\.md$' && continue
-  echo "ARCHIVE-NAME  $af  (the archive is the log's own name, one file per month: DECISIONS-archive-YYYY-MM.md · LESSONS-LEARNED-archive-YYYY-MM.md; a STATUS is never archived)"
+  echo "ARCHIVE-NAME  $af  (the archive is the log's own name, one file per month: DECISIONS-archive-YYYY-MM.md · LESSONS-LEARNED-archive-YYYY-MM.md; a STATUS is never archived)$(born 1.2.0)"
   any25=1
 done < <(git ls-files '.critos/memory/a*/archive/*' 2>/dev/null)
 [ "$any25" = 0 ] && echo "(none — every pointer in shape with a state of the three, every archive under the log's name by month)"
@@ -1155,16 +1166,16 @@ else
       [ -n "$ent" ] || continue
       ln26=${ent%%:*}; id26=${ent#*:}
       awk -F'\t' -v f="$lg" -v e="$id26" '$1 == f && $3 == e && $4 == e && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . \
-        || echo "NO-CARRIER  $lg:$ln26  $id26 — a live entry carries at least its own rule: one line under **Carries.** (binds: <lane>, or settled: <state>)" >> "$out26"
+        || echo "NO-CARRIER  $lg:$ln26  $id26 — a live entry carries at least its own rule: one line under **Carries.** (binds: <lane>, or settled: <state>)$(born 1.2.0)" >> "$out26"
     done < <(awk -v IDC="$id_core" '/^[[:space:]]*```/{f=!f;next} !f && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print NR ":" substr($0, RSTART, RLENGTH) }' "$lg")
   done < <(logs12)
   # (a heading that carries ROTATED is a pointer in the wrong shape — [25]'s finding, not an entry)
   # CARRIES-FORM, per line read
   while IFS=$'\t' read -r f26 l26 e26 id26 k26 v26 t26 d26 r26; do
     case "$k26" in
-      bad) echo "CARRIES-FORM  $f26:$l26  $(printf '%s' "$v26" | cut -c1-80) — the shape: - \`<id>\` · <rule> · binds: <lane>[ · tier N[ — <detector>]]  or  · settled: <state>[ — <why>]" >> "$out26" ;;
+      bad) echo "CARRIES-FORM  $f26:$l26  $(printf '%s' "$v26" | cut -c1-80) — the shape: - \`<id>\` · <rule> · binds: <lane>[ · tier N[ — <detector>]]  or  · settled: <state>[ — <why>]$(born 1.2.0)" >> "$out26" ;;
       settled) printf '%s' "$v26" | grep -Eq "^(done|superseded by \`?($id_core)\`?|consolidated in \`?($id_core)\`?)( — .*)?$" \
-                 || echo "CARRIES-FORM  $f26:$l26  settled: $(printf '%s' "$v26" | cut -c1-60) — the state is one of done · superseded by <id> · consolidated in <id>" >> "$out26" ;;
+                 || echo "CARRIES-FORM  $f26:$l26  settled: $(printf '%s' "$v26" | cut -c1-60) — the state is one of done · superseded by <id> · consolidated in <id>$(born 1.2.0)" >> "$out26" ;;
     esac
   done < "$lines26"
   # UNCARRIED, per id headed in an archive
@@ -1176,16 +1187,16 @@ else
       [ "$st26" = settled ] && continue
       if [ "$st26" = consolidated ]; then
         awk -F'\t' -v i="$aid" '$4 == i && $5 == "binds"' "$lines26" | grep -q . && continue
-        echo "UNCARRIED  $aid — its pointer says consolidated, and no live entry carries a binds: line for it (headed in $af)" >> "$out26"; continue
+        echo "UNCARRIED  $aid — its pointer says consolidated, and no live entry carries a binds: line for it (headed in $af)$(born 1.2.0)" >> "$out26"; continue
       fi
       awk -F'\t' -v i="$aid" '$4 == i && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . && continue
-      echo "UNCARRIED  $aid — headed in $af and carried by nothing live: no pointer, no Carries line (nothing leaves the live log without a live carrier)" >> "$out26"
+      echo "UNCARRIED  $aid — headed in $af and carried by nothing live: no pointer, no Carries line (nothing leaves the live log without a live carrier)$(born 1.2.0)" >> "$out26"
     done < <(awk -v IDC="$id_core" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$af" | sort -u)
   done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null)
   # CARRIER-CONFLICT: in force and settled at once
   { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"; awk -F'\t' '{print $1 "\tsettled"}' "$ptr26"; } | sort -u \
     | awk -F'\t' '{ s[$1] = s[$1] $2 ";" } END { for (i in s) if (index(s[i], "binds;") && index(s[i], "settled;")) print i }' | sort \
-    | while IFS= read -r cid; do echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id" >> "$out26"; done
+    | while IFS= read -r cid; do echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id$(born 1.2.0)" >> "$out26"; done
   if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has a live carrier, no id is carried two ways)"; fi
   rm -f "$lines26" "$ptr26" "$out26"
 fi
@@ -1201,7 +1212,8 @@ if [ ! -f "$inforce" ]; then
 else
   out27=$(bash "$inforce" --check 2>/dev/null)
   if printf '%s\n' "$out27" | grep -qE '^(STALE|BUDGET)'; then
-    printf '%s\n' "$out27" | sed -nE 's/^STALE  (.*)$/IN-FORCE-STALE  \1/p; s/^BUDGET  (.*)$/IN-FORCE-BUDGET  \1/p'
+    b27=$(born 1.2.0)
+    printf '%s\n' "$out27" | sed -nE "s/^STALE  (.*)$/IN-FORCE-STALE  \1$b27/p; s/^BUDGET  (.*)$/IN-FORCE-BUDGET  \1/p"
   elif printf '%s\n' "$out27" | grep -q '^(no memory folder'; then
     printf '%s\n' "$out27"
   else
@@ -1227,18 +1239,18 @@ while IFS= read -r df; do
   [ -n "$df" ] && [ -f "$df" ] || continue
   case "$df" in
     .critos/checks/a[0-9]*/*) ;;
-    *) echo "DETECTOR-HEAD  $df — a detector lives in its agent's folder, .critos/checks/a<N>/ (one writer, rooted by construction)" >> "$out28"; continue ;;
+    *) echo "DETECTOR-HEAD  $df — a detector lives in its agent's folder, .critos/checks/a<N>/ (one writer, rooted by construction)$(born 1.2.0)" >> "$out28"; continue ;;
   esac
   own28=$(printf '%s' "$df" | sed -E 's#^\.critos/checks/a([0-9]+)/.*#\1#')
   enf28=$(head -n 12 "$df" | grep -oE 'Enforces:[[:space:]]*.*' | head -1 | sed -E 's/^Enforces:[[:space:]]*//')
   if [ -z "$enf28" ]; then
-    echo "DETECTOR-HEAD  $df — no \`Enforces: <id>, <id>\` in its first lines: the rule it detects is unreadable, so no tier-2 claim resolves to it" >> "$out28"
+    echo "DETECTOR-HEAD  $df — no \`Enforces: <id>, <id>\` in its first lines: the rule it detects is unreadable, so no tier-2 claim resolves to it$(born 1.2.0)" >> "$out28"
   else
     printf '%s' "$enf28" | grep -oE "$id_re" | sed "s|^|$df\t|" >> "$heads28"
   fi
   head -n 12 "$df" | grep -qE '(^|[[:space:]])(Runs|Repo):[[:space:]]*.*([A-Za-z]:[\\/]|/(c|home|Users)/)' \
-    && echo "DETECTOR-HEAD  $df — its head runs a machine path: a command in another repository of the project is named as .claude/repos declares it (TARGET)" >> "$out28"
-  grep -nE "\.critos/checks/a[0-9]+/" "$df" | grep -vE "\.critos/checks/a${own28}/" | head -1 | sed -E "s|^([0-9]+):.*|DETECTOR-CROSS-IMPORT  $df:\1 — reaches into another agent's folder: a detector imports nothing from a neighbour (one address, one owner)|" >> "$out28"
+    && echo "DETECTOR-HEAD  $df — its head runs a machine path: a command in another repository of the project is named as .claude/repos declares it (TARGET)$(born 1.2.0)" >> "$out28"
+  grep -nE "\.critos/checks/a[0-9]+/" "$df" | grep -vE "\.critos/checks/a${own28}/" | head -1 | sed -E "s|^([0-9]+):.*|DETECTOR-CROSS-IMPORT  $df:\1 — reaches into another agent's folder: a detector imports nothing from a neighbour (one address, one owner)$(born 1.2.0)|" >> "$out28"
 done < <( { git ls-files '.critos/checks/*'; git ls-files --others --exclude-standard -- '.critos/checks/*'; } 2>/dev/null | sort -u)
 # the tier-2 claims: Enforcement lines and Carries lines (both logs, live entries only)
 claims28=$(mktemp)
@@ -1263,7 +1275,7 @@ while IFS=$'\t' read -r f28 l28 id28 det28; do
   done
   [ "$hit" = 1 ] && continue
   awk -F'\t' -v i="$id28" '$2 == i' "$heads28" | grep -q . && continue
-  echo "TIER-2-UNDETECTED  $f28:$l28  $id28 — claims tier 2 and names no detector that exists: a leg of the product by its stable name, or a file under .critos/checks/a<N>/ whose head says Enforces: $id28 (a number alone is not a name)" >> "$out28"
+  echo "TIER-2-UNDETECTED  $f28:$l28  $id28 — claims tier 2 and names no detector that exists: a leg of the product by its stable name, or a file under .critos/checks/a<N>/ whose head says Enforces: $id28 (a number alone is not a name)$(born 1.2.0)" >> "$out28"
 done < "$claims28"
 if [ -s "$out28" ]; then sort -u "$out28"; else echo "(none — every tier-2 claim resolves to a detector, every detector in its folder with its head)"; fi
 rm -f "$heads28" "$out28" "$claims28"

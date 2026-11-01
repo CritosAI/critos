@@ -170,6 +170,14 @@ migration belongs to its successor.** It may not apply its own redefinition and 
 the previous one — and a redefinition can arrive on the file alone: a format release rewrites the
 derived copy while the section stays byte-identical.
 
+**Severity at birth.** A control a release introduces, or tightens, reports as a **warning** in a
+project pinned at that release and as a **finding** from the next release on: a check carries
+the version that introduced it, and the battery compares it with the pin. A finding routed to
+owners that opens at hundreds on the existing data would make every battery red until each
+owner's round, and a red that is always there teaches agents to ignore red; one release of time
+is the convergence window, and the pin after it is the deadline. A leg that is a warning by a
+declared bound stays a warning.
+
 **A migration covers the project as it is declared, never one repo of it.** Every repo listed in
 `.claude/repos` is inside the same migration, in the same round: its pinned tier, where it
 carries one, moves to the same release; and every live surface there that names the layer's

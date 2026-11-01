@@ -1,9 +1,10 @@
 ---
 name: crit-doc-lint
 description: >-
-  Run the deterministic documentation-hygiene battery — twenty-four checks over links, orphan
-  docs, the inbox and its actors, the roadmap, the memory logs and their stamps, the pinned
-  system tier, the agent definitions and the domains' roots in the tree.
+  Run the deterministic documentation-hygiene battery — twenty-eight checks over links, orphan
+  docs, the inbox and its actors, the roadmap, the memory logs, their forms, carriers and
+  stamps, the generated law in force, the detectors, the pinned system tier, the agent
+  definitions and the domains' roots in the tree.
   The steward's cheap mechanical audit pass; use before a governance audit, at a session
   checkpoint, or after the doc tree was reorganised. The interpretive audits (redundancy,
   real drift, taxonomy, the cross-domain rollup) stay with the steward's own reasoning — this
@@ -29,7 +30,7 @@ The output opens with the layout it found and a **provenance stamp** —
 output. `+dirty` means the checkout the controls run from has uncommitted changes, so the output
 may match no release.
 
-## The twenty-four checks
+## The twenty-eight checks
 
 1. **BROKEN** — a relative markdown link that does not resolve to an existing file. Code spans
    and fenced blocks are stripped first (a `](…)` fragment inside backticks is prose about
@@ -219,6 +220,13 @@ may match no release.
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one
 level: a registered repo's own registry is not followed.
+
+**Severity at birth** (`contract-system § 6`). A leg a release introduces reports as a **WARN**
+in a project pinned at that release — its line ends *(WARN — new in X.Y.Z: a finding from the
+next release)* — and as a finding from the next release on: one release of time to converge,
+the pin after it the deadline. Born in 1.2.0: `[25]`, `[26]`, `[28]` and `IN-FORCE-STALE`. A
+leg that is a WARN by a declared bound (`[8]`, `[10]`, the form legs, `ORPHAN-BY-USE`,
+`IN-FORCE-BUDGET`) stays a WARN.
 
 ## How to act on the output (the steward)
 
