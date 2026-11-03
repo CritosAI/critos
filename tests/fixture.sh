@@ -36,7 +36,7 @@ printf '# orphan\nnobody links here\n' > docs/orphan.md
 # archived entry, a retired id kept alive by the alias table in a log's head
 printf '\nDecided in ADR-A2-001, earlier in ADR-A2-000, once known as ADR-OLD-005, and ADR-LEG-042 of a retired sequence; lost: ADR-A2-777; lost too, in the LIVE sequence an alias line points at: ADR-A3-888.\n' >> README.md
 mkdir -p "$L/memory/a2/archive"
-printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
+printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n## D-008 — another of the scheme, carried by nothing\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
 # a declared id family: `D-NNN` is grammar, so D-007 (headed above) resolves and D-099 is lost
 printf '# ids of the scheme before the method\n^D-[0-9]{3}$\n' > "$L/project/id-families"
 printf 'Under the old scheme: D-007 holds, D-099 was never written.\n' >> README.md
@@ -109,12 +109,16 @@ Enforcement: tier-2 (a variant of the one written form)
 EOF
 
 # [12] UNROTATED-LOG + ARCHIVABLE (a2)  ·  DECLARED-OVER (a3)
-# [25] POINTER-FORM: a pointer in shape (not a finding), one as a heading, one with a fourth state
+# [25] POINTER-FORM: a pointer in shape (not a finding), one as a heading, one with a fourth state;
+#      a sentence of prose naming the word (not a finding: prose is not read)
 # [11] ENFORCEMENT-FORM: a variant in a decision (`Tier 2 by design`) beside the one form
 { echo "# decisions"
   echo '- `ADR-A2-000` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (done)'
   echo '### ADR-A2-000 — ROTATED 2026-08-01 to the archive (still in force)'
   echo '- `ADR-A2-000` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (still in force)'
+  echo 'A ruling whose prose says an entry was ROTATED is a sentence, not a pointer.'
+  # [26] a pointer consolidated in a live entry, whose binds: line sits under that entry: carried, no conflict
+  echo '- `D-007` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (consolidated in `ADR-A2-001`)'
   echo "## ADR-A2-001 — first"; echo "**Status:** superseded by ADR-A2-002"; echo "**Enforcement:** tier 2 — the atlas"
   # [26] a block in shape (own id, binds), a settled line with a fourth state (CARRIES-FORM), and
   #      ADR-A2-000 carried as binds: beside its settled pointer (CARRIER-CONFLICT); ADR-A2-001 is
@@ -123,20 +127,31 @@ EOF
   echo '- `ADR-A2-001` · keep the first · binds: fixture'
   echo '- `ADR-A2-001` · the first, once · settled: retired'
   echo '- `ADR-A2-000` · the oldest, kept alive · binds: fixture · tier 3 — nobody'
+  echo '- `D-007` · the rule of the old scheme, carried on · binds: fixture'
   echo ""
   echo "## ADR-A2-002 — second"; echo "**Enforcement:** Tier 2 by design"
+  # [11] ENFORCEMENT-FORM: the field written mid-line, after other text — no reader sees it
+  echo "**Migration:** none. **Enforcement:** tier 2 — the atlas"
   # [26] a malformed own line: no disposition (CARRIES-FORM), so the entry has no carrier (NO-CARRIER)
   echo "**Carries.**"
   echo '- `ADR-A2-002` · the second, with no disposition'
   echo ""
+  # [28] three claims: one naming a word of a product name, not the name (TIER-2-UNDETECTED); one
+  #      whose field says tier 3 and mentions tier 2 later (not a claim); one naming the battery (resolves)
+  echo "## ADR-A2-003 — third"; echo "**Enforcement:** tier 2 — the guard of the door"
+  echo "**Carries.**"; echo '- `ADR-A2-003` · the third · settled: done'; echo ""
+  echo "## ADR-A2-004 — fourth"; echo "**Enforcement:** tier 3 — nobody reads it; it becomes tier 2 at the next release"
+  echo "**Carries.**"; echo '- `ADR-A2-004` · the fourth · settled: done'; echo ""
+  echo "## ADR-A2-005 — fifth"; echo "**Enforcement:** tier 2 — the battery"
+  echo "**Carries.**"; echo '- `ADR-A2-005` · the fifth · settled: done'; echo ""
   for i in $(seq 1 1210); do echo "l$i"; done; } > "$L/memory/a2/DECISIONS.md"
 # [25] ARCHIVE-NAME: a day file under an older prefix
 printf '# archive\nnothing headed here\n' > "$L/memory/a2/archive/LESSONS-archive-2026-08-01.md"
 
 # [28] the detectors: one in shape (a2, enforces ADR-A2-000); one outside a<N>/ and one without a
 #      head (DETECTOR-HEAD, twice); one reaching into a neighbour's folder (DETECTOR-CROSS-IMPORT);
-#      two tier-2 claims that name nothing a detector resolves (TIER-2-UNDETECTED: the a2 decision
-#      "Tier 2 by design", the a2 lesson "tier-2 (a variant …)")
+#      three tier-2 claims that name nothing a detector resolves (TIER-2-UNDETECTED: the a2 decisions
+#      "Tier 2 by design" and "the guard of the door", the a2 lesson "tier-2 (a variant …)")
 mkdir -p "$L/checks/a2" "$L/checks/a3"
 printf '#!/usr/bin/env bash\n# the rows of the oldest — a detector of AGENT 2\n# Enforces: ADR-A2-000\n# Reads: the rows\nexit 0\n' > "$L/checks/a2/rows-check.sh"
 printf '#!/usr/bin/env bash\n# a neighbour'"'"'s helper, imported — a detector of AGENT 2\n# Enforces: ADR-A2-000\nsource .critos/checks/a3/lib.sh\nexit 0\n' > "$L/checks/a2/cross-check.sh"

@@ -95,7 +95,9 @@ may match no release.
     — the field is optional, its value is not free. Its third leg, **ENFORCEMENT-FORM (WARN)**:
     the field outside its one written form — `**Enforcement:** tier N`, then nothing or an em
     dash and the detector — in a decision or a lesson; `tier-2`, `Tier 2`, a split *tier 2 for
-    X, tier 3 for Y* are variants, reported and never gated (a split tier is two carried rules).
+    X, tier 3 for Y* are variants, reported and never gated (a split tier is two carried rules);
+    a field written mid-line, after other text, is reported too: every reader reads the line's
+    start, so nothing sees it.
 12. **UNROTATED-LOG (WARN)** — a `DECISIONS.md` or `LESSONS-LEARNED.md` past the skimmable budget
     (1,200 lines; override in `.claude/doc-lint-log-lines`). The remedy is **rotation, never
     deletion**: move the oldest entries to `archive/<NAME>-archive-<period>.md` and leave a
@@ -189,8 +191,9 @@ may match no release.
 25. **POINTER-FORM** — a rotation pointer in a live memory log outside its one shape
     (`contract-memory § 2`): `- <id> — ROTATED YYYY-MM-DD to archive/<file> (<state>)`, the id
     in backticks, the state one of `done` · `superseded by <id>` · `consolidated in <id>`. A
-    line carrying ROTATED as a heading, or with a fourth state, is the finding; the fenced
-    shape in a log's head is not read. Its second leg, **ARCHIVE-NAME**: a file under
+    line carrying ROTATED as a heading, or with a fourth state, is the finding; a sentence of
+    prose that names the word is not read, nor is the fenced shape in a log's head. Its second
+    leg, **ARCHIVE-NAME**: a file under
     `.critos/memory/a<N>/archive/` outside `DECISIONS-archive-YYYY-MM.md` and
     `LESSONS-LEARNED-archive-YYYY-MM.md` — a day file, a range, an older prefix, a `STATUS`.
 26. **CARRIES** — the `Carries` block of every live entry (`contract-memory § 2`), read by the
@@ -199,18 +202,21 @@ may match no release.
     shapes, or a `settled:` state outside `done` · `superseded by <id>` · `consolidated in <id>`.
     **UNCARRIED**: an id headed in an archive with no live carrier — no pointer in the live log,
     no `Carries` line of a live entry; a pointer `consolidated in <id>` needs a `binds:` line
-    somewhere live. **CARRIER-CONFLICT**: one id carried as in force and as settled at once.
-    Fenced blocks are not read.
+    somewhere live. **CARRIER-CONFLICT**: one id carried as in force and as settled at once —
+    a pointer consolidated in a live entry is not settled: the `binds:` line it demands is its
+    carrier. Fenced blocks are not read.
 27. **IN-FORCE** — the generated law in force of every agent (`contract-memory § 6`), through
     `/crit-in-force --check`: **IN-FORCE-STALE** — `IN-FORCE.md` missing in a memory folder that
     holds a log, or differing from a fresh generation (a lane view beside it likewise);
     **IN-FORCE-BUDGET (WARN)** — past 300 lines (`.claude/doc-lint-in-force-lines` overrides):
     the signal to consolidate.
 28. **DETECTOR** — a domain's detectors are a class of the method (`contract-session § 6`).
-    **TIER-2-UNDETECTED**: a tier-2 claim — an `Enforcement:` line saying tier 2, or a `Carries`
-    line with tier 2 — that names no detector which exists: neither a leg of the product by its
-    stable name (`STATUS-CHRONICLE`, the inbox guard, the status check; a number alone is not a
-    name) nor a file under `.critos/checks/a<N>/` whose first lines say `Enforces: <id>`.
+    **TIER-2-UNDETECTED**: a tier-2 claim — an `Enforcement:` field whose head says tier 2 (a
+    tier-3 field that mentions tier 2 later is not a claim), or a `Carries` line with tier 2 —
+    that names no detector which exists: neither a leg of the product by its stable name,
+    matched whole (`STATUS-CHRONICLE`, the inbox guard, the battery, the status check; a word
+    of a name is not the name, a number alone is not a name) nor a file under
+    `.critos/checks/a<N>/` whose first lines say `Enforces: <id>`.
     **DETECTOR-HEAD**: a file under `.critos/checks/` outside `a<N>/`, or without the head, or
     whose head runs a machine path (a command in another repository of the project is named as
     `.claude/repos` declares it). **DETECTOR-CROSS-IMPORT**: a detector reaching into another

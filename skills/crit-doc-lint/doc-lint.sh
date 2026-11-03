@@ -23,7 +23,7 @@
 #                         a note of this machine's auto-memory
 #  [11] TIER-3-LESSON     an accepted_rule that does not name its "Enforcement: tier N";
 #       BAD-BOUND         a Bound: outside the eight; ENFORCEMENT-FORM (WARN) the field outside
-#                         its one written form
+#                         its one written form, or written mid-line where no reader sees it
 #  [12] UNROTATED-LOG     (WARN) an append-only memory log past the skimmable budget
 #  [13] MEMORY-SHAPE      a `.critos/memory/` child that is not `a<N>`, or an `a<N>` folder that
 #                         no roster row maps (contract-memory § 0)
@@ -52,17 +52,20 @@
 #                         heading, Last updated, a verdict, an aging mark) — dates in prose are
 #                         plans and are not read
 #  [25] POINTER-FORM      a rotation pointer in a live log outside its one shape, or with a state
-#                         outside the three (done · superseded by <id> · consolidated in <id>);
+#                         outside the three (done · superseded by <id> · consolidated in <id>) —
+#                         a list line or a heading carrying the word; prose is not read;
 #       ARCHIVE-NAME      a file under a memory archive/ outside DECISIONS-archive-YYYY-MM.md and
 #                         LESSONS-LEARNED-archive-YYYY-MM.md
 #  [26] NO-CARRIER        a live entry with no Carries line for its own id; CARRIES-FORM a line
 #                         under **Carries.** outside the two shapes or with a state outside the
 #                         three; UNCARRIED an id headed in an archive with no live carrier;
-#                         CARRIER-CONFLICT an id carried as in force and as settled at once
+#                         CARRIER-CONFLICT an id carried as in force and as settled at once (a
+#                         pointer consolidated in a live entry is not settled)
 #  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
 #                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
-#  [28] TIER-2-UNDETECTED a tier-2 claim naming no detector that exists — neither a leg of the
-#                         product by its stable name nor a file under .critos/checks/a<N>/ whose
+#  [28] TIER-2-UNDETECTED a tier-2 claim (a field whose head says tier 2) naming no detector that
+#                         exists — neither a leg of the product by its stable name, matched whole
+#                         (a word of a name is not the name), nor a file under .critos/checks/a<N>/ whose
 #                         head says Enforces: <id>; DETECTOR-HEAD a file under .critos/checks/
 #                         outside a<N>/, without the head, or running a machine path;
 #                         DETECTOR-CROSS-IMPORT a detector reaching into another agent's folder
@@ -548,17 +551,25 @@ fi
 # The third leg, ENFORCEMENT-FORM (WARN): the field in ONE written form — the bold label, a
 # space, `tier N` with a space and the digit, then nothing or an em dash and the detector
 # (contract-memory § 3). Read in both logs at the line's start, fenced blocks skipped (a log's
-# head shows the shape inside a fence); a variant is reported, never gated.
+# head shows the shape inside a fence); a variant is reported, never gated. A field written
+# mid-line, after other text, is reported too: every reader reads the line's start, so nothing
+# sees it — inline code spans are stripped first, so a line that quotes the label is not read.
 form11=$( { mem_files DECISIONS.md; mem_files LESSONS-LEARNED.md; } | while IFS= read -r lf; do
   [ -f "$lf" ] || continue
-  awk '/^[[:space:]]*```/{f=!f;next} !f{print NR ":" $0}' "$lf" \
-    | grep -E '^[0-9]+:(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:' \
+  num11=$(mktemp)
+  awk '/^[[:space:]]*```/{f=!f;next} !f{print NR ":" $0}' "$lf" > "$num11"
+  grep -E '^[0-9]+:(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:' "$num11" \
     | grep -vE '^[0-9]+:\*\*Enforcement:\*\* tier [123]( — .*)?$' \
     | sed -E "s|^([0-9]+):(.{0,70}).*|ENFORCEMENT-FORM  $lf:\1  \2|"
+  sed -E 's/`[^`]*`//g' "$num11" \
+    | grep -E '^[0-9]+:.+\*\*Enforcement:\*\*' \
+    | grep -vE '^[0-9]+:(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:' \
+    | sed -E "s|^([0-9]+):(.{0,70}).*|ENFORCEMENT-FORM  $lf:\1  \2 — written mid-line: no reader sees it|"
+  rm -f "$num11"
 done)
 if [ -n "$form11" ]; then
   printf '%s\n' "$form11"
-  echo "               → one written form: **Enforcement:** tier N — <the detector, or why none is possible>; a split tier is two Carries lines"
+  echo "               → one written form, at the line's start: **Enforcement:** tier N — <the detector, or why none is possible>; a split tier is two Carries lines"
 else
   echo "(no Enforcement: line outside the one written form)"
 fi
@@ -1109,7 +1120,8 @@ fi
 echo
 echo "### doc-lint [25] — FORMS: the rotation pointer and the archive's name, as the method writes them"
 # contract-memory § 2 fixes two forms the controls read. POINTER-FORM: a line of a live memory
-# log that marks a rotation — it carries the word ROTATED, outside a fence — in any shape but
+# log that marks a rotation — a list line or a heading carrying the word ROTATED, outside a
+# fence; a sentence of prose that names the word is not read — in any shape but
 #   - `<id>` — ROTATED YYYY-MM-DD to archive/<file> (<state>)
 # with the state one of `done` · `superseded by <id>` · `consolidated in <id>`; a heading is not a
 # pointer, a fourth state is not a state. ARCHIVE-NAME: a file under `.critos/memory/a<N>/archive/`
@@ -1127,7 +1139,7 @@ while IFS= read -r lg; do
     printf '%s' "$line25" | grep -Eq "$ptr_ok" && continue
     echo "POINTER-FORM  $lg:$ln25  $(printf '%s' "$line25" | cut -c1-90)$(born 1.2.0)"
     any25=1
-  done < <(awk '/^[[:space:]]*```/{f=!f;next} !f && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/{print NR ":" $0}' "$lg")
+  done < <(awk '/^[[:space:]]*```/{f=!f;next} !f && (/^- / || /^#{1,4}[[:space:]]/) && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/{print NR ":" $0}' "$lg")
 done < <(logs12)
 while IFS= read -r af; do
   [ -z "$af" ] && continue
@@ -1145,7 +1157,8 @@ echo "### doc-lint [26] — CARRIES: every live entry carries its rule; nothing 
 # settled state outside the three; UNCARRIED — an id headed in an archive with no live carrier
 # (no pointer in the live log, no Carries line of a live entry; a pointer `consolidated in <id>`
 # needs a binds: line somewhere live); CARRIER-CONFLICT — one id carried as in force and as
-# settled at once. Fenced blocks are not read: a log's head shows the shape inside a fence.
+# settled at once (a pointer consolidated in a live entry is not settled: the binds: line it
+# demands is its carrier). Fenced blocks are not read: a log's head shows the shape inside a fence.
 inforce="$here/../crit-in-force/in-force.sh"
 if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the Carries blocks cannot be read (NOT a clean none)"
@@ -1193,8 +1206,8 @@ else
       echo "UNCARRIED  $aid — headed in $af and carried by nothing live: no pointer, no Carries line (nothing leaves the live log without a live carrier)$(born 1.2.0)" >> "$out26"
     done < <(awk -v IDC="$id_core" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$af" | sort -u)
   done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null)
-  # CARRIER-CONFLICT: in force and settled at once
-  { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"; awk -F'\t' '{print $1 "\tsettled"}' "$ptr26"; } | sort -u \
+  # CARRIER-CONFLICT: in force and settled at once (a consolidated pointer is not settled)
+  { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"; awk -F'\t' '$2 == "settled" {print $1 "\tsettled"}' "$ptr26"; } | sort -u \
     | awk -F'\t' '{ s[$1] = s[$1] $2 ";" } END { for (i in s) if (index(s[i], "binds;") && index(s[i], "settled;")) print i }' | sort \
     | while IFS= read -r cid; do echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id$(born 1.2.0)" >> "$out26"; done
   if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has a live carrier, no id is carried two ways)"; fi
@@ -1223,16 +1236,29 @@ fi
 
 echo
 echo "### doc-lint [28] — DETECTOR: every tier-2 claim names a detector that exists; every detector is in its agent's folder, with its head"
-# contract-session § 6. A tier-2 claim — an Enforcement line that says tier 2, or a Carries line
-# with tier 2 — resolves either to a leg of the product's controls named by its stable name (the
-# list below: every finding token of this battery, the controls, the guards; a number alone is
-# not a name) or to a file under `.critos/checks/a<N>/` whose head names the id (`Enforces:`).
+# contract-session § 6. A tier-2 claim — an Enforcement line whose field says tier 2 at its head
+# (a tier-3 field that mentions tier 2 later is not a claim), or a Carries line with tier 2 —
+# resolves either to a leg of the product's controls named by its stable name (the list below:
+# every finding token of this battery, the controls, the guards — one name per line, matched
+# whole: a word of a name is not the name, a number alone is not a name) or to a file under
+# `.critos/checks/a<N>/` whose head names the id (`Enforces:`).
 # TIER-2-UNDETECTED — a claim neither resolves. DETECTOR-HEAD — a file under `.critos/checks/`
 # outside `a<N>/`, or without `Enforces: <id>` in its first lines, or whose head runs a machine
 # path (a command in another repository names it as `.claude/repos` declares it).
 # DETECTOR-CROSS-IMPORT — a detector that reaches into another agent's folder.
 # (Keep the list in step with the header above when a token is added.)
-product_legs='BROKEN PATH-IN-CODE ORPHAN ORPHAN-BY-USE DANGLING-SKILL PING-PONG NO-DONE-WHEN MULTI-OWNER STALE-Rx BAD-TOKEN UNBOLDED-TOKEN STATUS-CHRONICLE NOTE-CHRONICLE STALE-STATUS DANGLING-WIKI-LINK AUTO-MEMORY-CITED TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX CITED-ID UNROOTED OVERLAP DANGLING INBOX-ACTOR FUTURE-DATE POINTER-FORM ARCHIVE-NAME NO-CARRIER CARRIES-FORM UNCARRIED CARRIER-CONFLICT IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD DETECTOR-CROSS-IMPORT crit-doc-lint doc-lint crit-status-check status-check inbox-check crit-memory-index memory-index the atlas crit-in-force in-force guard-user-driven-actions guard-inbox the push guard the inbox guard the machine guard the guard'
+product_legs=(
+  BROKEN PATH-IN-CODE ORPHAN ORPHAN-BY-USE DANGLING-SKILL PING-PONG NO-DONE-WHEN MULTI-OWNER STALE-Rx
+  BAD-TOKEN UNBOLDED-TOKEN STATUS-CHRONICLE NOTE-CHRONICLE STALE-STATUS DANGLING-WIKI-LINK AUTO-MEMORY-CITED
+  TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT
+  VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX
+  CITED-ID UNROOTED OVERLAP DANGLING INBOX-ACTOR FUTURE-DATE POINTER-FORM ARCHIVE-NAME NO-CARRIER
+  CARRIES-FORM UNCARRIED CARRIER-CONFLICT IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD
+  DETECTOR-CROSS-IMPORT
+  crit-doc-lint doc-lint "the battery" crit-status-check status-check inbox-check
+  crit-memory-index memory-index "the atlas" crit-in-force in-force
+  guard-user-driven-actions guard-inbox "the push guard" "the inbox guard" "the guards"
+)
 heads28=$(mktemp); out28=$(mktemp)
 # the detectors: folder, file, the ids its head enforces
 while IFS= read -r df; do
@@ -1261,21 +1287,21 @@ while IFS= read -r lg; do
     /^[[:space:]]*```/ { fence = !fence; next }
     fence { next }
     $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); entry = substr($0, RSTART, RLENGTH); next }
-    entry != "" && /^(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:/ && /[Tt]ier[ -]?2([^0-9]|$)/ {
-      d = $0; sub(/^.*[Tt]ier[ -]?2[^A-Za-z]*/, "", d); printf "%s\t%d\t%s\t%s\n", f, NR, entry, d }
+    entry != "" && /^(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:/ {
+      d = $0; sub(/^[^:]*:[*_]*[[:space:]]*/, "", d)
+      if (d ~ /^[Tt]ier[ -]?2([^0-9]|$)/) { sub(/^[Tt]ier[ -]?2[^A-Za-z]*/, "", d); printf "%s\t%d\t%s\t%s\n", f, NR, entry, d } }
   ' "$lg"
 done < <(logs12) > "$claims28"
 [ -f "$inforce" ] && bash "$inforce" --lines 2>/dev/null | awk -F'\t' '$5 == "binds" && $7 == "2" { printf "%s\t%s\t%s\t%s\n", $1, $2, $4, $8 }' >> "$claims28"
 while IFS=$'\t' read -r f28 l28 id28 det28; do
   [ -n "$id28" ] || continue
   hit=0
-  for leg in $product_legs; do
-    case "$leg" in the) continue ;; esac
+  for leg in "${product_legs[@]}"; do
     printf '%s' "$det28" | grep -qwF -- "$leg" && { hit=1; break; }
   done
   [ "$hit" = 1 ] && continue
   awk -F'\t' -v i="$id28" '$2 == i' "$heads28" | grep -q . && continue
-  echo "TIER-2-UNDETECTED  $f28:$l28  $id28 — claims tier 2 and names no detector that exists: a leg of the product by its stable name, or a file under .critos/checks/a<N>/ whose head says Enforces: $id28 (a number alone is not a name)$(born 1.2.0)" >> "$out28"
+  echo "TIER-2-UNDETECTED  $f28:$l28  $id28 — claims tier 2 and names no detector that exists: a leg of the product by its stable name, whole, or a file under .critos/checks/a<N>/ whose head says Enforces: $id28 (a word of a name is not the name; a number alone is not a name)$(born 1.2.0)" >> "$out28"
 done < "$claims28"
 if [ -s "$out28" ]; then sort -u "$out28"; else echo "(none — every tier-2 claim resolves to a detector, every detector in its folder with its head)"; fi
 rm -f "$heads28" "$out28" "$claims28"
