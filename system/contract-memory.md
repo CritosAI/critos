@@ -127,7 +127,11 @@ code.
     *still in force*: an entry in force leaves only consolidated, and `consolidated in <id>` names
     the live entry that carries it. **The pointer is the live carrier of a settled id.** A pointer
     outside the shape, or a state outside the three, is a finding (`[25]`); a heading is not a
-    pointer.
+    pointer. **An id has one home — the folder whose archive heads it, a declared family's id
+    included — and is pointed from its home only:** a pointer in a folder whose own archive does
+    not head the id, or an id headed in two folders' archives, is a finding (`[26]`); the mark is
+    the owner's, and a split's new owner carries what it inherits in its founding block (§ 7),
+    never by pointer.
   - **Two triggers, either suffices:** an entry **fully** superseded or completed (its Status says
     so — *superseded in part* stays live: its surviving half is still law to its owner) is
     archivable the round it is marked; and a log past the skimmable budget rotates its oldest —
@@ -231,7 +235,11 @@ which are stable, while only *pointing* at the registers, whose rows churn daily
 line per rule that binds, read from the `Carries` blocks of the live entries of its two logs
 (§ 2), grouped by lane, each with its tier and its detector. The boot reads it in place of the
 logs whole (`contract-session § 1`): a log is the chronicle, opened at the id the index names.
-It holds the rules in force only — a settled rule resolves through the atlas. It lives beside
+It holds the rules in force only — a settled rule resolves through the atlas — and its head
+counts the live entries it read and names those that carry nothing (`Carried: k of N`, then
+`Uncarried:` with their ids, per log): the boot opens the named entries whole, because an
+index that cannot summarise an entry sends the reader to it, and never reads as *no rule
+binds you* while such an entry exists. It lives beside
 the logs it derives from, in the repository that holds the memory, never in a satellite, under
 one name for every project; a view per lane prefix (`IN-FORCE.onboarding.md`, one section per
 sub-lane under a stable anchor) may sit beside it for a skill to read. **Budget 300 lines**, a

@@ -160,11 +160,18 @@ printf '#!/usr/bin/env bash\n# the rows of the oldest — a detector of AGENT 2\
 printf '#!/usr/bin/env bash\n# a neighbour'"'"'s helper, imported — a detector of AGENT 2\n# Enforces: ADR-A2-000\nsource .critos/checks/a3/lib.sh\nexit 0\n' > "$L/checks/a2/cross-check.sh"
 printf '#!/usr/bin/env bash\n# no head here\nexit 0\n' > "$L/checks/a3/no-head.sh"
 printf '#!/usr/bin/env bash\n# Enforces: ADR-A2-000\n# a stray file outside any agent folder\nexit 0\n' > "$L/checks/stray.sh"
-{ echo "# decisions"; echo "> DECLARED EXEMPTION — ACTIVE: every entry here is cited"; echo "> alias: ADR-OLD-005 -> ADR-A3-001"; echo "> a retired sequence: ADR-LEG-NNN -> ADR-A3-NNN"; for i in $(seq 1 1210); do echo "l$i"; done
+# [26] TWO-HOMES: a pointer in a3 for an id that only a2's archive heads (a foreign pointer, in
+#      shape); and a3's archive heading an id that a2's archive heads too (a copied entry)
+{ echo "# decisions"; echo "> DECLARED EXEMPTION — ACTIVE: every entry here is cited"; echo "> alias: ADR-OLD-005 -> ADR-A3-001"; echo "> a retired sequence: ADR-LEG-NNN -> ADR-A3-NNN"
+  echo '- `D-007` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (done)'
+  for i in $(seq 1 1210); do echo "l$i"; done
   # [27] IN-FORCE-BUDGET: one entry carrying three hundred rules in force; and no IN-FORCE.md in
   #      a2 nor a3 (IN-FORCE-STALE, twice)
   echo "## ADR-A3-001 — carries three hundred"; echo "**Carries.**"
   for i in $(seq 1 300); do echo "- \`ADR-A3-001\` · rule $i · binds: lane-$i"; done; } > "$L/memory/a3/DECISIONS.md"
+
+mkdir -p "$L/memory/a3/archive"
+printf '# archive\n## ADR-A2-000 — a copy of an entry another folder heads\n' > "$L/memory/a3/archive/DECISIONS-archive-2026-08.md"
 
 # status-check axis 1: a dated STATUS beside a DECISIONS log (a3)
 # [24] negative: a future date in PROSE is a plan, not a stamp — it must NOT fire

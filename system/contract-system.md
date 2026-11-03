@@ -201,7 +201,7 @@ only the first two are engineering. Applied here, honestly:
 | one-writer-per-memory | **2** for the shape (the memory-shape check: every folder `a<N>`, every one rostered) — **3** for the writer itself, which no filesystem can attribute |
 | the retirement signpost and the archive's closed vocabulary | **2** | `[16]` flags a live doc leaning on a ⚰ RETIRED file; `[17]` flags a live lifecycle token in cold storage — one invariant, two doors: a marker that retires a surface is read by every control that still counts it |
 | a decision or lesson id cited anywhere resolves | **2** | `[21]` compares every cited id with the ids the logs declare, archives included — the citations that hold the logs together are checked, not trusted |
-| every live entry carries its rule, nothing in force leaves the live log uncarried, the law in force is read fresh | **2** | `[26]` reads the `Carries` blocks and the archives' ids against them; `[27]` holds each agent's generated `IN-FORCE.md` to a fresh generation |
+| every live entry carries its rule, nothing in force leaves the live log uncarried, the law in force is read fresh | **2** | `[26]` reads the `Carries` blocks and the archives' ids against them, each id at its one home; `[27]` holds each agent's generated `IN-FORCE.md` to a fresh generation |
 | a tier-2 claim names a detector that exists | **2** | `[28]` resolves every tier-2 line against the product's legs and the agent's `.critos/checks/a<N>/` heads — **3** for whether the detector proves anything |
 
 Stating this is not an apology: a contract that pretends to be enforced is worse than one that says

@@ -69,7 +69,8 @@ code?* No → archive it. A document kept for consultation alone is exempted by 
   `archive/LESSONS-LEARNED-archive-YYYY-MM.md`, one file per month of the entry's date, never a
   day file or a range — with a pointer left in the list at the head of the live log, one line per
   rotated id in one shape, its state one of `done` · `superseded by <id>` · `consolidated in <id>`
-  (`contract-memory § 2`; check `[25]`). Nothing is archived unmarked.
+  (`contract-memory § 2`; check `[25]`), written only in the folder whose archive heads the id —
+  an id has one home (check `[26]`). Nothing is archived unmarked.
 - **An id of an earlier scheme is declared, never renamed:** `.critos/project/id-families`, one
   regex per line (`^D-[0-9]{3}$`). The checks then read that family as ids — and expect each one
   to resolve, like any other.

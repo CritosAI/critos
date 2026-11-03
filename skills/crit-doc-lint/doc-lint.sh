@@ -62,7 +62,9 @@
 #                         under **Carries.** outside the two shapes or with a state outside the
 #                         three; UNCARRIED an id headed in an archive with no live carrier;
 #                         CARRIER-CONFLICT an id carried as in force and as settled at once (a
-#                         pointer consolidated in a live entry is not settled)
+#                         pointer consolidated in a live entry is not settled); TWO-HOMES an id
+#                         headed in two folders' archives, or pointed from a folder whose own
+#                         archive does not head it — an id has one home
 #  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
 #                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
 #  [28] TIER-2-UNDETECTED a tier-2 claim (a field whose head says tier 2) naming no detector that
@@ -1168,19 +1170,27 @@ echo "### doc-lint [26] — CARRIES: every live entry carries its rule; nothing 
 # (no pointer in the live log, no Carries line of a live entry; a pointer `consolidated in <id>`
 # needs a binds: line somewhere live); CARRIER-CONFLICT — one id carried as in force and as
 # settled at once (a pointer consolidated in a live entry is not settled: the binds: line it
-# demands is its carrier). Fenced blocks are not read: a log's head shows the shape inside a fence.
+# demands is its carrier); TWO-HOMES — an id has one home, the folder whose archive heads it:
+# headed in two folders' archives, or pointed from a folder whose own archive does not head it.
+# Pointers are read per folder, and UNCARRIED lands on the pointer that demands, at its line.
+# Fenced blocks are not read: a log's head shows the shape inside a fence.
 inforce="$here/../crit-in-force/in-force.sh"
 if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the Carries blocks cannot be read (NOT a clean none)"
 else
-  lines26=$(mktemp); ptr26=$(mktemp); out26=$(mktemp)
+  lines26=$(mktemp); ptr26=$(mktemp); heads26=$(mktemp); two26=$(mktemp); out26=$(mktemp)
   bash "$inforce" --lines > "$lines26" 2>/dev/null
-  # the pointers of every live log: id <TAB> settled|consolidated
+  # the pointers of every live log, per folder: folder <TAB> id <TAB> settled|consolidated <TAB> log:line
   while IFS= read -r lg; do
     [ -f "$lg" ] || continue
     case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-    awk -v IDC="$id_core" '/^[[:space:]]*```/{f=!f;next} !f && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print id "\t" st } }' "$lg"
+    awk -v IDC="$id_core" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print d "\t" id "\t" st "\t" f ":" NR } }' "$lg"
   done < <(logs12) | sort -u > "$ptr26"
+  # the ids headed in every archive, per folder: folder <TAB> id <TAB> archive
+  while IFS= read -r af; do
+    [ -f "$af" ] || continue
+    awk -v IDC="$id_core" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$af"
+  done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null) | sort -u > "$heads26"
   # NO-CARRIER, per live entry
   while IFS= read -r lg; do
     [ -f "$lg" ] || continue
@@ -1201,27 +1211,45 @@ else
                  || echo "CARRIES-FORM  $f26:$l26  settled: $(printf '%s' "$v26" | cut -c1-60) — the state is one of done · superseded by <id> · consolidated in <id>$(born 1.2.0)" >> "$out26" ;;
     esac
   done < "$lines26"
-  # UNCARRIED, per id headed in an archive
-  while IFS= read -r af; do
-    [ -f "$af" ] || continue
-    while IFS= read -r aid; do
-      [ -n "$aid" ] || continue
-      st26=$(awk -F'\t' -v i="$aid" '$1 == i {print $2; exit}' "$ptr26")
-      [ "$st26" = settled ] && continue
-      if [ "$st26" = consolidated ]; then
-        awk -F'\t' -v i="$aid" '$4 == i && $5 == "binds"' "$lines26" | grep -q . && continue
-        echo "UNCARRIED  $aid — its pointer says consolidated, and no live entry carries a binds: line for it (headed in $af)$(born 1.2.0)" >> "$out26"; continue
-      fi
-      awk -F'\t' -v i="$aid" '$4 == i && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . && continue
-      echo "UNCARRIED  $aid — headed in $af and carried by nothing live: no pointer, no Carries line (nothing leaves the live log without a live carrier)$(born 1.2.0)" >> "$out26"
-    done < <(awk -v IDC="$id_core" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$af" | sort -u)
-  done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null)
-  # CARRIER-CONFLICT: in force and settled at once (a consolidated pointer is not settled)
-  { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"; awk -F'\t' '$2 == "settled" {print $1 "\tsettled"}' "$ptr26"; } | sort -u \
+  # TWO-HOMES: an id has one home — the folder whose archive heads it. Headed in two folders'
+  # archives (a copied entry), or pointed from a folder whose own archive does not head it (the
+  # mark is the owner's; a split's new owner carries what it inherits in its founding block)
+  awk -F'\t' '{ k = $2; if (index(h[k], "\t" $1 "\t") == 0) { h[k] = h[k] "\t" $1 "\t"; n[k]++ } } END { for (k in h) if (n[k] > 1) { gsub(/\t\t/, ", ", h[k]); gsub(/^\t|\t$/, "", h[k]); print k "\t" h[k] } }' "$heads26" | sort > "$two26"
+  while IFS=$'\t' read -r tid tf; do
+    [ -n "$tid" ] && echo "TWO-HOMES  $tid — headed in the archives of two folders ($tf): an id has one home, the folder whose archive heads it; a copy of an entry is not a second home$(born 1.2.0)" >> "$out26"
+  done < "$two26"
+  while IFS=$'\t' read -r pf pid pst ploc; do
+    [ -n "$pid" ] || continue
+    awk -F'\t' -v d="$pf" -v i="$pid" '$1 == d && $2 == i' "$heads26" | grep -q . && continue
+    echo "TWO-HOMES  $ploc  $pid — pointed from $pf/, whose archive does not head it: an id is pointed from its home only, the folder whose archive heads it (the mark is the owner's; a split's new owner carries what it inherits in its founding block, never by pointer)$(born 1.2.0)" >> "$out26"
+  done < "$ptr26"
+  # UNCARRIED, per id headed in an archive, read against its home's pointer: a pointer settled
+  # carries it; a pointer consolidated needs a binds: line of a live entry, in any folder (a
+  # split's founding block lives elsewhere); no pointer needs a Carries line of a live entry.
+  # The finding lands on the pointer that demands, at its line — on the archive when no pointer
+  # exists. An id with two homes is reported above, not here.
+  while IFS=$'\t' read -r hf hid ha; do
+    [ -n "$hid" ] || continue
+    awk -F'\t' -v i="$hid" '$1 == i' "$two26" | grep -q . && continue
+    st26=$(awk -F'\t' -v d="$hf" -v i="$hid" '$1 == d && $2 == i {print $3; exit}' "$ptr26")
+    loc26=$(awk -F'\t' -v d="$hf" -v i="$hid" '$1 == d && $2 == i {print $4; exit}' "$ptr26")
+    [ "$st26" = settled ] && continue
+    if [ "$st26" = consolidated ]; then
+      awk -F'\t' -v i="$hid" '$4 == i && $5 == "binds"' "$lines26" | grep -q . && continue
+      echo "UNCARRIED  $loc26  $hid — its pointer says consolidated, and no live entry carries a binds: line for it (headed in $ha)$(born 1.2.0)" >> "$out26"; continue
+    fi
+    awk -F'\t' -v i="$hid" '$4 == i && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . && continue
+    echo "UNCARRIED  $hid — headed in $ha and carried by nothing live: no pointer in $hf/, no Carries line (nothing leaves the live log without a live carrier)$(born 1.2.0)" >> "$out26"
+  done < "$heads26"
+  # CARRIER-CONFLICT: in force and settled at once — a binds: line against a settled: line, or
+  # against the home's pointer in state done or superseded (a consolidated pointer is not
+  # settled; a pointer outside its home is TWO-HOMES, not a disposition)
+  { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"
+    awk -F'\t' 'NR == FNR { home[$1 "\t" $2] = 1; next } $3 == "settled" && (($1 "\t" $2) in home) { print $2 "\tsettled" }' "$heads26" "$ptr26"; } | sort -u \
     | awk -F'\t' '{ s[$1] = s[$1] $2 ";" } END { for (i in s) if (index(s[i], "binds;") && index(s[i], "settled;")) print i }' | sort \
     | while IFS= read -r cid; do echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id$(born 1.2.0)" >> "$out26"; done
-  if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has a live carrier, no id is carried two ways)"; fi
-  rm -f "$lines26" "$ptr26" "$out26"
+  if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has one home and a live carrier, no id is carried two ways)"; fi
+  rm -f "$lines26" "$ptr26" "$heads26" "$two26" "$out26"
 fi
 
 echo
@@ -1263,7 +1291,7 @@ product_legs=(
   TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT
   VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX
   CITED-ID UNROOTED OVERLAP DANGLING INBOX-ACTOR FUTURE-DATE POINTER-FORM ARCHIVE-NAME NO-CARRIER
-  CARRIES-FORM UNCARRIED CARRIER-CONFLICT IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD
+  CARRIES-FORM UNCARRIED CARRIER-CONFLICT TWO-HOMES IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD
   DETECTOR-CROSS-IMPORT
   crit-doc-lint doc-lint "the battery" crit-status-check status-check inbox-check
   crit-memory-index memory-index "the atlas" crit-in-force in-force

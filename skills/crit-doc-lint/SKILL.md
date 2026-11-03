@@ -204,9 +204,14 @@ may match no release.
     shapes, or a `settled:` state outside `done` · `superseded by <id>` · `consolidated in <id>`.
     **UNCARRIED**: an id headed in an archive with no live carrier — no pointer in the live log,
     no `Carries` line of a live entry; a pointer `consolidated in <id>` needs a `binds:` line
-    somewhere live. **CARRIER-CONFLICT**: one id carried as in force and as settled at once —
-    a pointer consolidated in a live entry is not settled: the `binds:` line it demands is its
-    carrier. Fenced blocks are not read.
+    somewhere live; the finding lands on the pointer that demands, at its line, or on the
+    archive when no pointer exists. **CARRIER-CONFLICT**: one id carried as in force and as
+    settled at once — a pointer consolidated in a live entry is not settled: the `binds:` line
+    it demands is its carrier. **TWO-HOMES**: an id has one home, the folder whose archive heads
+    it — an id headed in two folders' archives (a copied entry), or pointed from a folder whose
+    own archive does not head it (the mark is the owner's; a split's new owner carries what it
+    inherits in its founding block, never by pointer). Pointers are read per folder. Fenced
+    blocks are not read.
 27. **IN-FORCE** — the generated law in force of every agent (`contract-memory § 6`), through
     `/crit-in-force --check`: **IN-FORCE-STALE** — `IN-FORCE.md` missing in a memory folder that
     holds a log, or differing from a fresh generation (a lane view beside it likewise);
