@@ -31,6 +31,9 @@ cat > README.md <<EOF
 EOF
 printf '# ⚰ RETIRED — moved\n' > docs/old.md
 printf '# orphan\nnobody links here\n' > docs/orphan.md
+# [1] TRACKED-MISSING: a tracked path deleted from the disk after the commit (at the end), never
+#     from the index — an uncommitted deletion; read by no check, so not an ORPHAN
+printf '# gone\n' > docs/gone.md
 
 # [21] CITED-ID: one lost id (flagged) beside three that must resolve — a live entry, an
 # archived entry, a retired id kept alive by the alias table in a log's head
@@ -226,4 +229,5 @@ printf '# contracts\n' > "$L/shared/CONTRACTS.md"
 git add -A . >/dev/null 2>&1
 GIT_AUTHOR_DATE="2026-08-01T00:00:00Z" GIT_COMMITTER_DATE="2026-08-01T00:00:00Z" \
   git -c user.name=fixture -c user.email=fixture@example.invalid commit -qm "fixture" >/dev/null
+rm docs/gone.md
 echo "fixture built: $T"

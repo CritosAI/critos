@@ -35,7 +35,9 @@ may match no release.
 1. **BROKEN** — a relative markdown link that does not resolve to an existing file. Code spans
    and fenced blocks are stripped first (a `](…)` fragment inside backticks is prose about
    links), and untracked `.md` files are scanned as sources too. Not detected, on purpose: a
-   dead path written in backticks.
+   dead path written in backticks. Said first, before the links, **TRACKED-MISSING**: a path
+   git tracks that is absent from the disk — an uncommitted deletion, yours or a neighbour's —
+   once; every check reads the tree without it, and none dies on it.
 2. **PATH-IN-CODE** — a top-level `doc/….md` path hard-coded in code: it goes stale the moment
    the doc moves (reference by ID or concept, never by path). Exempt: `/archive/` paths, and a
    line annotated **`doc-lint:allow path-in-code`** — reserved for a path that is the program's

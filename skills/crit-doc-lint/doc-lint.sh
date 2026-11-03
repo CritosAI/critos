@@ -4,7 +4,9 @@
 # doc-lint — the deterministic documentation-hygiene battery (the steward's mechanical pass).
 #
 # The battery. This header is part of the interface: update it WITH the checks.
-#   [1] BROKEN            a relative markdown link that does not resolve to an existing file
+#   [1] BROKEN            a relative markdown link that does not resolve to an existing file;
+#       TRACKED-MISSING   a path git tracks that is absent from the disk (an uncommitted deletion),
+#                         said once and read by no check: every file list is filtered by existence
 #   [2] PATH-IN-CODE      a top-level `doc/….md` path hard-coded in code (reference by ID or
 #                         concept, never by path)
 #   [3] ORPHAN            a tracked .md that no other tracked .md links to ([1] and [3] are the
@@ -139,7 +141,10 @@ echo
 strip_code() { awk '/^[[:space:]]*```/{f=!f;next} !f{gsub(/``[^`]*``/,""); gsub(/`[^`]*`/,""); print}' "$1"; }
 links_of()   { strip_code "$1" | grep -oE '\]\([^)#][^)]*\)' 2>/dev/null | sed -E 's/^\]\(//; s/\)$//'; }
 # Untracked .md are link SOURCES too: a new doc's links are checked while its author is looking.
-md_link_sources() { { git ls-files '*.md'; git ls-files --others --exclude-standard -- '*.md'; } | sort -u; }
+# The tracked .md ON THE DISK: a tracked path absent from it (an uncommitted deletion) is said
+# once by [1] and read by nothing — a dead awk prints a none it has not earned.
+tracked_md() { git ls-files '*.md' | while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done; }
+md_link_sources() { { tracked_md; git ls-files --others --exclude-standard -- '*.md'; } | sort -u; }
 # The repos this one registers in `.claude/repos`, one absolute path per line.
 constellation() {
   local f="$1/.claude/repos" line
@@ -167,6 +172,11 @@ fi
 id_re="\\b($id_core)\\b"
 
 echo "### doc-lint [1] — broken relative links in .md (existence-checked per link; tracked + untracked)"
+# First, the index vs the tree: a path git tracks that is absent from the disk — an uncommitted
+# deletion, yours or a neighbour's. Said once, here; every check reads the tree without it.
+while IFS= read -r -d '' f; do
+  [ -e "$f" ] || echo "TRACKED-MISSING  $f  (tracked by git, absent on disk — an uncommitted deletion, yours or a neighbour's: commit it or restore it; every check reads the tree without it)"
+done < <(git ls-files -z 2>/dev/null)
 any_broken=0
 while IFS= read -r f; do
   d=$(dirname "$f")
@@ -216,7 +226,7 @@ while IFS= read -r f; do
     u=${url%%#*}; [ -z "$u" ] && continue
     realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
   done < <(links_of "$f")
-done < <(git ls-files '*.md') | sort -u > "$targets"
+done < <(tracked_md) | sort -u > "$targets"
 # Exempt: docs found by CONVENTION — entry points, the memory triad, the three registers, the
 # pinned tier's own files, per-entity notes. A repo declares its own convention families in
 # `.claude/doc-lint-exempt` (one extended regex per line, matched against the path).
@@ -233,7 +243,7 @@ while IFS= read -r f; do
   case "$f" in .critos/memory/*/notes/*) continue ;; esac
   if [ -n "$exempt_re" ] && printf '%s\n' "$f" | grep -qE "$exempt_re"; then continue; fi
   grep -qxF "$f" "$targets" || { echo "ORPHAN  $f  (no tracked .md points at it — register it in its index, or archive it)"; any_orphan=1; }
-done < <(git ls-files '*.md')
+done < <(tracked_md)
 [ "$any_orphan" = 0 ] && echo "(none — every doc is reachable from an index)"
 # The second leg, ORPHAN-BY-USE (WARN): linked is not read. A document earns its place when a
 # surface that DISPATCHES a reader names it — a SKILL.md, an agent definition, the roster, the
@@ -258,7 +268,7 @@ while IFS= read -r f; do
     u=${url%%#*}; [ -z "$u" ] && continue
     realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
   done < <(links_of "$f")
-done < <(git ls-files '*.md') | sort -u > "$dispatch"
+done < <(tracked_md) | sort -u > "$dispatch"
 any_byuse=0
 while IFS= read -r f; do
   case "$(basename "$f")" in
@@ -272,7 +282,7 @@ while IFS= read -r f; do
   grep -qxF "$f" "$dispatch" && continue
   echo "ORPHAN-BY-USE  $f  (linked only from an index or a history surface — no skill, definition, roster, contracts row or live document sends a reader here: a procedure an agent runs is a skill; a guide earns its place by a reader sent to it, or it is archived)"
   any_byuse=1
-done < <(git ls-files '*.md')
+done < <(tracked_md)
 rm -f "$targets" "$dispatch"
 [ "$any_byuse" = 0 ] && echo "(no document linked only from an index: every reachable doc has a reader sent to it)"
 
@@ -288,7 +298,7 @@ builtins="config hooks clear compact help agents rewind model init review resume
 run verify code-review simplify loop schedule artifact-design dataviz claude-api
 security-review update-config keybindings-help deep-research fewer-permission-prompts"
 any_dangling=0
-scan=$(git ls-files '*.md' | grep -E '(SKILL\.md$|^CLAUDE\.md$)' | grep -v '/crit-doc-lint/' || true)
+scan=$(tracked_md | grep -E '(SKILL\.md$|^CLAUDE\.md$)' | grep -v '/crit-doc-lint/' || true)
 for f in $scan; do
   # An invocation is backtick-delimited AND kebab-case (`/crit-doc-lint`), or follows an invoking
   # verb ("use /name"); a single backticked word is usually a URL path segment.
@@ -716,7 +726,7 @@ echo "### doc-lint [16] — RETIRED-REF: a live doc whose link resolves to a ⚰
 retired_set=$(mktemp)
 while IFS= read -r rf; do
   head -1 "$rf" 2>/dev/null | grep -qE '⚰|RETIRED' && printf '%s\n' "$rf"
-done < <(git ls-files '*.md') > "$retired_set"
+done < <(tracked_md) > "$retired_set"
 if [ ! -s "$retired_set" ]; then
   echo "(no ⚰ RETIRED files in this repo — skipped)"
   rm -f "$retired_set"
@@ -1248,7 +1258,7 @@ echo "### doc-lint [28] — DETECTOR: every tier-2 claim names a detector that e
 # DETECTOR-CROSS-IMPORT — a detector that reaches into another agent's folder.
 # (Keep the list in step with the header above when a token is added.)
 product_legs=(
-  BROKEN PATH-IN-CODE ORPHAN ORPHAN-BY-USE DANGLING-SKILL PING-PONG NO-DONE-WHEN MULTI-OWNER STALE-Rx
+  BROKEN TRACKED-MISSING PATH-IN-CODE ORPHAN ORPHAN-BY-USE DANGLING-SKILL PING-PONG NO-DONE-WHEN MULTI-OWNER STALE-Rx
   BAD-TOKEN UNBOLDED-TOKEN STATUS-CHRONICLE NOTE-CHRONICLE STALE-STATUS DANGLING-WIKI-LINK AUTO-MEMORY-CITED
   TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT
   VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX
