@@ -8,7 +8,8 @@
 #   1. the battery   every finding token of crit-doc-lint fires on the fixture, with the expected
 #                    tally (tests/expected-findings.txt). PIN-DRIFT is checked for PRESENCE only:
 #                    between two releases the tier's bytes legitimately differ from the last
-#                    ledger rows, so its count is not stable.
+#                    ledger rows, so its count is not stable. And the law in force generated for
+#                    the fixture's a2 counts its live entries and names the uncarried ones.
 #   2. the guards    every verdict of the command table (tests/expected-guard.txt), and every
 #                    verdict of the inbox guard's situations (tests/expected-guard-inbox.txt).
 #   3. the licence   every file carries the SPDX line, or a declared exemption (tests/licence.sh).
@@ -48,6 +49,17 @@ if grep -qE '^(awk|gawk|sed|grep|bash|realpath|node): ' "$tmp/battery.txt"; then
   grep -E '^(awk|gawk|sed|grep|bash|realpath|node): ' "$tmp/battery.txt" | sort | uniq -c | head -5 | sed 's/^/        /'
   fail=1
 else echo "ok    battery stderr (no interpreter diagnostic in $(grep -c . "$tmp/battery.txt") lines)"; fi
+# The law in force names what it cannot summarise: a2 holds five decisions and two lessons, four
+# of them carrying their rule — the index says 4 of 7 and names the other three, per log.
+( cd "$tmp/fx" && bash "$repo/skills/crit-in-force/in-force.sh" .critos/memory/a2 >/dev/null 2>&1 )
+if grep -q '^\*\*Carried:\*\* 4 of 7 live entries' "$tmp/fx/.critos/memory/a2/IN-FORCE.md" \
+   && grep -q '^\*\*Uncarried:\*\* `ADR-A2-002` — in `DECISIONS.md`' "$tmp/fx/.critos/memory/a2/IN-FORCE.md" \
+   && grep -q '^\*\*Uncarried:\*\* `L-A2-001`, `L-A2-002` — in `LESSONS-LEARNED.md`' "$tmp/fx/.critos/memory/a2/IN-FORCE.md"; then
+  echo "ok    in-force (the index counts 4 of 7 live entries and names the three uncarried)"
+else
+  echo "FAIL  in-force — the index does not count its live entries or name the uncarried ones:"
+  grep -E '^\*\*(Carried|Uncarried):' "$tmp/fx/.critos/memory/a2/IN-FORCE.md" 2>/dev/null | sed 's/^/        /'; fail=1
+fi
 bash "$here/guard-cases.sh" "$repo/hooks/guard-user-driven-actions.sh" "$tmp/fx" 2>/dev/null > "$tmp/guard.txt"
 bash "$here/guard-inbox-cases.sh" "$repo/hooks/guard-inbox.sh" "$tmp/fx" 2>/dev/null > "$tmp/guard-inbox.txt"
 

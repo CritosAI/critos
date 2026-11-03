@@ -25,7 +25,8 @@ one will know, it must write before leaving. This contract is that rhythm.
    the entries you must act on. Address the newest `[OPEN]` entries addressed to you **before**
    re-touching older ones.
 8. **Your own memory** — `STATUS` always; **`IN-FORCE.md` always** — the generated law in force,
-   one line per rule that binds you (`contract-memory § 6`); then `DECISIONS` and
+   one line per rule that binds you, and the entries its head names as uncarried, opened whole
+   (`contract-memory § 6`); then `DECISIONS` and
    `LESSONS-LEARNED` **opened at an id the index names, never read whole**: they are the
    chronicle, and a log skimmed from the top is a rule not read. The inbox came first on
    purpose: a snapshot read before the debt gets believed — your `STATUS` is hearsay about what

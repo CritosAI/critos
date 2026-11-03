@@ -56,6 +56,7 @@ done
 ( cd "$t" && bash "$repo/skills/crit-memory-index/memory-index.sh" --check >/dev/null 2>&1 ) || bad "the atlas the scaffold generated is already stale"
 ( cd "$t" && bash "$repo/skills/crit-in-force/in-force.sh" --check >/dev/null 2>&1 ) || bad "the law in force the scaffold generated is already stale"
 grep -q 'Rules in force:\*\* 0' "$t/.critos/memory/a1/IN-FORCE.md" || bad "the newborn steward's law in force is not empty"
+grep -q '^\*\*Carried:\*\* 0 of 0 live entries' "$t/.critos/memory/a1/IN-FORCE.md" || bad "the newborn steward's law in force does not count its (zero) live entries"
 grep -qE '\| 0 ADR \|' "$t/MEMORY-INDEX.md" || bad "the atlas counts a decision in a log that was born empty"
 grep -qE 'no L- ids' "$t/MEMORY-INDEX.md" || bad "the atlas counts a lesson in a log that was born empty"
 

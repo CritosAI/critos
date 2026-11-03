@@ -45,6 +45,11 @@ Inside a live entry of `DECISIONS.md` or `LESSONS-LEARNED.md`, under a line that
 
 `.critos/memory/a<N>/IN-FORCE.md` — a header, then one section per lane, one line per rule:
 `` - `<id>` · <rule> · tier N — <detector> ``. Derived: a hand-edit disappears at the next run.
+The header counts what was read and names what it cannot summarise: `**Carried:** k of N live
+entries` and, when k < N, an `**Uncarried:**` line per log with the ids of the entries that
+carry nothing — the boot opens those whole. The none-line is written only when every live
+entry carries its rule: an index never reads as *no rule binds you* while an entry it could
+not read exists.
 **Budget 300 lines** (`.claude/doc-lint-in-force-lines` overrides): past it `--check` prints a
 `BUDGET` warning — the law in force of one agent is read at every boot, so a long index is the
 signal to consolidate, not to read faster.
@@ -58,5 +63,6 @@ index.
 
 - **At the round-close** that appended or changed an entry (`contract-session § 2`), beside the
   atlas. `/crit-doc-lint [27]` reports a stale or missing index.
-- **At boot**, `contract-session § 1` step 8 reads it in place of the logs whole.
+- **At boot**, `contract-session § 1` step 8 reads it in place of the logs whole, and opens the
+  entries its head names as uncarried.
 - Never cite it: cite the entry it points at.

@@ -8,7 +8,10 @@
 # file names. It is DERIVED — a hand-edit disappears at the next run — and it holds the rules
 # in force only: a settled rule resolves through the atlas. Grouped by lane; a lane may be
 # hierarchical (`onboarding/config`), and a view per lane prefix can be emitted beside the index,
-# one section per sub-lane under a stable anchor.
+# one section per sub-lane under a stable anchor. Its head counts the live entries it read and
+# names those that carry nothing (`Carried: k of N`, then `Uncarried:` per log): the boot opens
+# the named entries whole — an index that cannot summarise an entry sends the reader to it, and
+# never reads as "no rule binds you" while such an entry exists.
 #
 # The line it reads, inside a live entry, under a line that is exactly `**Carries.**`:
 #   - `<id>` · <the rule in one imperative line> · binds: <lane>[ · tier N[ — <detector>]]
@@ -114,12 +117,31 @@ lines_of() {   # $1 = folder -> the parsed lines of both logs
   local lg
   for lg in "$1/DECISIONS.md" "$1/LESSONS-LEARNED.md"; do [ -f "$lg" ] && parse_lines "$lg"; done
 }
+entries_of() {   # $1 = log -> the ids of its live entries, in order (a heading carrying ROTATED is a
+                 # pointer in the wrong shape, not an entry; the carrier check reads the same heads)
+  awk -v IDC="$id_core" '/^[[:space:]]*```/ { fence = !fence; next } fence { next }
+    $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$1"
+}
+carried_of() {   # $1 = folder, $2 = the parsed lines (a file) -> per log: carried <TAB> total <TAB> the uncarried ids
+  local lg
+  for lg in "$1/DECISIONS.md" "$1/LESSONS-LEARNED.md"; do
+    [ -f "$lg" ] || continue
+    awk -F'\t' -v f="$lg" '
+      FILENAME == ARGV[1] { if ($1 == f && $3 == $4 && ($5 == "binds" || $5 == "settled")) c[$3] = 1; next }
+      { t++; if ($0 in c) k++; else u = u ", `" $0 "`" }
+      END { printf "%s\t%d\t%d\t%s\n", f, k, t, substr(u, 3) }' "$2" <(entries_of "$lg")
+  done
+}
 
 # gen_index FOLDER [PREFIX] — the index (no prefix) or the lane view of PREFIX, to stdout
 gen_index() {
-  local d="$1" prefix="${2:-}" agent rules n lanes
+  local d="$1" prefix="${2:-}" agent rules n lanes all carried k_all t_all
   agent=$(printf '%s' "$d" | sed -nE 's#^\.critos/memory/a([0-9]+)$#\1#p')
-  rules=$(lines_of "$d" | awk -F'\t' '$5 == "binds"')
+  all=$(mktemp); lines_of "$d" > "$all"
+  rules=$(awk -F'\t' '$5 == "binds"' "$all")
+  carried=$(carried_of "$d" "$all"); rm -f "$all"
+  k_all=$(printf '%s\n' "$carried" | awk -F'\t' '{ k += $2 } END { print k + 0 }')
+  t_all=$(printf '%s\n' "$carried" | awk -F'\t' '{ t += $3 } END { print t + 0 }')
   if [ -n "$prefix" ]; then
     rules=$(printf '%s\n' "$rules" | awk -F'\t' -v p="$prefix" '$6 == p || index($6, p "/") == 1')
   fi
@@ -138,7 +160,12 @@ gen_index() {
   echo "> Cite the entry, never this file."
   echo
   echo "**Generated:** $stamp (UTC) · **Folder:** \`$d/\` · **Rules in force:** $n · **Lanes:** $(printf '%s\n' "$lanes" | grep -c '.')"
-  [ "$n" = 0 ] && { echo; echo "(no rule in force yet — a live entry carries its rules under \`**Carries.**\`)"; }
+  if [ -z "$prefix" ]; then
+    # the head counts what was read and names what it cannot summarise: the boot opens those whole
+    echo "**Carried:** $k_all of $t_all live entries"
+    printf '%s\n' "$carried" | awk -F'\t' '$4 != "" { n = $1; sub(/.*\//, "", n); print "**Uncarried:** " $4 " — in `" n "`: opened whole until each carries its rule" }'
+    [ "$n" = 0 ] && [ "$k_all" = "$t_all" ] && { echo; echo "(no rule in force — $k_all of $t_all live entries carry their rule, none binds)"; }
+  fi
   while IFS= read -r lane; do
     [ -n "$lane" ] || continue
     echo
