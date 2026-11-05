@@ -79,7 +79,10 @@ for o in ${own[@]+"${own[@]}"} ${folders[@]+"${folders[@]}"}; do
 done
 head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
 head_root=$(mktemp -d); trap 'rm -rf "$head_root"' EXIT
-is_owned() { local x; for x in ${owned[@]+"${owned[@]}"}; do [ "$x" = "$1" ] && return 0; done; return 1; }
+is_owned() {   # $1 = a folder, or anything under it (its archive, its notes): owned with its memory folder
+  local x t; t=$(printf '%s' "$1" | sed -nE 's#^(\.critos/memory/[^/]+)(/.*)?$#\1#p'); [ -n "$t" ] || t="$1"
+  for x in ${owned[@]+"${owned[@]}"}; do [ "$x" = "$t" ] && return 0; done; return 1
+}
 materialize() {   # $1 = folder -> its HEAD copy under $head_root, once (nothing at HEAD: an empty copy).
                   # Called up front, never inside a command substitution: a subshell's copy dies with it.
   [ -d "$head_root/$1" ] && return 0

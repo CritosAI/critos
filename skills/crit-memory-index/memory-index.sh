@@ -44,7 +44,10 @@ for o in ${own[@]+"${own[@]}"} ${folders[@]+"${folders[@]}"}; do
 done
 head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
 head_root=$(mktemp -d); trap 'rm -rf "$head_root"' EXIT
-is_owned() { local x; for x in ${owned[@]+"${owned[@]}"}; do [ "$x" = "$1" ] && return 0; done; return 1; }
+is_owned() {   # $1 = a folder, or anything under it (its archive, its notes): owned with its memory folder
+  local x t; t=$(printf '%s' "$1" | sed -nE 's#^(\.critos/memory/[^/]+)(/.*)?$#\1#p'); [ -n "$t" ] || t="$1"
+  for x in ${owned[@]+"${owned[@]}"}; do [ "$x" = "$t" ] && return 0; done; return 1
+}
 materialize() {   # $1 = folder -> its HEAD copy under $head_root, once (nothing at HEAD: an empty copy).
                   # Called up front, never inside a command substitution: a subshell's copy dies with it.
   [ -d "$head_root/$1" ] && return 0
@@ -71,11 +74,12 @@ log_files() {   # every *<KIND>*.md: tracked and new outside the unowned memory 
 if [ "$head_ok" = 1 ]; then
   while IFS= read -r d; do [ -n "$d" ] && ! is_owned "$d" && materialize "$d"; done < <(git ls-tree -d --name-only HEAD -- '.critos/memory/' 2>/dev/null)
 fi
-memory_folders() {   # the folders of the table: owned ones from the tree, the others as committed
+memory_folders() {   # the folders of the table (a folder under one, its archive, counts as before): the
+                     # owned ones from the tree, the others as committed
   { for o in ${owned[@]+"${owned[@]}"}; do tracked_and_new "$o/*.md"; done
     if [ "$head_ok" = 1 ]; then
-      git ls-tree -r --name-only HEAD -- '.critos/memory/' 2>/dev/null | grep -E '^\.critos/memory/[^/]+/[^/]+\.md$' | while IFS= read -r f; do d=${f%/*}; is_owned "$d" || printf '%s\n' "$f"; done
-    else tracked_and_new '.critos/memory/*/*.md'; fi; } | sed -E 's#/[^/]+$##' | grep -E '^\.critos/memory/[^/]+$' | sort -u
+      git ls-tree -r --name-only HEAD -- '.critos/memory/' 2>/dev/null | grep -E '\.md$' | while IFS= read -r f; do is_owned "$f" || printf '%s\n' "$f"; done
+    else tracked_and_new '.critos/memory/*/*.md'; fi; } | sed -E 's#/[^/]+$##' | grep -E '^\.critos/memory/' | sort -u
 }
 tmp=$(mktemp)
 
