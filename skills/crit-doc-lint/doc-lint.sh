@@ -65,7 +65,9 @@
 #                         CARRIER-CONFLICT an id carried as in force and as settled at once (a
 #                         pointer consolidated in a live entry is not settled); TWO-HOMES an id
 #                         headed in two folders' archives, or pointed from a folder whose own
-#                         archive does not head it — an id has one home
+#                         archive does not head it — an id has one home; a declared family's
+#                         heading outside its declared home (`· home: a<N>` in id-families),
+#                         or a declared home that is no memory folder, likewise
 #  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
 #                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
 #  [28] TIER-2-UNDETECTED a tier-2 claim (a field whose head says tier 2) naming no detector that
@@ -76,7 +78,8 @@
 #                         DETECTOR-CROSS-IMPORT a detector reaching into another agent's folder
 #
 # Ids: the method's grammar (`ADR-<scope>-NNN`, `L-<scope>-NNN`) plus the families a project
-# declares in `.critos/project/id-families` — grammar, never an exemption.
+# declares in `.critos/project/id-families` — grammar, never an exemption; a family may name
+# its home on its line (`· home: a<N>`), read by [26].
 #
 # Severity at birth (contract-system § 6): a leg introduced by a release reports as a WARN in a
 # project pinned at that release — its line says so — and as a finding from the next release.
@@ -172,9 +175,11 @@ decode() { local u="$1"; u=${u//%20/ }; u=${u//%28/(}; u=${u//%29/)}; u=${u//%26
 # `.critos/project/id-families` — one extended regex per line, '#' comments — and every reader of
 # an id in this battery (the citations, the pointers, the carriers) reads those families as ids
 # too. A declared family is grammar, never an exemption: its ids must resolve like any other.
+# A line may name the family's HOME after its regex (`^D-[0-9]{3}$ · home: a2`): every reader
+# strips the suffix before it reads the regex; [26] reads the declaration.
 id_core='(ADR|L)-[A-Za-z0-9]+-[0-9]{3,}'
 if [ -f .critos/project/id-families ]; then
-  fam=$(grep -vE '^[[:space:]]*(#|$)' .critos/project/id-families | sed -E 's/^\^//; s/\$$//' | paste -sd'|' -)
+  fam=$(grep -vE '^[[:space:]]*(#|$)' .critos/project/id-families | sed -E 's/[[:space:]]*·[[:space:]]*home:.*$//; s/^\^//; s/\$$//' | paste -sd'|' -)
   [ -n "$fam" ] && id_core="$id_core|$fam"
 fi
 id_re="\\b($id_core)\\b"
@@ -1209,6 +1214,33 @@ else
   while IFS=$'\t' read -r tid tf; do
     [ -n "$tid" ] && echo "TWO-HOMES  $tid — headed in the archives of two folders ($tf): an id has one home, the folder whose archive heads it; a copy of an entry is not a second home$(born 1.2.0)" >> "$out26"
   done < "$two26"
+  # The declared home of a family (`<regex> · home: a<N>` in id-families): a heading of the family
+  # in a folder other than its home — an archive's or a live log's — is a finding from the first
+  # heading, with no second archive to compare; a declared home that is no memory folder is a
+  # finding on the line. The declaration is a claim the control reads, never an exemption; an
+  # undeclared family's home stays derived from the archives.
+  if [ -f .critos/project/id-families ]; then
+    while IFS= read -r hl; do
+      [ -n "$hl" ] || continue
+      hln=${hl%%:*}; hbody=${hl#*:}
+      hre=$(printf '%s' "$hbody" | sed -E 's/[[:space:]]*·[[:space:]]*home:.*$//')
+      hhome=$(printf '%s' "$hbody" | sed -E 's/^.*home:[[:space:]]*//; s/[[:space:]]+$//')
+      if ! printf '%s' "$hhome" | grep -qE '^a[0-9]+$' || [ ! -d ".critos/memory/$hhome" ]; then
+        echo "TWO-HOMES  .critos/project/id-families:$hln  $(printf '%s' "$hbody" | cut -c1-60) — the declared home \`$hhome\` is not a memory folder (.critos/memory/a<N>/): a family's home is a folder that exists$(born 1.2.0)" >> "$out26"
+        continue
+      fi
+      { awk -F'\t' -v re="$hre" -v home=".critos/memory/$hhome" '$2 ~ re && $1 != home { print $3 "\t" $2 "\t" $1 }' "$heads26"
+        while IFS= read -r lg; do
+          [ -f "$lg" ] || continue
+          case "$lg" in *-archive-*|*/archive/*) continue ;; esac
+          [ "$(dirname "$lg")" = ".critos/memory/$hhome" ] && continue
+          awk -v IDC="$id_core" -v re="$hre" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); id = substr($0, RSTART, RLENGTH); if (id ~ re) print f ":" NR "\t" id "\t" d }' "$lg"
+        done < <(logs12); } | sort -u \
+      | while IFS=$'\t' read -r hwhere hid hfold; do
+          [ -n "$hid" ] && echo "TWO-HOMES  $hwhere  $hid — headed in $hfold/, outside the family's declared home ($hhome, id-families:$hln): an id has one home, and a declared family is headed in its home only$(born 1.2.0)" >> "$out26"
+        done
+    done < <(grep -nE '·[[:space:]]*home:' .critos/project/id-families | grep -vE '^[0-9]+:[[:space:]]*#')
+  fi
   while IFS=$'\t' read -r pf pid pst ploc; do
     [ -n "$pid" ] || continue
     awk -F'\t' -v d="$pf" -v i="$pid" '$1 == d && $2 == i' "$heads26" | grep -q . && continue

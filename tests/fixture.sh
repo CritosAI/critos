@@ -40,8 +40,10 @@ printf '# gone\n' > docs/gone.md
 printf '\nDecided in ADR-A2-001, earlier in ADR-A2-000, once known as ADR-OLD-005, and ADR-LEG-042 of a retired sequence; lost: ADR-A2-777; lost too, in the LIVE sequence an alias line points at: ADR-A3-888.\n' >> README.md
 mkdir -p "$L/memory/a2/archive"
 printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n## D-008 — another of the scheme, carried by nothing\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
-# a declared id family: `D-NNN` is grammar, so D-007 (headed above) resolves and D-099 is lost
-printf '# ids of the scheme before the method\n^D-[0-9]{3}$\n' > "$L/project/id-families"
+# a declared id family: `D-NNN` is grammar, so D-007 (headed above) resolves and D-099 is lost;
+# its home is declared (a2), so D-009 headed in a3's archive is TWO-HOMES from the first heading;
+# the Z- family's declared home names no memory folder (a second TWO-HOMES, on the line)
+printf '# ids of the scheme before the method\n^D-[0-9]{3}$ · home: a2\n^Z-[0-9]{3}$ · home: a7\n' > "$L/project/id-families"
 printf 'Under the old scheme: D-007 holds, D-099 was never written.\n' >> README.md
 
 # [2] PATH-IN-CODE
@@ -169,10 +171,12 @@ printf '#!/usr/bin/env bash\n# Enforces: ADR-A2-000\n# a stray file outside any 
   # [27] IN-FORCE-BUDGET: one entry carrying three hundred rules in force; and no IN-FORCE.md in
   #      a2 nor a3 (IN-FORCE-STALE, twice)
   echo "## ADR-A3-001 — carries three hundred"; echo "**Carries.**"
-  for i in $(seq 1 300); do echo "- \`ADR-A3-001\` · rule $i · binds: lane-$i"; done; } > "$L/memory/a3/DECISIONS.md"
+  for i in $(seq 1 300); do echo "- \`ADR-A3-001\` · rule $i · binds: lane-$i"; done
+  # [26] the carrier of D-009, headed in a3's archive outside the family's declared home (a2)
+  echo '- `D-009` · carried here, headed outside its declared home · binds: fixture'; } > "$L/memory/a3/DECISIONS.md"
 
 mkdir -p "$L/memory/a3/archive"
-printf '# archive\n## ADR-A2-000 — a copy of an entry another folder heads\n' > "$L/memory/a3/archive/DECISIONS-archive-2026-08.md"
+printf '# archive\n## ADR-A2-000 — a copy of an entry another folder heads\n## D-009 — a declared family headed outside its declared home\n' > "$L/memory/a3/archive/DECISIONS-archive-2026-08.md"
 
 # status-check axis 1: a dated STATUS beside a DECISIONS log (a3)
 # [9] STALE-STAMP positive: stamped 2026-07-01, committed 2026-08-01 (the build's commit day)

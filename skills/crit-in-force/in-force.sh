@@ -51,10 +51,11 @@ budget=300
 : "${budget:=300}"
 stamp=${CRITOS_SCAFFOLD_DATE:-$(date -u +%Y-%m-%d)}
 
-# the id grammar: the method's, plus the families the project declares (contract-memory § 2)
+# the id grammar: the method's, plus the families the project declares (contract-memory § 2);
+# a family line may name its home after the regex (`· home: a2`) — stripped before reading
 id_core='(ADR|L)-[A-Za-z0-9]+-[0-9]{3,}'
 if [ -f .critos/project/id-families ]; then
-  fam=$(grep -vE '^[[:space:]]*(#|$)' .critos/project/id-families | sed -E 's/^\^//; s/\$$//' | paste -sd'|' -)
+  fam=$(grep -vE '^[[:space:]]*(#|$)' .critos/project/id-families | sed -E 's/[[:space:]]*·[[:space:]]*home:.*$//; s/^\^//; s/\$$//' | paste -sd'|' -)
   [ -n "$fam" ] && id_core="$id_core|$fam"
 fi
 

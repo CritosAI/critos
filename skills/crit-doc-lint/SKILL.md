@@ -160,8 +160,8 @@ CritOS@…`. A slow run names the check that costs, not the run.
     (`contract-memory § 7`) are the moments an id gets lost. An id of an unregistered repo is
     flagged: exempt it in `.claude/doc-lint-exempt`, or register the repo. The ids read are the
     method's grammar plus the families a project declares in `.critos/project/id-families`
-    (one regex per line) — a declared family is grammar, never an exemption: its ids must
-    resolve too.
+    (one regex per line, optionally `· home: a<N>` after it) — a declared family is grammar,
+    never an exemption: its ids must resolve too.
 22. **ROOTS** — the roster's **`Roots`** column against the tracked tree (`contract-agent § 1`,
     `§ 3`): **UNROOTED** — files under no domain's root and no ruled surface (listed per
     top-level folder, a few names each; the count is the finding, the names the lead);
@@ -218,8 +218,12 @@ CritOS@…`. A slow run names the check that costs, not the run.
     it demands is its carrier. **TWO-HOMES**: an id has one home, the folder whose archive heads
     it — an id headed in two folders' archives (a copied entry), or pointed from a folder whose
     own archive does not head it (the mark is the owner's; a split's new owner carries what it
-    inherits in its founding block, never by pointer). Pointers are read per folder. Fenced
-    blocks are not read.
+    inherits in its founding block, never by pointer). A declared family may name its home on
+    its line in `.critos/project/id-families` (`^D-[0-9]{3}$ · home: a2`): a heading of the
+    family outside that folder — in an archive or a live log — is TWO-HOMES from the first
+    heading, with no second archive to compare, and a declared home that is no memory folder
+    is a finding on the line; an undeclared family's home stays derived from the archives.
+    Pointers are read per folder. Fenced blocks are not read.
 27. **IN-FORCE** — the generated law in force of every agent (`contract-memory § 6`), through
     `/crit-in-force --check`: **IN-FORCE-STALE** — `IN-FORCE.md` missing in a memory folder that
     holds a log, or differing from a fresh generation (a lane view beside it likewise);

@@ -102,7 +102,10 @@ code.
   declared:** `.critos/project/id-families`, one extended regex per line (`^D-[0-9]{3}$`), and
   every control that reads an id — the citations, the pointers, the carriers, the index — reads
   those families as ids. A declared family is grammar, never an exemption: its ids must resolve
-  like any other (`[21]`).
+  like any other (`[21]`). A line may name the family's **home** after its regex —
+  `^ADR-0[0-9]{2}$ · home: a2` — and every reader strips the suffix: a heading of the family
+  outside its declared home, or a declared home that is no memory folder, is a finding (`[26]`);
+  an undeclared family's home stays the folder whose archive heads it.
 - **The one legal rename is a RETIREMENT MIGRATION.** A repo may retire a legacy sequence by
   renaming it to the owner scheme, only under all four conditions at once: it is **versioned** (a
   release, user-approved); it is **one repo in one commit** (a half-renamed repo is worse than an
