@@ -122,6 +122,11 @@ fi
 # pin is at that release; a leg WARN by a declared bound never calls it.
 pin_base=${_ver%%-rc*}
 born() { [ -n "$pin_base" ] && [ "$pin_base" = "$1" ] && printf ' (WARN — new in %s: a finding from the next release)' "$1"; return 0; }
+# Every check's block ends with its elapsed seconds, and the run ends with the total: a slow run
+# names the check that costs, not the run. `hdr` prints the previous block's figure, a blank
+# line, then the header of the next check.
+t_start=$(date +%s); t_prev=$t_start; t_n=""
+hdr() { local now; now=$(date +%s); [ -n "$t_n" ] && echo "(elapsed [$t_n]: $((now - t_prev))s)"; t_prev=$now; t_n=$1; echo; echo "### doc-lint [$1] — $2"; }
 
 # ---- which controls ran -----------------------------------------------------------------------
 # The controls are shared from a CritOS checkout: say which revision ran, and whether that
@@ -173,7 +178,7 @@ if [ -f .critos/project/id-families ]; then
 fi
 id_re="\\b($id_core)\\b"
 
-echo "### doc-lint [1] — broken relative links in .md (existence-checked per link; tracked + untracked)"
+hdr 1 "broken relative links in .md (existence-checked per link; tracked + untracked)"
 # First, the index vs the tree: a path git tracks that is absent from the disk — an uncommitted
 # deletion, yours or a neighbour's. Said once, here; every check reads the tree without it.
 while IFS= read -r -d '' f; do
@@ -195,8 +200,7 @@ while IFS= read -r f; do
 done < <(md_link_sources)
 [ "$any_broken" = 0 ] && echo "(none — all relative links resolve)"
 
-echo
-echo "### doc-lint [2] — top-level doc/*.md paths hard-coded in code (fragile breadcrumbs)"
+hdr 2 "top-level doc/*.md paths hard-coded in code (fragile breadcrumbs)"
 # Excluded: a doc co-located with its code (`…/doc/…`), archived code, this skill itself, and
 # any line annotated `doc-lint:allow path-in-code` — for a path that is a program's I/O target.
 # The failure signal is stderr: a no-match batch already makes xargs+grep exit non-zero.
@@ -216,8 +220,7 @@ else
   if [ -n "$p2_hits" ]; then printf '%s\n' "$p2_hits" | sed 's/^/PATH-IN-CODE  /'; else echo "(none)"; fi
 fi
 
-echo
-echo "### doc-lint [3] — ORPHAN docs: tracked .md that nothing links to (the 'no floating doc' rule)"
+hdr 3 "ORPHAN docs: tracked .md that nothing links to (the 'no floating doc' rule)"
 # The reachability graph is built from TRACKED sources only: an uncommitted pointer can vanish.
 targets=$(mktemp)
 while IFS= read -r f; do
@@ -288,8 +291,7 @@ done < <(tracked_md)
 rm -f "$targets" "$dispatch"
 [ "$any_byuse" = 0 ] && echo "(no document linked only from an index: every reachable doc has a reader sent to it)"
 
-echo
-echo "### doc-lint [4] — DANGLING skill references in the agentic docs"
+hdr 4 "DANGLING skill references in the agentic docs"
 # Installed = the machine's skills + the repo's own + the ones bundled with Claude Code (not on
 # disk). Scope: the skill layer only (SKILL.md files and CLAUDE.md) — the text the model reads to
 # choose a skill; elsewhere a /token is usually a URL or an API path.
@@ -315,8 +317,7 @@ for f in $scan; do
 done
 [ "$any_dangling" = 0 ] && echo "(none — every /skill referenced is installed)"
 
-echo
-echo "### doc-lint [5] — INBOX hygiene (ping-pong · no closure criterion · diffused ownership)"
+hdr 5 "INBOX hygiene (ping-pong · no closure criterion · diffused ownership)"
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 inbox="$INBOX"
 if [ -n "$inbox_retired" ] && [ -z "$inbox" ]; then
@@ -329,8 +330,7 @@ else
   node "$here/inbox-audit.mjs" "$inbox" $(ls .critos/shared/archive/HANDOFFS-archive-*.md 2>/dev/null)
 fi
 
-echo
-echo "### doc-lint [6] — STALE-Rx: open ROADMAP rows nobody has touched in >=10 days"
+hdr 6 "STALE-Rx: open ROADMAP rows nobody has touched in >=10 days"
 # The net under the lead's flip duty. A flagged row is not "done": re-verify it with its lead;
 # re-verifying touches the row, which resets its clock.
 rmf="$RMF"
@@ -369,8 +369,7 @@ if [ -n "$rmf" ]; then
   [ "$any_stale_rx" = 0 ] && echo "(none — every open Rx row was touched in the last 10 days)"
 fi
 
-echo
-echo "### doc-lint [7] — BAD-TOKEN: inbox entries whose lifecycle token is outside the closed vocabulary"
+hdr 7 "BAD-TOKEN: inbox entries whose lifecycle token is outside the closed vocabulary"
 # The owed-counter treats only OPEN and PARKED-OWNED as live: an ask written under an invented
 # token is owed by someone and counted by nobody.
 if [ -n "$inbox_retired" ] && [ -z "$inbox" ]; then
@@ -383,8 +382,7 @@ else
   node "$here/token-audit.mjs" "$inbox"
 fi
 
-echo
-echo "### doc-lint [8] — STATUS-CHRONICLE (WARN): a memory STATUS.md that stopped being a snapshot"
+hdr 8 "STATUS-CHRONICLE (WARN): a memory STATUS.md that stopped being a snapshot"
 # A STATUS is overwritten, not prepended. Two fingerprints of a chronicle: over the line budget
 # (default 200; a repo may set its own in `.claude/doc-lint-status-lines`, one integer), or more
 # than one dated AS-OF heading (extra heading words: `.claude/doc-lint-status-headings`).
@@ -426,8 +424,7 @@ while IFS= read -r nf; do
 done < <(git ls-files '.critos/memory/a*/notes/*' 2>/dev/null | grep -E '\.md$')
 [ "$any_note" = 0 ] && echo "(no per-entity note reads as a diary)"
 
-echo
-echo "### doc-lint [9] — STALE-STATUS: a memory STATUS.md nobody has touched in >=14 days"
+hdr 9 "STALE-STATUS: a memory STATUS.md nobody has touched in >=14 days"
 # The flag means "re-verify with the owner", never "this is wrong": a STATUS legitimately rests
 # while its domain is quiet.
 any_stale_status=0
@@ -447,8 +444,7 @@ else
   [ "$any_stale_status" = 0 ] && echo "(none — every STATUS was touched in the last 14 days)"
 fi
 
-echo
-echo "### doc-lint [10] — DANGLING-WIKI-LINK (WARN): a [[slug]] that resolves nowhere reachable"
+hdr 10 "DANGLING-WIKI-LINK (WARN): a [[slug]] that resolves nowhere reachable"
 # A slug resolves if it is (a) a heading or ID declared in a tracked .md, (a2) a tracked doc's
 # basename, (a3) a token-shaped first cell of a table row, or (b) exempted in
 # `.claude/doc-lint-exempt`. Never against the assistant's auto-memory: a link that resolved
@@ -503,8 +499,7 @@ else
   [ "$any_am" = 0 ] && echo "(no tracked file cites an auto-memory note of this machine)"
 fi
 
-echo
-echo "### doc-lint [11] — TIER-3 LESSON: an accepted_rule that does not name its enforcement tier"
+hdr 11 "TIER-3 LESSON: an accepted_rule that does not name its enforcement tier"
 # A lessons log is written as headings (`## L-A<N>-NNN …`) or as top-level bullets
 # (`- **YYYY-MM-DD · accepted_rule — …`): the shape is detected first, because a bullet boundary
 # inside a heading-shaped file would split entries at their own lists. The field is read at its
@@ -586,8 +581,7 @@ else
   echo "(no Enforcement: line outside the one written form)"
 fi
 
-echo
-echo "### doc-lint [12] — UNROTATED LOG: an append-only memory log past the skimmable budget"
+hdr 12 "UNROTATED LOG: an append-only memory log past the skimmable budget"
 # The remedy is rotation, never deletion (default budget 1200 lines; a repo may set its own in
 # `.claude/doc-lint-log-lines`). Rotation is forbidden while the entries that would move are
 # still cited, so a log may DECLARE its overage in its own head — the state word
@@ -624,8 +618,7 @@ while IFS= read -r lg; do
 done < <(logs12)
 [ "$any_unrotated" = 0 ] && echo "(none — every append-only memory log is within budget, or declares its overage in its own head)"
 
-echo
-echo "### doc-lint [13] — MEMORY-SHAPE: one agent, one folder, one writer, one address"
+hdr 13 "MEMORY-SHAPE: one agent, one folder, one writer, one address"
 if [ -d .critos/memory ]; then
   any_shape=0
   for d in .critos/memory/*/; do
@@ -645,8 +638,7 @@ else
   echo "(no .critos/memory/ in this repo — skipped)"
 fi
 
-echo
-echo "### doc-lint [14] — PIN-DRIFT: the pinned system tier vs its declared release"
+hdr 14 "PIN-DRIFT: the pinned system tier vs its declared release"
 # The target is the DECLARED version's entries in the release manifest, never HEAD: a project
 # pinned at an older release verifies against its own release. A release candidate
 # (`1.2.0-rc.1`) is a version of its own, with its own entries. The manifest is found from where
@@ -695,8 +687,7 @@ else
   fi
 fi
 
-echo
-echo "### doc-lint [15] — DEFINITION-PATH: a path in an agent definition, beyond the law-fixed addresses"
+hdr 15 "DEFINITION-PATH: a path in an agent definition, beyond the law-fixed addresses"
 # Only the two classes that are wrong without judgment: a .md path (a doc map) and an absolute
 # path (a machine, not a perimeter). Perimeter-versus-interior depth is the steward's review.
 def_files=$(git ls-files '.critos/project/agents/agent-*.md' '.claude/agents/agent-*.md' 2>/dev/null)
@@ -721,8 +712,7 @@ else
   [ "$any_defpath" = 0 ] && echo "(none — every definition names concepts and the two law-fixed addresses only)"
 fi
 
-echo
-echo "### doc-lint [16] — RETIRED-REF: a live doc whose link resolves to a ⚰ RETIRED file"
+hdr 16 "RETIRED-REF: a live doc whose link resolves to a ⚰ RETIRED file"
 # The link resolves, so [1] is green by design: the target exists and its own first line disowns
 # it. Not sources: files under archive/ or release/, and the signposts themselves.
 retired_set=$(mktemp)
@@ -752,8 +742,7 @@ else
   [ "$any_retref" = 0 ] && echo "(none — no live doc leans on a retired file)"
 fi
 
-echo
-echo "### doc-lint [17] — COLD-LIVE-TOKEN: a live lifecycle token buried in cold storage"
+hdr 17 "COLD-LIVE-TOKEN: a live lifecycle token buried in cold storage"
 # The owed-counter reads the live inbox only. A FINDING is a live token in the token position of
 # an ENTRY (`- <date> — <from> → <to>: **[OPEN` - bracket plus token, right after the entry's
 # header colon; an entry whose token is unbracketed prose and only QUOTES `[OPEN]` is not one). A line
@@ -774,8 +763,7 @@ else
   [ "$quoted17" -gt 0 ] && echo "($quoted17 other line(s) quote a live token in prose or inside a settled entry — not findings)"
 fi
 
-echo
-echo "### doc-lint [18] — DEFINITION-SHAPE: an agent definition outside the template's section shape"
+hdr 18 "DEFINITION-SHAPE: an agent definition outside the template's section shape"
 # Four mandatory sections, plus the optional '5 · Standing directives' (contract-agent § 1).
 if [ -z "$def_files" ]; then
   echo "(no agent definitions in this repo — skipped)"
@@ -800,8 +788,7 @@ else
   [ "$any_shape18" = 0 ] && echo "(none — every definition carries the template's shape: the four, plus at most the optional §5)"
 fi
 
-echo
-echo "### doc-lint [19] — DEFINITION-ACTOR: a definition naming an actor other than itself"
+hdr 19 "DEFINITION-ACTOR: a definition naming an actor other than itself"
 # The one legal id is the definition's own (the filename's); a neighbour is named by its DOMAIN
 # and the roster resolves it.
 if [ -z "$def_files" ]; then
@@ -821,8 +808,7 @@ else
   [ "$any_actor19" = 0 ] && echo "(none — every definition names domains, and itself, only)"
 fi
 
-echo
-echo "### doc-lint [20] — SHELF-INDEX: a rostered shelf whose index does not resolve, or whose folder holds unlisted documents"
+hdr 20 "SHELF-INDEX: a rostered shelf whose index does not resolve, or whose folder holds unlisted documents"
 # ADDRESS: every link in a Shelf cell resolves to a file (the index).
 # LIST: where that index is the folder's README.md, every tracked .md under the folder (archives
 #   excluded) is reachable from the INDEX CHAIN — the index and the READMEs it links,
@@ -907,8 +893,7 @@ else
   fi
 fi
 
-echo
-echo "### doc-lint [21] — CITED-ID: a decision or lesson id cited somewhere and declared nowhere"
+hdr 21 "CITED-ID: a decision or lesson id cited somewhere and declared nowhere"
 # Decisions are cited by id, never by path — so the ids must resolve, and this is what checks it.
 # DECLARED: every id in a heading of a DECISIONS or LESSONS-LEARNED log, archives included, plus
 #   every id written in a log's HEAD (before its first entry) — the alias table of a retired
@@ -962,8 +947,7 @@ else
 fi
 rm -f "$declared21" "$prefixes21"
 
-echo
-echo "### doc-lint [22] — ROOTS: every tracked file under a domain's root or a ruled surface; no root declared twice; none matching nothing"
+hdr 22 "ROOTS: every tracked file under a domain's root or a ruled surface; no root declared twice; none matching nothing"
 # The roster's Roots column (contract-agent § 1, § 3): backticked paths — a trailing `/` is a
 # folder root, any other a file root, `/` alone the whole repo. The most specific path wins, so a
 # file root inside another actor's folder is legal and only the SAME root under two actors is an
@@ -1048,8 +1032,7 @@ else
   fi
 fi
 
-echo
-echo "### doc-lint [23] — INBOX-ACTOR: a live entry whose sender is not a rostered agent, or whose recipient is neither rostered nor AGENT 0"
+hdr 23 "INBOX-ACTOR: a live entry whose sender is not a rostered agent, or whose recipient is neither rostered nor AGENT 0"
 # The membrane (contract-system § 0): what enters the inbox is a builder's own entry, so every
 # sender must be an actor the roster names — AGENT 0 included: it is the reserved address of
 # upstream, a recipient only; nobody in the project writes as it (contract-agent § 5). A
@@ -1086,8 +1069,7 @@ else
   [ "$any23" = 1 ] && echo "               → a settled entry listed above is history: rotate it to the archive (A1); a live one is content with no owner"
 fi
 
-echo
-echo "### doc-lint [24] — FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a register or their archives"
+hdr 24 "FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a register or their archives"
 # contract-system § 5: a stamp is taken from date -u at the moment of stamping — the harness
 # announces the machine's LOCAL day, which after 22:00 UTC is tomorrow. The registers are
 # ORDERED by these dates, so a future one sorts above everything written after it.
@@ -1129,8 +1111,7 @@ else
   if [ -n "$out24" ]; then printf '%s\n' "$out24"; else echo "(none — no stamp later than $today24 UTC in a stamp position; dates in prose are not read)"; fi
 fi
 
-echo
-echo "### doc-lint [25] — FORMS: the rotation pointer and the archive's name, as the method writes them"
+hdr 25 "FORMS: the rotation pointer and the archive's name, as the method writes them"
 # contract-memory § 2 fixes two forms the controls read. POINTER-FORM: a line of a live memory
 # log that marks a rotation — a list line or a heading carrying the word ROTATED, outside a
 # fence; a sentence of prose that names the word is not read — in any shape but
@@ -1161,8 +1142,7 @@ while IFS= read -r af; do
 done < <(git ls-files '.critos/memory/a*/archive/*' 2>/dev/null)
 [ "$any25" = 0 ] && echo "(none — every pointer in shape with a state of the three, every archive under the log's name by month)"
 
-echo
-echo "### doc-lint [26] — CARRIES: every live entry carries its rule; nothing in force left the live log without a live carrier"
+hdr 26 "CARRIES: every live entry carries its rule; nothing in force left the live log without a live carrier"
 # contract-memory § 2. The `Carries` block of a live entry is read by the in-force control
 # (`in-force.sh --lines`: one parser for the index and for this check). NO-CARRIER — a live entry
 # with no line for its own id; CARRIES-FORM — a line under the block outside the two shapes, or a
@@ -1252,8 +1232,7 @@ else
   rm -f "$lines26" "$ptr26" "$heads26" "$two26" "$out26"
 fi
 
-echo
-echo "### doc-lint [27] — IN-FORCE: the generated law in force of every agent is fresh, and within its budget"
+hdr 27 "IN-FORCE: the generated law in force of every agent is fresh, and within its budget"
 # contract-memory § 6: IN-FORCE.md is derived from the folder's logs by the in-force control;
 # its --check compares the file on disk with a fresh generation (the stamp line excepted) and
 # reads the budget. IN-FORCE-STALE — missing, or differs: the boot would read a law that is not
@@ -1272,8 +1251,7 @@ else
   fi
 fi
 
-echo
-echo "### doc-lint [28] — DETECTOR: every tier-2 claim names a detector that exists; every detector is in its agent's folder, with its head"
+hdr 28 "DETECTOR: every tier-2 claim names a detector that exists; every detector is in its agent's folder, with its head"
 # contract-session § 6. A tier-2 claim — an Enforcement line whose field says tier 2 at its head
 # (a tier-3 field that mentions tier 2 later is not a claim), or a Carries line with tier 2 —
 # resolves either to a leg of the product's controls named by its stable name (the list below:
@@ -1343,6 +1321,9 @@ while IFS=$'\t' read -r f28 l28 id28 det28; do
 done < "$claims28"
 if [ -s "$out28" ]; then sort -u "$out28"; else echo "(none — every tier-2 claim resolves to a detector, every detector in its folder with its head)"; fi
 rm -f "$heads28" "$out28" "$claims28"
+[ -n "$t_n" ] && echo "(elapsed [$t_n]: $(( $(date +%s) - t_prev ))s)"
+echo
+echo "### doc-lint done — 28 checks in $(( $(date +%s) - t_start ))s · controls: CritOS@${ctl_rev:-unversioned}${ctl_dirty:-}"
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
 # `.claude/repos`: one path per line, relative to this repo's root ('#' comments). One level only:

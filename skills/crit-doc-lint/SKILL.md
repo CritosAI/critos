@@ -30,6 +30,10 @@ The output opens with the layout it found and a **provenance stamp** —
 output. `+dirty` means the checkout the controls run from has uncommitted changes, so the output
 may match no release.
 
+Every check's block ends with its elapsed seconds — `(elapsed [n]: 412s)` — and the run ends
+with the total and the stamp again: `### doc-lint done — 28 checks in 1830s · controls:
+CritOS@…`. A slow run names the check that costs, not the run.
+
 ## The twenty-eight checks
 
 1. **BROKEN** — a relative markdown link that does not resolve to an existing file. Code spans
