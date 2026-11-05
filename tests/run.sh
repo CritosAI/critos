@@ -9,7 +9,8 @@
 #                    tally (tests/expected-findings.txt). PIN-DRIFT is checked for PRESENCE only:
 #                    between two releases the tier's bytes legitimately differ from the last
 #                    ledger rows, so its count is not stable. And the law in force generated for
-#                    the fixture's a2 counts its live entries and names the uncarried ones.
+#                    the fixture's a2 counts its live entries and names the uncarried ones; for
+#                    a3 it counts the one untiered rule line in its head.
 #   2. the guards    every verdict of the command table (tests/expected-guard.txt), and every
 #                    verdict of the inbox guard's situations (tests/expected-guard-inbox.txt).
 #   3. the licence   every file carries the SPDX line, or a declared exemption (tests/licence.sh).
@@ -59,6 +60,16 @@ if grep -q '^\*\*Carried:\*\* 4 of 7 live entries' "$tmp/fx/.critos/memory/a2/IN
 else
   echo "FAIL  in-force — the index does not count its live entries or name the uncarried ones:"
   grep -E '^\*\*(Carried|Uncarried):' "$tmp/fx/.critos/memory/a2/IN-FORCE.md" 2>/dev/null | sed 's/^/        /'; fail=1
+fi
+# The head counts the untiered beside the uncarried: a3 carries 302 rules in force, one with no tier
+# on its line and no Enforcement: field in its entry — the index says 1 of 302 and prints tier ? there.
+( cd "$tmp/fx" && bash "$repo/skills/crit-in-force/in-force.sh" .critos/memory/a3 >/dev/null 2>&1 )
+if grep -q '^\*\*Untiered:\*\* 1 of 302 rule lines' "$tmp/fx/.critos/memory/a3/IN-FORCE.md" \
+   && grep -q '^- `ADR-A3-002` · a rule with no tier anywhere · tier ?$' "$tmp/fx/.critos/memory/a3/IN-FORCE.md"; then
+  echo "ok    in-force (the a3 index counts 1 of 302 untiered and prints tier ? on the line)"
+else
+  echo "FAIL  in-force — the a3 index does not count its untiered line:"
+  grep -E '^\*\*(Carried|Uncarried|Untiered):|ADR-A3-002' "$tmp/fx/.critos/memory/a3/IN-FORCE.md" 2>/dev/null | sed 's/^/        /'; fail=1
 fi
 bash "$here/guard-cases.sh" "$repo/hooks/guard-user-driven-actions.sh" "$tmp/fx" 2>/dev/null > "$tmp/guard.txt"
 bash "$here/guard-inbox-cases.sh" "$repo/hooks/guard-inbox.sh" "$tmp/fx" 2>/dev/null > "$tmp/guard-inbox.txt"

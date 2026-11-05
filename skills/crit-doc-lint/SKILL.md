@@ -228,8 +228,10 @@ CritOS@…`. A slow run names the check that costs, not the run.
     stub of the old pointer form is not an entry, and no archive reader counts it). An
     amendment is a dated line in the entry's body (`**Amended YYYY-MM-DD (<id>):**`) or a new
     entry that cites it; a change of state moves in the heading's token and the Status
-    paragraph; a stub is deleted at its rotation, never archived. Pointers are read per
-    folder. Fenced blocks are not read.
+    paragraph; a stub is deleted at its rotation, never archived. **UNTIERED**: a `binds:`
+    line with no `tier N` on the line and no `Enforcement:` field in its entry — the index
+    prints `tier ?` and counts them in its head; a rule in force declares its tier. Pointers
+    are read per folder. Fenced blocks are not read.
 27. **IN-FORCE** — the generated law in force of every agent (`contract-memory § 6`), through
     `/crit-in-force --check`: **IN-FORCE-STALE** — `IN-FORCE.md` missing in a memory folder that
     holds a log, or differing from a fresh generation (a lane view beside it likewise);

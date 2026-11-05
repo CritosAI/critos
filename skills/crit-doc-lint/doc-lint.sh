@@ -69,7 +69,8 @@
 #                         heading outside its declared home (`· home: a<N>` in id-families),
 #                         or a declared home that is no memory folder, likewise; HEADED-TWICE an
 #                         id headed more than once inside its home (live logs and archives
-#                         together; a heading carrying ROTATED is a stub, not an entry)
+#                         together; a heading carrying ROTATED is a stub, not an entry); UNTIERED a
+#                         binds: line with no tier on the line and none in its entry's field
 #  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
 #                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
 #  [28] TIER-2-UNDETECTED a tier-2 claim (a field whose head says tier 2) naming no detector that
@@ -1210,6 +1211,12 @@ else
                  || echo "CARRIES-FORM  $f26:$l26  settled: $(printf '%s' "$v26" | cut -c1-60) — the state is one of done · superseded by <id> · consolidated in <id>$(born 1.2.0)" >> "$out26" ;;
     esac
   done < "$lines26"
+  # UNTIERED: a rule in force declares its tier — on its line, or by its entry's Enforcement:
+  # field; a binds: line with neither prints `tier ?` in the index and is a finding on the line
+  awk -F'\t' '$5 == "binds" && $7 == "?" { print $1 ":" $2 "\t" $4 }' "$lines26" \
+    | while IFS=$'\t' read -r uw uid; do
+        [ -n "$uid" ] && echo "UNTIERED  $uw  $uid — a rule in force declares its tier: \`tier N\` on the line, or the entry's **Enforcement:** field; this line has neither, and the index prints tier ?$(born 1.2.0)" >> "$out26"
+      done
   # TWO-HOMES: an id has one home — the folder whose archive heads it. Headed in two folders'
   # archives (a copied entry), or pointed from a folder whose own archive does not head it (the
   # mark is the owner's; a split's new owner carries what it inherits in its founding block)
@@ -1335,7 +1342,7 @@ product_legs=(
   TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT
   VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX
   CITED-ID UNROOTED OVERLAP DANGLING INBOX-ACTOR FUTURE-DATE POINTER-FORM ARCHIVE-NAME NO-CARRIER
-  CARRIES-FORM UNCARRIED CARRIER-CONFLICT TWO-HOMES HEADED-TWICE IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD
+  CARRIES-FORM UNCARRIED CARRIER-CONFLICT TWO-HOMES HEADED-TWICE UNTIERED IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD
   DETECTOR-CROSS-IMPORT
   crit-doc-lint doc-lint "the battery" crit-status-check status-check inbox-check
   crit-memory-index memory-index "the atlas" crit-in-force in-force

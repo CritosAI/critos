@@ -36,7 +36,9 @@ Inside a live entry of `DECISIONS.md` or `LESSONS-LEARNED.md`, under a line that
 - An entry carries **at least its own id's line**; an entry that consolidates carries one line
   per id it absorbs — that line is the archived id's live carrier.
 - `binds: <lane>` — the rule is in force; the lane is the owner's word (`code`, `onboarding/config`).
-  A tier on the line wins; absent, the entry's `**Enforcement:** tier N` field; absent both, `?`.
+  A tier on the line wins; absent, the entry's `**Enforcement:** tier N` field; absent both, `?` —
+  a finding of `/crit-doc-lint [26]` (UNTIERED), counted in the header. The field's detector is
+  lent to a line only with its tier: a line with its own tier and no detector prints the tier alone.
 - `settled: <state>` — the rule binds nothing: `done` · `superseded by <id>` · `consolidated in <id>`,
   then an optional ` — <why>`. Settled lines are not in the index.
 - A line outside the two shapes is a `CARRIES-FORM` finding of `/crit-doc-lint [26]`.
@@ -47,9 +49,10 @@ Inside a live entry of `DECISIONS.md` or `LESSONS-LEARNED.md`, under a line that
 `` - `<id>` · <rule> · tier N — <detector> ``. Derived: a hand-edit disappears at the next run.
 The header counts what was read and names what it cannot summarise: `**Carried:** k of N live
 entries` and, when k < N, an `**Uncarried:**` line per log with the ids of the entries that
-carry nothing — the boot opens those whole. The none-line is written only when every live
-entry carries its rule: an index never reads as *no rule binds you* while an entry it could
-not read exists.
+carry nothing — the boot opens those whole; and, when any rule line prints `tier ?`, an
+`**Untiered:** u of N rule lines` line — the debt where the boot reads it. The none-line is
+written only when every live entry carries its rule: an index never reads as *no rule binds
+you* while an entry it could not read exists.
 **Budget 300 lines** (`.claude/doc-lint-in-force-lines` overrides): past it `--check` prints a
 `BUDGET` warning — the law in force of one agent is read at every boot, so a long index is the
 signal to consolidate, not to read faster.

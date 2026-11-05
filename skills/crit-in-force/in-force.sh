@@ -16,7 +16,9 @@
 # The line it reads, inside a live entry, under a line that is exactly `**Carries.**`:
 #   - `<id>` · <the rule in one imperative line> · binds: <lane>[ · tier N[ — <detector>]]
 #   - `<id>` · <the rule in one imperative line> · settled: <state>[ — <why>]
-# A tier on the line wins; absent, the entry's `**Enforcement:** tier N` field; absent both, `?`.
+# A tier on the line wins; absent, the entry's `**Enforcement:** tier N` field; absent both, `?` —
+# a finding of the carrier check (UNTIERED), counted in the head. The field's detector is lent
+# to a line only with its tier: a line with its own tier and no detector prints the tier alone.
 #
 # Usage:  bash ~/.claude/skills/crit-in-force/in-force.sh [--check | --lines] [--lane <prefix>] [<memory-folder>...]
 #           (no args)        rewrite IN-FORCE.md in every `.critos/memory/a<N>/` that holds a log,
@@ -74,7 +76,7 @@ parse_lines() {
     function flush(   i, t, d) {
       for (i = 1; i <= n; i++) {
         t = P_tier[i]; if (t == "") t = etier; if (t == "") t = "?"
-        d = P_det[i]; if (d == "") d = edet
+        d = P_det[i]; if (d == "" && P_tier[i] == "") d = edet
         printf "%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", F, P_ln[i], entry, P_id[i], P_kind[i], P_val[i], t, d, P_rule[i]
       }
       n = 0
@@ -140,6 +142,7 @@ gen_index() {
   agent=$(printf '%s' "$d" | sed -nE 's#^\.critos/memory/a([0-9]+)$#\1#p')
   all=$(mktemp); lines_of "$d" > "$all"
   rules=$(awk -F'\t' '$5 == "binds"' "$all")
+  u=$(printf '%s\n' "$rules" | awk -F'\t' '$7 == "?"' | grep -c '.')
   carried=$(carried_of "$d" "$all"); rm -f "$all"
   k_all=$(printf '%s\n' "$carried" | awk -F'\t' '{ k += $2 } END { print k + 0 }')
   t_all=$(printf '%s\n' "$carried" | awk -F'\t' '{ t += $3 } END { print t + 0 }')
@@ -165,6 +168,8 @@ gen_index() {
     # the head counts what was read and names what it cannot summarise: the boot opens those whole
     echo "**Carried:** $k_all of $t_all live entries"
     printf '%s\n' "$carried" | awk -F'\t' '$4 != "" { n = $1; sub(/.*\//, "", n); print "**Uncarried:** " $4 " — in `" n "`: opened whole until each carries its rule" }'
+    # the untiered beside the uncarried: a rule in force declares its tier, and the debt is read here
+    [ "$u" -gt 0 ] && echo "**Untiered:** $u of $n rule lines — tier ? until the line, or its entry's Enforcement: field, declares one"
     [ "$n" = 0 ] && [ "$k_all" = "$t_all" ] && { echo; echo "(no rule in force — $k_all of $t_all live entries carry their rule, none binds)"; }
   fi
   while IFS= read -r lane; do

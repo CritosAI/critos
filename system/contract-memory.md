@@ -163,7 +163,8 @@ code.
   An entry carries **at least its own id's line**; an entry that consolidates carries one line per
   id it absorbs — that line is the archived id's live carrier. `binds: <lane>` says the rule is in
   force and where (the lane is the owner's word; a lane may be hierarchical, `onboarding/config`);
-  a tier on the line wins over the entry's `Enforcement:` field, and a split field is two lines.
+  a tier on the line wins over the entry's `Enforcement:` field, a split field is two lines, and
+  a line with neither is a finding (`[26]`) — the index head counts them.
   `settled: <state>` says it binds nothing — the three states of the pointer: `done` ·
   `superseded by <id>` · `consolidated in <id>` — with an optional reason after an em dash. Three
   readers, one shape: the generated law in force (§ 6) collects every `binds:` line; the carrier

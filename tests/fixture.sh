@@ -170,10 +170,14 @@ printf '#!/usr/bin/env bash\n# Enforces: ADR-A2-000\n# a stray file outside any 
   for i in $(seq 1 1210); do echo "l$i"; done
   # [27] IN-FORCE-BUDGET: one entry carrying three hundred rules in force; and no IN-FORCE.md in
   #      a2 nor a3 (IN-FORCE-STALE, twice)
-  echo "## ADR-A3-001 — carries three hundred"; echo "**Carries.**"
+  echo "## ADR-A3-001 — carries three hundred"; echo "**Enforcement:** tier 3 — the fixture, tiered by the field"; echo "**Carries.**"
   for i in $(seq 1 300); do echo "- \`ADR-A3-001\` · rule $i · binds: lane-$i"; done
   # [26] the carrier of D-009, headed in a3's archive outside the family's declared home (a2)
-  echo '- `D-009` · carried here, headed outside its declared home · binds: fixture'; } > "$L/memory/a3/DECISIONS.md"
+  echo '- `D-009` · carried here, headed outside its declared home · binds: fixture'
+  echo ""
+  # [26] UNTIERED: a rule in force with no tier on its line and no Enforcement: field in its entry
+  echo "## ADR-A3-002 — untiered"; echo "**Carries.**"
+  echo '- `ADR-A3-002` · a rule with no tier anywhere · binds: fixture'; } > "$L/memory/a3/DECISIONS.md"
 
 mkdir -p "$L/memory/a3/archive"
 printf '# archive\n## ADR-A2-000 — a copy of an entry another folder heads\n## D-009 — a declared family headed outside its declared home\n' > "$L/memory/a3/archive/DECISIONS-archive-2026-08.md"
