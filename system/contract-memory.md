@@ -131,7 +131,14 @@ code.
     *still in force*: an entry in force leaves only consolidated, and `consolidated in <id>` names
     the live entry that carries it. **The pointer is the live carrier of a settled id.** A pointer
     outside the shape, or a state outside the three, is a finding (`[25]`); a heading is not a
-    pointer. **An id has one home — the folder whose archive heads it, a declared family's id
+    pointer, and a pointer is never an entry: it never rotates — a heading-shaped stub of the
+    old form converts to the list line and is never archived, and every reader of an archive
+    skips a heading that carries ROTATED. **One id, one heading inside its home:** an entry is
+    amended in its body — a dated line under its Status, `**Amended YYYY-MM-DD (<id>):**` naming
+    the entry that amended it, or `**Marked YYYY-MM-DD, at rotation:**` — or by a new entry
+    that cites it; a change of state moves in the heading's token and the Status paragraph,
+    never in a second heading; an id headed twice in its home is a finding (`[26]`). **An id
+    has one home — the folder whose archive heads it, a declared family's id
     included — and is pointed from its home only:** a pointer in a folder whose own archive does
     not head the id, or an id headed in two folders' archives, is a finding (`[26]`); the mark is
     the owner's, and a split's new owner carries what it inherits in its founding block (§ 7),

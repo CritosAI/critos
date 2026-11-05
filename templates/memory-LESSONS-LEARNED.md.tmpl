@@ -36,7 +36,8 @@ script finds it whether or not anyone remembered) · **3 = written down and hope
 **Rotation:** the same aging process as `DECISIONS.md` (`contract-memory § 2`) — mark, then move to
 `archive/LESSONS-LEARNED-archive-YYYY-MM.md`, one file per month of the entry's date, on either
 trigger, and leave one pointer line per rotated id in the list below, in the one shape the
-controls read (`/crit-doc-lint [25]`); the atlas keeps every archived id resolving.
+controls read (`/crit-doc-lint [25]`); the atlas keeps every archived id resolving. The pointer
+list stays where it is: a pointer is never an entry and never rotates.
 
 ```
     - `L-A<N>-###` — ROTATED YYYY-MM-DD to archive/LESSONS-LEARNED-archive-YYYY-MM.md (done | superseded by <id> | consolidated in <id>)
@@ -51,6 +52,8 @@ controls read (`/crit-doc-lint [25]`); the atlas keeps every archived id resolvi
     **What happened.**  the incident, concretely: what was done, what broke, how it was found. 1–2 lines.
     **The rule.**       one imperative line — what to do instead, next time. If it does not fit in one
                         line, you have an observation, not a rule.
+    **Amended YYYY-MM-DD (`<id>`):**  (later, optional) what changed, naming the entry that changed it — a
+                        dated line here, never a second heading under this id
     **Enforcement:**    tier N — the detector that enforces it; or, for tier 3, why none is possible.
                         One written form, read by `/crit-doc-lint [11]`: the bold label, `tier N`, an em dash.
     **Bound:**          (optional) the contract-session § 6 bound this instantiates — TIME · LAYER · SHAPE ·

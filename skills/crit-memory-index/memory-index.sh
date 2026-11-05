@@ -53,9 +53,9 @@ owner_of() {
     st="—"; de="—"; le="—"
     # `grep -c` prints 0 AND exits 1 on no match: swallow the status, never append a fallback.
     [ -f "$d/STATUS.md" ] && st="$(grep -c '' "$d/STATUS.md") ln"
-    [ -f "$d/DECISIONS.md" ] && de="$( { grep -cE '^#{1,4}[[:space:]]*(ADR|D)-' "$d/DECISIONS.md" || true; } 2>/dev/null) ADR"
+    [ -f "$d/DECISIONS.md" ] && de="$( { grep -E '^#{1,4}[[:space:]]*(ADR|D)-' "$d/DECISIONS.md" | grep -vc ROTATED || true; } 2>/dev/null) ADR"
     if [ -f "$d/LESSONS-LEARNED.md" ]; then
-      lc=$( { grep -cE '^#{1,4}[[:space:]]*L-' "$d/LESSONS-LEARNED.md" || true; } 2>/dev/null)
+      lc=$( { grep -E '^#{1,4}[[:space:]]*L-' "$d/LESSONS-LEARNED.md" | grep -vc ROTATED || true; } 2>/dev/null)
       if [ "$lc" -gt 0 ]; then le="$lc lessons"
       else le="$(grep -c '' "$d/LESSONS-LEARNED.md") ln · **no L- ids**"   # a non-empty log with no ids is not "0 lessons"
       fi
@@ -68,17 +68,18 @@ owner_of() {
   echo "## Decisions — every ADR, by ID"
   echo
   echo "Cite an ADR **by ID**, never by path (the ID is stable; paths move)."
-  # A title is copied as TEXT: a markdown link inside a heading (a rotation stub's pointer) is
+  # A heading that carries ROTATED is a stub of the old pointer form, never an entry: neither
+  # listed nor counted (contract-memory § 2). A title is copied as TEXT: a markdown link inside a heading is
   # de-linked, because a relative link copied one folder up breaks, and the atlas is generated —
   # nobody may hand-fix it. The atlas holds addresses by LINE, never links inside titles.
   echo
   while IFS= read -r f; do
     [ -z "$f" ] && continue
-    n=$( { grep -cE '^#{1,4}[[:space:]]*(ADR|D)-' "$f" || true; } 2>/dev/null)
+    n=$( { grep -E '^#{1,4}[[:space:]]*(ADR|D)-' "$f" | grep -vc ROTATED || true; } 2>/dev/null)
     [ "$n" = 0 ] && continue
     echo "### \`$f\` — $n"
     echo
-    grep -nE '^#{1,4}[[:space:]]*(ADR|D)-' "$f" \
+    grep -nE '^#{1,4}[[:space:]]*(ADR|D)-' "$f" | grep -v ROTATED \
       | sed -E 's/^([0-9]+):#+[[:space:]]*/- L\1 · /' \
       | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g' \
       | sed -E 's/[[:space:]]+$//' | cut -c1-160
@@ -89,11 +90,11 @@ owner_of() {
   echo
   while IFS= read -r f; do
     [ -z "$f" ] && continue
-    n=$( { grep -cE '^#{1,4}[[:space:]]*L-' "$f" || true; } 2>/dev/null)
+    n=$( { grep -E '^#{1,4}[[:space:]]*L-' "$f" | grep -vc ROTATED || true; } 2>/dev/null)
     [ "$n" = 0 ] && continue
     echo "### \`$f\` — $n"
     echo
-    grep -nE '^#{1,4}[[:space:]]*L-' "$f" \
+    grep -nE '^#{1,4}[[:space:]]*L-' "$f" | grep -v ROTATED \
       | sed -E 's/^([0-9]+):#+[[:space:]]*/- L\1 · /' \
       | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g' \
       | sed -E 's/[[:space:]]+$//' | cut -c1-160

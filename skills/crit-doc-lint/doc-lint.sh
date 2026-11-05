@@ -67,7 +67,9 @@
 #                         headed in two folders' archives, or pointed from a folder whose own
 #                         archive does not head it — an id has one home; a declared family's
 #                         heading outside its declared home (`· home: a<N>` in id-families),
-#                         or a declared home that is no memory folder, likewise
+#                         or a declared home that is no memory folder, likewise; HEADED-TWICE an
+#                         id headed more than once inside its home (live logs and archives
+#                         together; a heading carrying ROTATED is a stub, not an entry)
 #  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
 #                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
 #  [28] TIER-2-UNDETECTED a tier-2 claim (a field whose head says tier 2) naming no detector that
@@ -1182,10 +1184,11 @@ else
     case "$lg" in *-archive-*|*/archive/*) continue ;; esac
     awk -v IDC="$id_core" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print d "\t" id "\t" st "\t" f ":" NR } }' "$lg"
   done < <(logs12) | sort -u > "$ptr26"
-  # the ids headed in every archive, per folder: folder <TAB> id <TAB> archive
+  # the ids headed in every archive, per folder: folder <TAB> id <TAB> archive (a heading that
+  # carries ROTATED is a stub of the old pointer form, never an entry: not read here)
   while IFS= read -r af; do
     [ -f "$af" ] || continue
-    awk -v IDC="$id_core" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$af"
+    awk -v IDC="$id_core" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$af"
   done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null) | sort -u > "$heads26"
   # NO-CARRIER, per live entry
   while IFS= read -r lg; do
@@ -1246,6 +1249,26 @@ else
     awk -F'\t' -v d="$pf" -v i="$pid" '$1 == d && $2 == i' "$heads26" | grep -q . && continue
     echo "TWO-HOMES  $ploc  $pid — pointed from $pf/, whose archive does not head it: an id is pointed from its home only, the folder whose archive heads it (the mark is the owner's; a split's new owner carries what it inherits in its founding block, never by pointer)$(born 1.2.0)" >> "$out26"
   done < "$ptr26"
+  # HEADED-TWICE: one id, one heading inside its home. The headings of a folder's live logs and
+  # archives together, a heading carrying ROTATED excluded: an id headed more than once in one
+  # folder is a finding naming the places. An increment written as a heading (ADDENDUM, STEP n,
+  # AMENDED) is a dated line in the entry's body or a new entry; a stub of the old pointer form is
+  # deleted, never archived; two entries under one string are the collision the owner tells apart.
+  all26=$(mktemp)
+  { while IFS= read -r lg; do
+      [ -f "$lg" ] || continue
+      case "$lg" in *-archive-*|*/archive/*) continue ;; esac
+      awk -v IDC="$id_core" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$lg"
+    done < <(logs12)
+    while IFS= read -r af; do
+      [ -f "$af" ] || continue
+      awk -v IDC="$id_core" -v f="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$af"
+    done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null); } | sort -u > "$all26"
+  awk -F'\t' '{ k = $1 "\t" $2; n[k]++; w[k] = w[k] (w[k] ? ", " : "") $3 } END { for (k in n) if (n[k] > 1) print k "\t" n[k] "\t" w[k] }' "$all26" | sort \
+    | while IFS=$'\t' read -r hf hid hn hw; do
+        echo "HEADED-TWICE  $hid — headed $hn times in $hf/ ($hw): one id, one heading inside its home — an amendment is a dated line in the entry's body (**Amended YYYY-MM-DD (<id>):**) or a new entry that cites it; a stub of the old pointer form is deleted, never archived$(born 1.2.0)" >> "$out26"
+      done
+  rm -f "$all26"
   # UNCARRIED, per id headed in an archive, read against its home's pointer: a pointer settled
   # carries it; a pointer consolidated needs a binds: line of a live entry, in any folder (a
   # split's founding block lives elsewhere); no pointer needs a Carries line of a live entry.
@@ -1312,7 +1335,7 @@ product_legs=(
   TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT
   VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX
   CITED-ID UNROOTED OVERLAP DANGLING INBOX-ACTOR FUTURE-DATE POINTER-FORM ARCHIVE-NAME NO-CARRIER
-  CARRIES-FORM UNCARRIED CARRIER-CONFLICT TWO-HOMES IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD
+  CARRIES-FORM UNCARRIED CARRIER-CONFLICT TWO-HOMES HEADED-TWICE IN-FORCE-STALE IN-FORCE-BUDGET TIER-2-UNDETECTED DETECTOR-HEAD
   DETECTOR-CROSS-IMPORT
   crit-doc-lint doc-lint "the battery" crit-status-check status-check inbox-check
   crit-memory-index memory-index "the atlas" crit-in-force in-force

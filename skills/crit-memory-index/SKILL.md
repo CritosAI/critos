@@ -47,6 +47,9 @@ never a citable address: resolve an id by grep in the file the atlas names.)
 
 ## Rules
 
+- **A heading that carries `ROTATED` is a stub of the old pointer form, never an entry:** it is
+  neither listed nor counted (`contract-memory § 2`). The address of a rotated id is the pointer
+  line in its live log, and the atlas lists the entry where the archive heads it.
 - **Generated — never hand-edited.** An edit is lost on the next run, and a hand-written line would
   be exactly the copy this design exists to avoid.
 - **Never cite it as a source.** Cite what it points at (an ADR ID, a lesson ID, a register row).

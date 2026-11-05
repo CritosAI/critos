@@ -223,7 +223,13 @@ CritOS@…`. A slow run names the check that costs, not the run.
     family outside that folder — in an archive or a live log — is TWO-HOMES from the first
     heading, with no second archive to compare, and a declared home that is no memory folder
     is a finding on the line; an undeclared family's home stays derived from the archives.
-    Pointers are read per folder. Fenced blocks are not read.
+    **HEADED-TWICE**: one id, one heading inside its home — an id headed more than once in one
+    folder, its live logs and archives read together, a heading carrying ROTATED excluded (a
+    stub of the old pointer form is not an entry, and no archive reader counts it). An
+    amendment is a dated line in the entry's body (`**Amended YYYY-MM-DD (<id>):**`) or a new
+    entry that cites it; a change of state moves in the heading's token and the Status
+    paragraph; a stub is deleted at its rotation, never archived. Pointers are read per
+    folder. Fenced blocks are not read.
 27. **IN-FORCE** — the generated law in force of every agent (`contract-memory § 6`), through
     `/crit-in-force --check`: **IN-FORCE-STALE** — `IN-FORCE.md` missing in a memory folder that
     holds a log, or differing from a fresh generation (a lane view beside it likewise);

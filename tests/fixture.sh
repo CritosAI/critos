@@ -39,7 +39,7 @@ printf '# gone\n' > docs/gone.md
 # archived entry, a retired id kept alive by the alias table in a log's head
 printf '\nDecided in ADR-A2-001, earlier in ADR-A2-000, once known as ADR-OLD-005, and ADR-LEG-042 of a retired sequence; lost: ADR-A2-777; lost too, in the LIVE sequence an alias line points at: ADR-A3-888.\n' >> README.md
 mkdir -p "$L/memory/a2/archive"
-printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n## D-008 — another of the scheme, carried by nothing\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
+printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n## D-008 — another of the scheme, carried by nothing\n## D-008 — ADDENDUM 2 — a second heading under one id (HEADED-TWICE)\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
 # a declared id family: `D-NNN` is grammar, so D-007 (headed above) resolves and D-099 is lost;
 # its home is declared (a2), so D-009 headed in a3's archive is TWO-HOMES from the first heading;
 # the Z- family's declared home names no memory folder (a second TWO-HOMES, on the line)
