@@ -60,7 +60,9 @@ symptom in a neighbour's.
    do", and the lead is the only actor who knows it landed.
 4. **Run the deterministic checks** on what you changed, and **fact-flip on the spot** (§4).
 5. **Refresh the generated indexes** — the atlas and your `IN-FORCE.md` — if you appended or
-   changed an ADR or a lesson. An index nobody regenerates is worse than none: it looks like a
+   changed an ADR or a lesson, as yourself (`--own a<N>`): a generator writes only in the folders
+   its runner owns and reads every other folder as committed (`contract-memory § 6`). An index
+   nobody regenerates is worse than none: it looks like a
    map and points at the past; a law in force nobody regenerates binds the next boot to the
    previous law.
 

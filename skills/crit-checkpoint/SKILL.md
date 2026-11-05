@@ -49,8 +49,9 @@ order, then print the RESTART BLOCK.
 
 3. **TIDY DOCS — run `/crit-doc-lint`.** Fix the broken links / path-in-code you own; route the rest to
    the owning agent via HANDOFFS. **Then refresh the two generated indexes if the repo keeps them:**
-   the atlas, `bash ~/.claude/skills/crit-memory-index/memory-index.sh`, and your law in force,
-   `bash ~/.claude/skills/crit-in-force/in-force.sh` (a checkpoint always appends to
+   the atlas, `bash ~/.claude/skills/crit-memory-index/memory-index.sh --own a<N>`, and your law in
+   force, `bash ~/.claude/skills/crit-in-force/in-force.sh --own a<N>` — as yourself: a generator
+   writes only in the folders its runner owns and reads every other folder as committed (a checkpoint always appends to
    DECISIONS/LESSONS, so both are always owed here; each one's `--check` proves it). An entry you
    appended carries its rule under `**Carries.**` — the index is built from that line. Then curate (don't just
    append): prune stale/superseded entries,

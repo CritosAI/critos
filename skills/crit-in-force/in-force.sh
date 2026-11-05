@@ -20,7 +20,11 @@
 # a finding of the carrier check (UNTIERED), counted in the head. The field's detector is lent
 # to a line only with its tier: a line with its own tier and no detector prints the tier alone.
 #
-# Usage:  bash ~/.claude/skills/crit-in-force/in-force.sh [--check | --lines] [--lane <prefix>] [<memory-folder>...]
+# Usage:  bash ~/.claude/skills/crit-in-force/in-force.sh [--check | --lines] [--own a<N>]... [--lane <prefix>] [<memory-folder>...]
+#           --own a<N>       the runner's folder (repeatable; a folder argument counts as one): read from
+#                            the working tree and the only ones written. Every other folder is read as
+#                            committed (HEAD) and never written; without a name, nothing is written and
+#                            every folder is read at HEAD. An unchanged index is not rewritten.
 #           (no args)        rewrite IN-FORCE.md in every `.critos/memory/a<N>/` that holds a log,
 #                            and every lane view (IN-FORCE.<prefix>.md) already present beside it
 #           --lane <prefix>  also emit IN-FORCE.<prefix>.md: the rules whose lane is `<prefix>` or
@@ -37,13 +41,15 @@ set -uo pipefail
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "in-force: not inside a git repository. If Claude Code was opened ABOVE the repo, none of the repo's .claude/ (steward, hooks) is loaded - reopen it at the repo root." >&2; exit 1; }
 cd "$root" || exit 1
 
-mode=write; lanes=(); folders=()
+mode=write; lanes=(); folders=(); own=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --check) mode=check; shift ;;
     --lines) mode=lines; shift ;;
     --lane) lanes+=("$2"); shift 2 ;;
-    --me|--domain) shift 2 ;;    # the controls share one calling convention; these are not ours
+    --own) own+=("$2"); shift 2 ;;
+    --me) own+=("a$2"); shift 2 ;;    # the controls' shared convention: --me <N> is --own a<N>
+    --domain) shift 2 ;;             # shared convention too; not ours
     -*) echo "in-force: unknown option $1" >&2; exit 2 ;;
     *) folders+=("${1%/}"); shift ;;
   esac
@@ -61,18 +67,55 @@ if [ -f .critos/project/id-families ]; then
   [ -n "$fam" ] && id_core="$id_core|$fam"
 fi
 
+
+# Owned folders: the runner's, read from the working tree and the only ones written; every other
+# memory folder is read as committed (HEAD) and never written — a generator cannot carry another
+# owner's uncommitted state (contract-memory § 6). The runner names its folders (--own a<N>, or a
+# folder argument); without a name every folder is read at HEAD. A repository with no commit yet
+# has nothing that could be another's: its tree is read.
+owned=()
+for o in ${own[@]+"${own[@]}"} ${folders[@]+"${folders[@]}"}; do
+  o=${o%/}; case "$o" in a[0-9]*) o=".critos/memory/$o" ;; esac; owned+=("$o")
+done
+head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
+head_root=$(mktemp -d); trap 'rm -rf "$head_root"' EXIT
+is_owned() { local x; for x in ${owned[@]+"${owned[@]}"}; do [ "$x" = "$1" ] && return 0; done; return 1; }
+materialize() {   # $1 = folder -> its HEAD copy under $head_root, once (nothing at HEAD: an empty copy).
+                  # Called up front, never inside a command substitution: a subshell's copy dies with it.
+  [ -d "$head_root/$1" ] && return 0
+  mkdir -p "$head_root/$1"
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    mkdir -p "$head_root/$(dirname "$p")"; git show "HEAD:$p" > "$head_root/$p" 2>/dev/null
+  done < <(git ls-tree -r --name-only HEAD -- "$1" 2>/dev/null)
+}
+src_of() {   # $1 = folder -> the directory it is read from: itself when owned, its HEAD copy otherwise
+  if [ "$head_ok" = 0 ] || is_owned "$1"; then printf '%s' "$1"; else printf '%s' "$head_root/$1"; fi
+}
+
+# the folders: the ones named, else every folder with a log — at HEAD, plus the owned ones in the tree
 if [ "${#folders[@]}" = 0 ]; then
   while IFS= read -r f; do [ -n "$f" ] && folders+=("$f"); done < <(
-    { git ls-files '.critos/memory/*/DECISIONS.md' '.critos/memory/*/LESSONS-LEARNED.md'
-      git ls-files --others --exclude-standard -- '.critos/memory/*/DECISIONS.md' '.critos/memory/*/LESSONS-LEARNED.md'; } 2>/dev/null \
+    { if [ "$head_ok" = 1 ]; then
+        git ls-tree -r --name-only HEAD -- '.critos/memory/' 2>/dev/null | grep -E '^\.critos/memory/a[0-9]+/(DECISIONS|LESSONS-LEARNED)\.md$'
+        for o in ${owned[@]+"${owned[@]}"}; do
+          git ls-files "$o/DECISIONS.md" "$o/LESSONS-LEARNED.md"
+          git ls-files --others --exclude-standard -- "$o/DECISIONS.md" "$o/LESSONS-LEARNED.md"
+        done
+      else
+        git ls-files '.critos/memory/*/DECISIONS.md' '.critos/memory/*/LESSONS-LEARNED.md'
+        git ls-files --others --exclude-standard -- '.critos/memory/*/DECISIONS.md' '.critos/memory/*/LESSONS-LEARNED.md'
+      fi; } 2>/dev/null \
     | sed -E 's#/[^/]+$##' | grep -E '^\.critos/memory/a[0-9]+$' | sort -u)
 fi
+# the HEAD copies of the folders not owned, made once, before anything reads them
+if [ "$head_ok" = 1 ]; then for d in ${folders[@]+"${folders[@]}"}; do is_owned "$d" || materialize "$d"; done; fi
 
 # parse_lines LOG — every `Carries` line of a live entry, tab-separated (see --lines). The entry's
 # `Enforcement:` field may sit before or after the block, so lines are held and emitted when the
 # entry ends. Fenced blocks are skipped: a log's head shows the shape inside a fence.
-parse_lines() {
-  awk -v IDC="$id_core" -v F="$1" '
+parse_lines() {   # $1 = the file read, $2 = the path it is reported as (the folder's own, when read at HEAD)
+  awk -v IDC="$id_core" -v F="${2:-$1}" '
     function flush(   i, t, d) {
       for (i = 1; i <= n; i++) {
         t = P_tier[i]; if (t == "") t = etier; if (t == "") t = "?"
@@ -116,9 +159,9 @@ parse_lines() {
     END { flush() }
   ' "$1"
 }
-lines_of() {   # $1 = folder -> the parsed lines of both logs
-  local lg
-  for lg in "$1/DECISIONS.md" "$1/LESSONS-LEARNED.md"; do [ -f "$lg" ] && parse_lines "$lg"; done
+lines_of() {   # $1 = folder -> the parsed lines of both logs, read where the folder is read (src_of)
+  local lg s; s=$(src_of "$1")
+  for lg in DECISIONS.md LESSONS-LEARNED.md; do [ -f "$s/$lg" ] && parse_lines "$s/$lg" "$1/$lg"; done
 }
 entries_of() {   # $1 = log -> the ids of its live entries, in order (a heading carrying ROTATED is a
                  # pointer in the wrong shape, not an entry; the carrier check reads the same heads)
@@ -126,13 +169,13 @@ entries_of() {   # $1 = log -> the ids of its live entries, in order (a heading 
     $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$1"
 }
 carried_of() {   # $1 = folder, $2 = the parsed lines (a file) -> per log: carried <TAB> total <TAB> the uncarried ids
-  local lg
-  for lg in "$1/DECISIONS.md" "$1/LESSONS-LEARNED.md"; do
-    [ -f "$lg" ] || continue
-    awk -F'\t' -v f="$lg" '
+  local lg s; s=$(src_of "$1")
+  for lg in DECISIONS.md LESSONS-LEARNED.md; do
+    [ -f "$s/$lg" ] || continue
+    awk -F'\t' -v f="$1/$lg" '
       FILENAME == ARGV[1] { if ($1 == f && $3 == $4 && ($5 == "binds" || $5 == "settled")) c[$3] = 1; next }
       { t++; if ($0 in c) k++; else u = u ", `" $0 "`" }
-      END { printf "%s\t%d\t%d\t%s\n", f, k, t, substr(u, 3) }' "$2" <(entries_of "$lg")
+      END { printf "%s\t%d\t%d\t%s\n", f, k, t, substr(u, 3) }' "$2" <(entries_of "$s/$lg")
   done
 }
 
@@ -190,7 +233,17 @@ gen_index() {
 }
 
 # views_of FOLDER — the lane prefixes whose view sits beside the index
-views_of() { ls -1 "$1"/IN-FORCE.*.md 2>/dev/null | sed -E 's#.*/IN-FORCE\.(.*)\.md$#\1#'; }
+views_of() { ls -1 "$(src_of "$1")"/IN-FORCE.*.md 2>/dev/null | sed -E 's#.*/IN-FORCE\.(.*)\.md$#\1#'; }
+write_index() {   # $1 = folder, $2 = lane prefix or "" — written only when the content differs (the stamp line excepted)
+  local d="$1" p="$2" f tmp
+  f="$d/IN-FORCE.md"; [ -n "$p" ] && f="$d/IN-FORCE.$p.md"
+  tmp=$(mktemp); gen_index "$d" $p > "$tmp"
+  if [ -f "$f" ] && diff -q <(grep -v '^\*\*Generated:\*\*' "$f") <(grep -v '^\*\*Generated:\*\*' "$tmp") >/dev/null 2>&1; then
+    rm -f "$tmp"; echo "unchanged $f ($(grep -c '' "$f") lines)"
+  else
+    mv "$tmp" "$f"; echo "wrote $f ($(grep -c '' "$f") lines)"; wrote=1
+  fi
+}
 
 case "$mode" in
   lines)
@@ -198,32 +251,43 @@ case "$mode" in
     exit 0 ;;
   write)
     [ "${#folders[@]}" = 0 ] && { echo "(no memory folder with a log in this repo — nothing to generate)"; exit 0; }
+    wrote=0; skipped=0
     for d in "${folders[@]}"; do
       [ -d "$d" ] || continue
-      tmp=$(mktemp); gen_index "$d" > "$tmp"; mv "$tmp" "$d/IN-FORCE.md"
-      echo "wrote $d/IN-FORCE.md ($(grep -c '' "$d/IN-FORCE.md") lines)"
-      for p in "${lanes[@]}" $(views_of "$d"); do
+      is_owned "$d" || { skipped=$((skipped + 1)); continue; }
+      write_index "$d" ""
+      for p in ${lanes[@]+"${lanes[@]}"} $(views_of "$d"); do
         [ -n "$p" ] || continue
-        tmp=$(mktemp); gen_index "$d" "$p" > "$tmp"; mv "$tmp" "$d/IN-FORCE.$p.md"
-        echo "wrote $d/IN-FORCE.$p.md ($(grep -c '' "$d/IN-FORCE.$p.md") lines)"
+        write_index "$d" "$p"
       done
     done
+    [ "$wrote" = 0 ] && [ "$skipped" -gt 0 ] && echo "(no folder owned: nothing written — name yours with --own a<N>; every other folder is read as committed and never written)"
     exit 0 ;;
   check)
     rc=0
     [ "${#folders[@]}" = 0 ] && { echo "(no memory folder with a log in this repo — nothing to check)"; exit 0; }
     for d in "${folders[@]}"; do
-      [ -d "$d" ] || continue
+      if is_owned "$d"; then
+        [ -d "$d" ] || continue
+      elif [ "$head_ok" = 1 ] && [ -z "$(git ls-tree -r --name-only HEAD -- "$d" 2>/dev/null | head -1)" ]; then
+        echo "(skip  $d/ — nothing at HEAD: read as empty; its owner's index is checked at its own round)"; continue
+      fi
       for p in "" $(views_of "$d"); do
         f="$d/IN-FORCE.md"; [ -n "$p" ] && f="$d/IN-FORCE.$p.md"
         fresh=$(gen_index "$d" $p)
         nl=$(printf '%s\n' "$fresh" | grep -c '')
-        if [ ! -f "$f" ]; then
-          echo "STALE  $f — missing: the boot reads it and finds nothing (regenerate: bash ~/.claude/skills/crit-in-force/in-force.sh)"; rc=1
-        elif ! diff -q <(grep -v '^\*\*Generated:\*\*' "$f") <(printf '%s\n' "$fresh" | grep -v '^\*\*Generated:\*\*') >/dev/null 2>&1; then
-          echo "STALE  $f — differs from a fresh generation: a rule moved, appeared or vanished (regenerate: bash ~/.claude/skills/crit-in-force/in-force.sh)"; rc=1
+        # an owned folder's index is the file in the tree; another's is the committed one
+        if is_owned "$d" || [ "$head_ok" = 0 ]; then
+          where=""; have=0; [ -f "$f" ] && { have=1; cur=$(cat "$f"); }
         else
-          echo "FRESH  $f ($nl lines)"
+          where=" (as committed)"; have=0; git cat-file -e "HEAD:$f" 2>/dev/null && { have=1; cur=$(git show "HEAD:$f" 2>/dev/null); }
+        fi
+        if [ "$have" = 0 ]; then
+          echo "STALE  $f —$where missing: the boot reads it and finds nothing (regenerate: bash ~/.claude/skills/crit-in-force/in-force.sh --own a<N>)"; rc=1
+        elif ! diff -q <(printf '%s\n' "$cur" | grep -v '^\*\*Generated:\*\*') <(printf '%s\n' "$fresh" | grep -v '^\*\*Generated:\*\*') >/dev/null 2>&1; then
+          echo "STALE  $f —$where differs from a fresh generation: a rule moved, appeared or vanished (regenerate: bash ~/.claude/skills/crit-in-force/in-force.sh --own a<N>)"; rc=1
+        else
+          echo "FRESH  $f ($nl lines$where)"
         fi
         [ "$nl" -gt "$budget" ] && echo "BUDGET  $f — $nl lines of $budget: the law in force of one agent should be read at every boot; consolidate (contract-memory § 2)"
       done

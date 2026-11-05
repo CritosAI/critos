@@ -95,8 +95,19 @@
 # zero produced by a broken pipeline is not evidence; and every finding is a FLAG for its owner,
 # never a gate. Interpretive audits (redundancy, real drift, taxonomy) are not in scope.
 #
-# Usage:  bash ~/.claude/skills/crit-doc-lint/doc-lint.sh
+# Usage:  bash ~/.claude/skills/crit-doc-lint/doc-lint.sh [--own a<N>]
+#           --own a<N> (or --me <N>): the runner's folder, passed to the generators this battery
+#           calls — they read every other folder as committed and write nothing anywhere
+#           (contract-memory § 6); without it they read every folder at HEAD.
 set -uo pipefail
+own_args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --own) own_args+=(--own "$2"); shift 2 ;;
+    --me) own_args+=(--own "a$2"); shift 2 ;;
+    *) shift ;;
+  esac
+done
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "doc-lint: not inside a git repository. If Claude Code was opened ABOVE the repo, none of the repo's .claude/ (steward, hooks) is loaded - reopen it at the repo root." >&2; exit 1; }
 cd "$root" || exit 1
 
@@ -1178,7 +1189,7 @@ if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the Carries blocks cannot be read (NOT a clean none)"
 else
   lines26=$(mktemp); ptr26=$(mktemp); heads26=$(mktemp); two26=$(mktemp); out26=$(mktemp)
-  bash "$inforce" --lines > "$lines26" 2>/dev/null
+  bash "$inforce" ${own_args[@]+"${own_args[@]}"} --lines > "$lines26" 2>/dev/null
   # the pointers of every live log, per folder: folder <TAB> id <TAB> settled|consolidated <TAB> log:line
   while IFS= read -r lg; do
     [ -f "$lg" ] || continue
@@ -1313,7 +1324,7 @@ hdr 27 "IN-FORCE: the generated law in force of every agent is fresh, and within
 if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the indexes cannot be checked (NOT a clean none)"
 else
-  out27=$(bash "$inforce" --check 2>/dev/null)
+  out27=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --check 2>/dev/null)
   if printf '%s\n' "$out27" | grep -qE '^(STALE|BUDGET)'; then
     b27=$(born 1.2.0)
     printf '%s\n' "$out27" | sed -nE "s/^STALE  (.*)$/IN-FORCE-STALE  \1$b27/p; s/^BUDGET  (.*)$/IN-FORCE-BUDGET  \1/p"
@@ -1415,6 +1426,6 @@ if [ -z "${DOC_LINT_NO_CONSTELLATION:-}" ]; then
       echo "(registered in .claude/repos but MISSING on disk: $r)"
       continue
     fi
-    (cd "$r" && DOC_LINT_NO_CONSTELLATION=1 DOC_LINT_CHILD=1 bash "$self_abs")
+    (cd "$r" && DOC_LINT_NO_CONSTELLATION=1 DOC_LINT_CHILD=1 bash "$self_abs" ${own_args[@]+"${own_args[@]}"})
   done < <(constellation "$root")
 fi

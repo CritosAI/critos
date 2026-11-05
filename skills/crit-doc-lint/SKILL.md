@@ -18,7 +18,7 @@ Run the mechanical documentation-hygiene checks and interpret the output.
 
 ## How to run
 ```
-bash ~/.claude/skills/crit-doc-lint/doc-lint.sh
+bash ~/.claude/skills/crit-doc-lint/doc-lint.sh --own a4    # as a4: the generators it calls read every other folder as committed
 ```
 
 Two rules hold for every check. A check that **could not run says `SKIPPED`**, never `(none)`: a

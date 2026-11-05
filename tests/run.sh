@@ -27,6 +27,10 @@
 #   8. the version cited  every install line of the README and the install guide names the
 #                    release system/VERSION declares (tests/version-cited.sh): a page that
 #                    sends a newcomer to an older tag cannot be cut.
+#   9. the owner    a generator reads a folder it does not own as committed and writes only in
+#                    the folders its runner owns: a neighbour's uncommitted entry never reaches
+#                    what another owner writes, and an unchanged index is not rewritten
+#                    (tests/own.sh).
 # To change an expectation on purpose: run with --update, review the diff, commit it WITH the
 # change that caused it.
 set -uo pipefail
@@ -86,4 +90,5 @@ bash "$here/wrong-place.sh" || fail=1
 bash "$here/install.sh" || fail=1
 bash "$here/commit-format.sh" || fail=1
 bash "$here/version-cited.sh" || fail=1
+bash "$here/own.sh" || fail=1
 exit $fail

@@ -30,9 +30,14 @@ regenerate it.
 ## Use
 
 ```bash
-bash ~/.claude/skills/crit-memory-index/memory-index.sh            # rewrite MEMORY-INDEX.md
+bash ~/.claude/skills/crit-memory-index/memory-index.sh --own a4   # rewrite MEMORY-INDEX.md as a4 (when it changed)
 bash ~/.claude/skills/crit-memory-index/memory-index.sh --check    # verdict: 0 fresh · 1 STALE-ID · 2 STALE-COUNT
 ```
+
+`--own a<N>` names the runner's folder (repeatable): it is read from the working tree, every
+other memory folder as committed (HEAD) — the atlas one owner writes never carries another
+owner's uncommitted state. Without it every folder is read at HEAD: a verification's run,
+nobody's. An atlas whose content did not change is not rewritten (`unchanged`).
 
 **The `--check` verdict is SPLIT, because the defect is in the verdict, not the frequency.** A
 single binary STALE reported *an id whose address moved* (the atlas sends a reader to a DIFFERENT

@@ -262,6 +262,13 @@ Both are **generated, never written**: a hand-edit disappears at the next run. W
 changes an ADR or a lesson regenerates both in the same round-close; a staleness check makes
 forgetting detectable (`[27]`, and the atlas's own `--check`).
 
+**A generator reads a folder it does not own as committed, and writes only in the folders its
+runner owns.** The runner names them (`--own a<N>`): those are read from the working tree; every
+other memory folder is read at HEAD and never written — an owner cannot commit another's
+uncommitted state through a generated file. Without a name every folder is read at HEAD and only
+the atlas is written: a verification's run, nobody's. An unchanged content is not written, so the
+stamp says when the law last changed, not when someone last looked.
+
 **And the discipline is general to every index a project keeps, the hand-written ones included: an
 index points at its target; it never describes it.** A description in an index is a copy that will
 drift — one reference index described an identity contract as the *reverse* of what its own linked

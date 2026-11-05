@@ -18,10 +18,18 @@ The law in force of one agent, derived from its logs (`contract-memory § 2`, `�
 ## How to run
 
 ```
-bash ~/.claude/skills/crit-in-force/in-force.sh                  # rewrite every agent's IN-FORCE.md
-bash ~/.claude/skills/crit-in-force/in-force.sh --check          # fresh? exit 1 when any is stale or missing
+bash ~/.claude/skills/crit-in-force/in-force.sh --own a4         # rewrite YOUR IN-FORCE.md (a4's), when it changed
+bash ~/.claude/skills/crit-in-force/in-force.sh --check --own a4 # fresh? yours from the tree, the others as committed
 bash ~/.claude/skills/crit-in-force/in-force.sh --lane onboarding .critos/memory/a4   # also the lane's view
 ```
+
+**Who writes.** A generator reads a folder it does not own as committed, and writes only in the
+folders its runner owns (`contract-memory § 6`): `--own a<N>` (repeatable; a folder argument counts
+as one) names yours — read from the working tree and the only ones written; every other memory
+folder is read at HEAD and never written, so your run cannot carry a neighbour's uncommitted
+state, and a neighbour's run cannot dirty your index. Without a name nothing is written and every
+folder is read at HEAD — a verification's run, nobody's. An index whose content did not change is
+not rewritten (`unchanged`), so its stamp says when the law last changed.
 
 ## What it reads
 
