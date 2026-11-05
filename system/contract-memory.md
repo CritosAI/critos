@@ -56,7 +56,8 @@ answer is not history worth keeping, it is a **wrong answer**.
 
 - **Sections:** `Now true` · `Next (my domain)` · `Proposals` · `Cleanup pending` ·
   `Last updated: YYYY-MM-DD`. No chronicle of past rounds. **At most one dated "as of" stamp** —
-  the file's own.
+  the file's own, and a claim a control reads: a stamp day older than the day of the file's last
+  commit is a finding (`[9]`) — re-stamp with `date -u` whenever the file changes.
 - **`Next` is committed work only; what awaits a yes lives in `Proposals`.** The test, applied
   identically by anyone: *if nobody says yes, does it still have to happen?* Yes → `Next` (a
   parked item is committed work and carries its un-park trigger). No → `Proposals`: noticed,

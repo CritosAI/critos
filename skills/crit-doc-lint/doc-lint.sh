@@ -19,7 +19,8 @@
 #   [7] BAD-TOKEN         an inbox lifecycle token outside the closed vocabulary (token-audit.mjs)
 #   [8] STATUS-CHRONICLE  (WARN) a STATUS.md over the line budget or stacking dated AS-OF sections;
 #       NOTE-CHRONICLE    (WARN) a per-entity note stacking dated headings — a diary, not a photograph
-#   [9] STALE-STATUS      a STATUS.md whose last commit is >=14 days old
+#   [9] STALE-STATUS      a STATUS.md whose last commit is >=14 days old; STALE-STAMP a STATUS
+#                         whose Last updated day is older than the day of its last commit (UTC)
 #  [10] DANGLING-WIKI-LINK (WARN) a [[slug]] that resolves nowhere the repo can reach — never
 #                         against the auto-memory; AUTO-MEMORY-CITED (WARN) a tracked .md citing
 #                         a note of this machine's auto-memory
@@ -424,7 +425,7 @@ while IFS= read -r nf; do
 done < <(git ls-files '.critos/memory/a*/notes/*' 2>/dev/null | grep -E '\.md$')
 [ "$any_note" = 0 ] && echo "(no per-entity note reads as a diary)"
 
-hdr 9 "STALE-STATUS: a memory STATUS.md nobody has touched in >=14 days"
+hdr 9 "STALE-STATUS: a memory STATUS.md nobody has touched in >=14 days · STALE-STAMP: a head stamp older than the file's last commit"
 # The flag means "re-verify with the owner", never "this is wrong": a STATUS legitimately rests
 # while its domain is quiet.
 any_stale_status=0
@@ -440,8 +441,18 @@ else
       echo "STALE-STATUS  $sf — last commit ${age}d ago. Re-verify with its owner: is this still true?"
       any_stale_status=1
     fi
+    # STALE-STAMP: the head stamp is a claim a control reads. The `Last updated:` day against the
+    # day of the file's last commit, both UTC: older is a finding — the head the boot trusts says
+    # an older day than the file; newer is the writer mid-round (the tree ahead of its commit),
+    # not a finding; a day later than today is [24]'s. No stamp line: nothing to read here.
+    cday=$(date -u -d "@$ct" +%F 2>/dev/null || date -u -r "$ct" +%F 2>/dev/null)
+    sday=$(grep -m1 -oE '^\*\*Last updated:\*\*[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$sf" 2>/dev/null | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+    if [ -n "$cday" ] && [ -n "$sday" ] && [[ "$sday" < "$cday" ]]; then
+      echo "STALE-STAMP  $sf — stamped $sday, last committed $cday (UTC): the head the boot trusts is older than the file; re-stamp with date -u when the file changes$(born 1.2.0)"
+      any_stale_status=1
+    fi
   done <<< "$status_files"
-  [ "$any_stale_status" = 0 ] && echo "(none — every STATUS was touched in the last 14 days)"
+  [ "$any_stale_status" = 0 ] && echo "(none — every STATUS was touched in the last 14 days, and no head stamp is older than its commit)"
 fi
 
 hdr 10 "DANGLING-WIKI-LINK (WARN): a [[slug]] that resolves nowhere reachable"
@@ -1265,7 +1276,7 @@ hdr 28 "DETECTOR: every tier-2 claim names a detector that exists; every detecto
 # (Keep the list in step with the header above when a token is added.)
 product_legs=(
   BROKEN TRACKED-MISSING PATH-IN-CODE ORPHAN ORPHAN-BY-USE DANGLING-SKILL PING-PONG NO-DONE-WHEN MULTI-OWNER STALE-Rx
-  BAD-TOKEN UNBOLDED-TOKEN STATUS-CHRONICLE NOTE-CHRONICLE STALE-STATUS DANGLING-WIKI-LINK AUTO-MEMORY-CITED
+  BAD-TOKEN UNBOLDED-TOKEN STATUS-CHRONICLE NOTE-CHRONICLE STALE-STATUS STALE-STAMP DANGLING-WIKI-LINK AUTO-MEMORY-CITED
   TIER-3-LESSON BAD-BOUND ENFORCEMENT-FORM UNROTATED-LOG DECLARED-OVER ARCHIVABLE MEMORY-SHAPE PIN-DRIFT
   VERSION-SPLIT DEFINITION-PATH RETIRED-REF COLD-LIVE-TOKEN DEFINITION-SHAPE DEFINITION-ACTOR SHELF-INDEX
   CITED-ID UNROOTED OVERLAP DANGLING INBOX-ACTOR FUTURE-DATE POINTER-FORM ARCHIVE-NAME NO-CARRIER

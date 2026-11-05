@@ -84,6 +84,10 @@ CritOS@…`. A slow run names the check that costs, not the run.
    budget, and each folder's `README.md` (the kind's contract) is not read.
 9. **STALE-STATUS** — a `STATUS.md` whose last commit is ≥14 days old. It means *re-verify with
    the owner*, never *this is wrong*: a snapshot legitimately rests while its domain is quiet.
+   **STALE-STAMP** — a `STATUS.md` whose `Last updated:` day is older than the day of its last
+   commit, both UTC: the file changed after its head was stamped, and the boot trusts the head.
+   A stamp newer than the commit is the writer mid-round, not a finding; a day later than today
+   is `[24]`'s. New in 1.2.0: a WARN at this pin, a finding from the next release.
 10. **DANGLING-WIKI-LINK (WARN)** — a `[[slug]]` that resolves nowhere reachable. A slug
     resolves against a heading in a tracked `.md`, a tracked doc's basename, a table row id, or
     `.claude/doc-lint-exempt` — never against the assistant's auto-memory: a link that resolved

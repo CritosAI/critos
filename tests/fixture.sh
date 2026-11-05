@@ -94,8 +94,9 @@ the code; its map lives in docs/maps/code-map.md
 never a template section
 EOF
 
-# [8] STATUS-CHRONICLE (over the line budget)   [9] STALE-STATUS (the old commit date below)
-{ echo "# status"; for i in $(seq 1 215); do echo "line $i"; done; } > "$L/memory/a2/STATUS.md"
+# [8] STATUS-CHRONICLE (over the line budget)   [9] STALE-STATUS (the old commit date below) ·
+#     STALE-STAMP negative: stamped after the build's commit day — the writer mid-round, not a finding
+{ echo "# status"; echo "**Last updated:** 2026-08-02 09:00 UTC"; for i in $(seq 1 215); do echo "line $i"; done; } > "$L/memory/a2/STATUS.md"
 
 # [11] TIER-3-LESSON · BAD-BOUND (a Bound: outside the eight)   [10] DANGLING-WIKI-LINK
 # [24] FUTURE-DATE (a lesson stamped 2099-01-01, with a legal Bound: TARGET beside it)
@@ -174,6 +175,7 @@ mkdir -p "$L/memory/a3/archive"
 printf '# archive\n## ADR-A2-000 — a copy of an entry another folder heads\n' > "$L/memory/a3/archive/DECISIONS-archive-2026-08.md"
 
 # status-check axis 1: a dated STATUS beside a DECISIONS log (a3)
+# [9] STALE-STAMP positive: stamped 2026-07-01, committed 2026-08-01 (the build's commit day)
 # [24] negative: a future date in PROSE is a plan, not a stamp — it must NOT fire
 printf '# status
 **Last updated:** 2026-07-01
