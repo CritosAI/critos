@@ -19,7 +19,8 @@ entry's date — and leave a pointer behind, one list line per rotated id in the
 one shape the controls read (`/crit-doc-lint [25]`), its state one of three — on either trigger:
 an entry fully settled, or the log past its skimmable budget (`/crit-doc-lint [12]`).
 **Nothing is archived unmarked**, and the atlas is regenerated in the same round, so every archived
-ID keeps resolving — relocated for legibility, never trimmed away.
+ID keeps resolving — relocated for legibility, never trimmed away. The pointer list stays where
+it is: a pointer is never an entry and never rotates.
 
 ```
     - `ADR-A1-###` — ROTATED YYYY-MM-DD to archive/DECISIONS-archive-YYYY-MM.md (done | superseded by <id> | consolidated in <id>)
@@ -32,6 +33,9 @@ ID keeps resolving — relocated for legibility, never trimmed away.
 ```
     ## ADR-A1-### — the decision, as a one-line imperative — the date, absolute
     **Status:** accepted            (later, when it ages: superseded by its successor's id, or completed + date)
+    **Amended YYYY-MM-DD (`<id>`):**  (later, optional) what changed, naming the entry that changed it — a dated
+                   line here, never a second heading under this id; a change of state moves in the
+                   heading's token and in Status
     **Context.**   what forced a choice: the constraint, the incident, the request. 1–3 lines.
     **Decision.**  what we do now, unambiguously. One line if it fits.
     **Why.**       the reason a future reader needs in order NOT to redo this differently. This is the

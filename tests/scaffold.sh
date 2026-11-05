@@ -43,10 +43,12 @@ leftover=$(grep -rlE 'SCAFFOLD:|<PROJECT_NAME>|<TODAY>|<Domain>' "$t/CLAUDE.md" 
 for f in "$repo"/system/*; do cmp -s "$f" "$t/.critos/system/$(basename "$f")" || bad "the pinned $(basename "$f") differs from its source"; done
 cmp -s "$repo/agents/agent-1.md" "$t/.claude/agents/agent-1.md" || bad "the steward's definition differs from its source"
 
-# 3. a newborn project reads as clean - before AND after its first commit
+# 3. a newborn project reads as clean - before AND after its first commit. The commit is dated the
+#    day the scaffold stamped its STATUS: a STATUS committed on a later day than its stamp is
+#    STALE-STAMP's business ([9]), and a newborn committed the day it was born is clean.
 lint() { ( cd "$t" && DOC_LINT_NO_CONSTELLATION=1 bash "$repo/skills/crit-doc-lint/doc-lint.sh" 2>&1 ) | grep -E '^[A-Z][A-Za-z0-9-]+  ' | grep -v '^PIN-DRIFT' || true; }
 f0=$(lint); [ -z "$f0" ] || bad "the battery finds something in an uncommitted scaffold: $(printf '%s' "$f0" | head -3)"
-( cd "$t" && git add -A >/dev/null 2>&1 && git -c user.name=t -c user.email=t@example.invalid commit -q -m scaffold )
+( cd "$t" && git add -A >/dev/null 2>&1 && GIT_AUTHOR_DATE="2026-01-01T00:00:00Z" GIT_COMMITTER_DATE="2026-01-01T00:00:00Z" git -c user.name=t -c user.email=t@example.invalid commit -q -m scaffold )
 f1=$(lint); [ -z "$f1" ] || bad "the battery finds something in a committed scaffold: $(printf '%s' "$f1" | head -3)"
 for n in 1 2; do
   # captured first: with pipefail, a `grep -q` that exits early turns the pipeline's status into a SIGPIPE
