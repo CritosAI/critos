@@ -154,7 +154,9 @@ entry point that runs what enforces (a package test, a query, a satellite's scri
 its first lines say `Enforces: <id>, <id>` and what it reads, and the CLI contract binds it:
 `--check` the default — exit 0 clean, 1 with findings, 2 when it cannot answer, never a silent
 zero without data (the INSTRUMENT bound); one line per finding in the battery's form; it
-detects, never repairs; `--selftest` fires it on its own fixture. It imports nothing from another
+detects, never repairs; `--selftest` fires it on its own fixture, and a selftest whose instrument
+is absent exits 2 and names the fixture it could not fire, exactly as `--check` — a green selftest
+is one that fired, a skipped test is never a green. It imports nothing from another
 agent's folder, and a command in another repository of the project names that repository as
 `.claude/repos` declares it, never by a machine path. The template is the contract as a bash
 skeleton; a project writes it in its own language keeping the contract. Tier 2 (`[28]`): a

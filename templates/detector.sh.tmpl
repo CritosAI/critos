@@ -8,7 +8,9 @@
 # it enforces, so that a tier-2 claim resolves to it; and it answers one CLI contract:
 #   --check     the default. exit 0 clean · 1 with findings · 2 when it cannot answer (no data,
 #               a missing input — never a silent zero: a green that cannot go red is not evidence)
-#   --selftest  fires the detector on a known positive of its own and fails unless it goes red
+#   --selftest  fires the detector on a known positive of its own and fails unless it goes red;
+#               when its instrument is absent it exits 2 and names the fixture it could not fire
+#               (a green selftest is one that fired; a skipped test is never a green)
 # One line per finding, in the battery's form: TOKEN  <where>  <what> — it detects, never repairs.
 # It imports nothing from another agent's folder. A command in another repository of the project
 # names that repository as .claude/repos declares it, never by a machine path.
@@ -30,6 +32,10 @@ case "$mode" in
   --check)
     detect "<the artifact>" ;;
   --selftest)
+    # the instrument first, when the detector needs one (a proxy, a token, a browser): absent, the
+    # fixture cannot fire — say which, exit 2, never a green that was never red
+    # <probe the instrument; when absent:>
+    #   echo "SKIP  selftest — <the fixture>: the instrument is absent (<what is missing>)"; exit 2
     # a known positive, built here, that MUST make detect() go red
     tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
     # <plant the violation under $tmp>
