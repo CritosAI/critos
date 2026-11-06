@@ -18,8 +18,22 @@ Run the mechanical documentation-hygiene checks and interpret the output.
 
 ## How to run
 ```
-bash ~/.claude/skills/crit-doc-lint/doc-lint.sh --own a4    # as a4: the generators it calls read every other folder as committed
+bash ~/.claude/skills/crit-doc-lint/doc-lint.sh --own a4          # as a4, at a round-close: the runner's scope
+bash ~/.claude/skills/crit-doc-lint/doc-lint.sh --own a1 --all    # the whole battery, as the steward: its daily close, every pin
+bash ~/.claude/skills/crit-doc-lint/doc-lint.sh                   # the whole, nobody's: every memory folder as committed
 ```
+
+**Two scopes, and the owner's name chooses** (`contract-session § 2` step 4). With `--own a<N>`
+and no `--all` the battery reads the **runner's scope**: its memory folder (`[8] [9] [11] [12]
+[13] [24] [25] [26] [27] [28]` on `a<N>`), its ids (`[21]`: the sequences its number keys, the
+declared families homed with it), the inbox entries it authored (`[5] [7] [23]`) and the links
+of the files under its roots (`[1] [2] [16]`: its memory and checks folders, the roster's Roots
+cell of its row, the folder of its Shelf index); the tree-wide checks — `[3] [4] [6] [10] [14]
+[15] [17] [18] [19] [20] [22]` — are skipped and say so, one line each. Without a name, or with
+`--all`, the **whole**: every check over the whole tree — the steward's, at its daily close and
+at every pin. The scope line under the provenance stamp, and the closing stamp, name the scope
+the run read. Cost accepted: a break on a shared surface outside the runner's roots is found by
+the steward within the day, not by its author within the hour.
 
 **Who the run is.** A control reads a memory folder its runner does not own as committed
 (`contract-memory § 6`): the folder `--own a<N>` names is read from the working tree, by every
@@ -42,8 +56,8 @@ output. `+dirty` means the checkout the controls run from has uncommitted change
 may match no release.
 
 Every check's block ends with its elapsed seconds — `(elapsed [n]: 412s)` — and the run ends
-with the total and the stamp again: `### doc-lint done — 28 checks in 1830s · controls:
-CritOS@…`. A slow run names the check that costs, not the run.
+with the total, the scope and the stamp again: `### doc-lint done — 28 checks in 1830s · scope:
+whole · controls: CritOS@…`. A slow run names the check that costs, not the run.
 
 ## The twenty-eight checks
 

@@ -47,7 +47,10 @@ order, then print the RESTART BLOCK.
    - If a durable CROSS-SESSION fact emerged, update auto-memory too (the fact in its own file + a
      one-line pointer in `MEMORY.md`). In-repo memory is the source of truth; auto-memory points at it.
 
-3. **TIDY DOCS — run `/crit-doc-lint`.** Fix the broken links / path-in-code you own; route the rest to
+3. **TIDY DOCS — run `/crit-doc-lint --own a<N>`.** As yourself the battery reads your scope — your
+   memory folder, your ids, the inbox entries you authored, the links under your roots — and skips
+   the tree-wide checks, saying so; the whole battery (`--all`, or no name) is the steward's, at its
+   daily close and at every pin. Fix the broken links / path-in-code you own; route the rest to
    the owning agent via HANDOFFS. **Then refresh the two generated indexes if the repo keeps them:**
    the atlas, `bash ~/.claude/skills/crit-memory-index/memory-index.sh --own a<N>`, and your law in
    force, `bash ~/.claude/skills/crit-in-force/in-force.sh --own a<N>` — as yourself: a generator

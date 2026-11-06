@@ -90,6 +90,14 @@
 # project pinned at that release — its line says so — and as a finding from the next release.
 # Born in 1.2.0: [25] [26] [28] and IN-FORCE-STALE. A leg WARN by a declared bound stays WARN.
 #
+# The battery has two SCOPES, and the owner's name chooses (contract-session § 2, step 4). With
+# --own a<N> and no --all it reads the RUNNER's scope: its memory folder ([8] [9] [11] [12] [13]
+# [24] [25] [26] [27] [28]), its ids ([21]), the inbox entries it authored ([5] [7] [23]) and the
+# links of the files under its roots ([1] [2] [16]); the tree-wide checks — [3] [4] [6] [10] [14]
+# [15] [17] [18] [19] [20] [22] — are skipped and say so, one line each. Without a name, or with
+# --all, the WHOLE: every check over the whole tree — the steward's, at its daily close and at
+# every pin. The stamp line names the scope the run read.
+#
 # A project that spans several repos registers them in `.claude/repos`; the whole battery is then
 # repeated in each (one level, read-only).
 #
@@ -97,7 +105,8 @@
 # zero produced by a broken pipeline is not evidence; and every finding is a FLAG for its owner,
 # never a gate. Interpretive audits (redundancy, real drift, taxonomy) are not in scope.
 #
-# Usage:  bash ~/.claude/skills/crit-doc-lint/doc-lint.sh [--own a<N>]
+# Usage:  bash ~/.claude/skills/crit-doc-lint/doc-lint.sh [--own a<N>] [--all]
+#           --all: with --own, the whole battery as that owner (the steward's daily close).
 #           --own a<N> (or --me <N>): the runner's folder — read from the working tree, by every
 #           check and by the generators this battery calls; every other memory folder is read as
 #           COMMITTED, its logs, archives, STATUS and notes as HEAD holds them (contract-memory
@@ -107,11 +116,12 @@
 #           nobody's. The shared surfaces — the inbox and its archives, the registers, the
 #           documents, the code, the pinned tier, the detectors — stay the tree.
 set -uo pipefail
-own_args=(); own_names=()
+own_args=(); own_names=(); all=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --own) own_args+=(--own "$2"); own_names+=("$2"); shift 2 ;;
     --me) own_args+=(--own "a$2"); own_names+=("a$2"); shift 2 ;;
+    --all) all=1; shift ;;
     *) shift ;;
   esac
 done
@@ -124,6 +134,13 @@ for o in ${own_names[@]+"${own_names[@]}"}; do
   [ -d ".critos/memory/$o" ] || [ -n "$(git ls-tree -d --name-only HEAD -- ".critos/memory/$o" 2>/dev/null | head -1)" ] \
     || { echo "doc-lint: --own $o names no memory folder — .critos/memory/$o/ is neither in the tree nor at HEAD" >&2; exit 2; }
 done
+# The two scopes: the owner's name chooses. With a name and no --all, the runner's; without a name,
+# or with --all, the whole (the header above; contract-session § 2 step 4).
+scope=whole; [ "${#own_names[@]}" -gt 0 ] && [ "$all" = 0 ] && scope=runner
+me_nums=(); for o in ${own_names[@]+"${own_names[@]}"}; do me_nums+=("${o#a}"); done
+is_me() { local x; for x in ${me_nums[@]+"${me_nums[@]}"}; do [ "$x" = "$1" ] && return 0; done; return 1; }   # $1 = an agent number
+me_author=""; [ "$scope" = runner ] && { me_author=$(printf 'A%s,' "${me_nums[@]}"); me_author=${me_author%,}; }   # the inbox audits read the runner's entries
+skip_tree() { echo "(skipped — a tree-wide check: this run reads the scope of ${own_names[*]}; the whole battery is the steward's — --all, or no name)"; }
 
 # ---- layout ------------------------------------------------------------------------------------
 INBOX=""; ROSTER=""; RMF=""
@@ -148,13 +165,16 @@ for o in ${own_names[@]+"${own_names[@]}"}; do owned+=(".critos/memory/$o"); don
 head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
 head_root=$(mktemp -d); head_list=$(mktemp); trap 'rm -rf "$head_root" "$head_list"' EXIT
 [ "$head_ok" = 1 ] && git ls-tree -r --name-only HEAD -- '.critos/memory/' 2>/dev/null > "$head_list"
-mem_owned() {   # $1 = a path: read from the tree? — outside the memory folders always; inside, when owned
+in_me() {   # $1 = a path (or a folder): under one of the runner's memory folders?
   local t="$1" x
-  [ "$head_ok" = 0 ] && return 0
-  case "$t" in .critos/memory/*) ;; *) return 0 ;; esac
+  case "$t" in .critos/memory/*) ;; *) return 1 ;; esac
   t=${t#.critos/memory/}; t=".critos/memory/${t%%/*}"
   for x in ${owned[@]+"${owned[@]}"}; do [ "$x" = "$t" ] && return 0; done
   return 1
+}
+mem_owned() {   # $1 = a path: read from the tree? — outside the memory folders always; inside, when owned
+  [ "$head_ok" = 0 ] && return 0
+  case "$1" in .critos/memory/*) in_me "$1" ;; *) return 0 ;; esac
 }
 rd() { RD="$1"; mem_owned "$1" || RD="$head_root/$1"; }   # RD = where $1 is read: itself, or its HEAD copy
 materialize() {   # $1 = a memory folder: its HEAD copy under $head_root, once — one git process per folder;
@@ -164,19 +184,22 @@ materialize() {   # $1 = a memory folder: its HEAD copy under $head_root, once �
   git -c core.autocrlf=false -c core.eol=lf archive --format=tar HEAD -- "$1" 2>/dev/null | tar -xf - -C "$head_root" 2>/dev/null
   return 0
 }
-mem_dirs() {   # every memory folder, one per line: the owned ones from the tree, every other as committed
+mem_dirs_all() {   # every memory folder, one per line: the owned ones from the tree, every other as committed
   { for o in ${owned[@]+"${owned[@]}"}; do [ -d "$o" ] && printf '%s\n' "$o"; done
     if [ "$head_ok" = 1 ]; then
       sed -nE 's#^(\.critos/memory/[^/]+)/.*$#\1#p' "$head_list" | sort -u | while IFS= read -r d; do mem_owned "$d" || printf '%s\n' "$d"; done
     else for d in .critos/memory/*/; do [ -d "$d" ] && printf '%s\n' "${d%/}"; done; fi; } | sort -u
 }
-mem_ls() {   # $1 = a pathspec under .critos/memory/ -> the paths it matches: an owned folder's as git ls-files
-             # lists them (the index), every other folder's as committed
+mem_ls_all() {   # $1 = a pathspec under .critos/memory/ -> the paths it matches: an owned folder's as git ls-files
+                 # lists them (the index), every other folder's as committed
   { git ls-files "$1" 2>/dev/null | while IFS= read -r f; do mem_owned "$f" && printf '%s\n' "$f"; done
     [ "$head_ok" = 1 ] && while IFS= read -r f; do [[ "$f" == $1 ]] && ! mem_owned "$f" && printf '%s\n' "$f"; done < "$head_list"; } | sort -u
 }
+# the scoped listings: in the runner's scope only its own folders; in the whole, every folder
+mem_dirs() { if [ "$scope" = runner ]; then mem_dirs_all | while IFS= read -r d; do in_me "$d" && printf '%s\n' "$d"; done; else mem_dirs_all; fi; }
+mem_ls() { if [ "$scope" = runner ]; then mem_ls_all "$1" | while IFS= read -r f; do in_me "$f" && printf '%s\n' "$f"; done; else mem_ls_all "$1"; fi; }
 mem_files() { mem_ls ".critos/memory/*/$1"; }
-if [ "$head_ok" = 1 ]; then while IFS= read -r d; do [ -n "$d" ] && ! mem_owned "$d" && materialize "$d"; done < <(mem_dirs); fi
+if [ "$head_ok" = 1 ]; then while IFS= read -r d; do [ -n "$d" ] && ! mem_owned "$d" && materialize "$d"; done < <(mem_dirs_all); fi
 # A git grep over the repository as a run sees it: the tree outside the memory folders and inside the
 # owned ones, HEAD inside every other memory folder (a HEAD hit's `HEAD:` prefix is stripped). The
 # first argument is the positive pathspec (`.` or a glob such as `*.md`), then git grep's own
@@ -194,6 +217,54 @@ mgrep() {
   opos=".critos/memory"; [ "$pos" != . ] && opos=".critos/memory/$pos"
   git grep "${a[@]}" HEAD -- "$opos" ${hex[@]+"${hex[@]}"} ${ex[@]+"${ex[@]}"} 2>/dev/null | sed 's/^HEAD://'
   return 0
+}
+
+# The runner's ids ([21], the carrier conflicts): the sequences its number keys, and the declared
+# families whose home is one of its folders. The runner's roots ([1] [2] [16]): its memory and
+# checks folders by construction, the roster's Roots cell of its row, the folder of its Shelf
+# index; `/` alone is the whole repository.
+me_id_re="^$"; me_roots=(); me_all=0; me_roots_note=""
+if [ "$scope" = runner ]; then
+  me_id_re="^(ADR|L)-A($(printf '%s|' "${me_nums[@]}" | sed 's/|$//'))-[0-9]+$"
+  if [ -f .critos/project/id-families ]; then
+    while IFS= read -r fl; do
+      fh=$(printf '%s' "$fl" | sed -E 's/^.*home:[[:space:]]*a//; s/[[:space:]]+$//')
+      is_me "$fh" || continue
+      me_id_re="$me_id_re|^($(printf '%s' "$fl" | sed -E 's/[[:space:]]*·[[:space:]]*home:.*$//; s/^\^//; s/\$$//'))$"
+    done < <(grep -E '·[[:space:]]*home:[[:space:]]*a[0-9]+' .critos/project/id-families | grep -vE '^[[:space:]]*#')
+  fi
+  for o in ${owned[@]+"${owned[@]}"}; do me_roots+=("$o/" ".critos/checks/${o##*/}/"); done
+  if [ -z "$ROSTER" ]; then me_roots_note="no roster: the memory and checks folders only"
+  else
+    rc_me=$(awk -F'|' '$2 ~ /^[[:space:]]*#[[:space:]]*$/ { for(i=1;i<=NF;i++) if (tolower($i) ~ /roots/) {print i; exit} }' "$ROSTER" | head -1)
+    sc_me=$(awk -F'|' '$2 ~ /^[[:space:]]*#[[:space:]]*$/ { for(i=1;i<=NF;i++) if (tolower($i) ~ /shelf/) {print i; exit} }' "$ROSTER" | head -1)
+    [ -n "$rc_me" ] || me_roots_note="the roster has no Roots column: the memory and checks folders, and the shelf, only"
+    for n in ${me_nums[@]+"${me_nums[@]}"}; do
+      row_me=$(grep -E "^\|[[:space:]]*A${n}[[:space:]]*\|" "$ROSTER" | head -1)
+      [ -n "$row_me" ] || { me_roots_note="A${n} has no roster row: the memory and checks folders only"; continue; }
+      if [ -n "$rc_me" ]; then
+        while IFS= read -r r_me; do
+          [ -n "$r_me" ] || continue
+          case "$r_me" in /) me_all=1 ;; *) me_roots+=("$r_me") ;; esac
+        done < <(printf '%s' "$row_me" | awk -F'|' -v c="$rc_me" 'NF>c {print $c}' | grep -oE '`[^`]+`' | tr -d '`' | sed -E 's#^\./##' | awk 'NF')
+      fi
+      if [ -n "$sc_me" ]; then
+        sh_me=$(printf '%s' "$row_me" | awk -F'|' -v c="$sc_me" 'NF>c {print $c}' | grep -oE '\]\([^)]+\)' | head -1 | sed -E 's/^\]\(//; s/\)$//')
+        case "$sh_me" in ''|http://*|https://*|mailto:*|\#*) ;; *)
+          sh_me=${sh_me%%#*}; sh_me=${sh_me//%20/ }
+          t_me=$(realpath -m --relative-to=. "$(dirname "$ROSTER")/$sh_me" 2>/dev/null)
+          if [ -n "$t_me" ] && [ -f "$t_me" ]; then d_me=$(dirname "$t_me"); [ "$d_me" = . ] && me_all=1 || me_roots+=("$d_me/"); fi ;;
+        esac
+      fi
+    done
+  fi
+fi
+under_me() {   # $1 = a path: under one of the runner's roots? (a folder root ends with /, a file root is exact)
+  local r; [ "$me_all" = 1 ] && return 0
+  for r in ${me_roots[@]+"${me_roots[@]}"}; do
+    case "$r" in */) [[ "$1" == "$r"* ]] && return 0 ;; *) [ "$1" = "$r" ] && return 0 ;; esac
+  done
+  return 1
 }
 
 _ver=""
@@ -230,6 +301,12 @@ if [ -n "$ctl_root" ]; then
   echo "### controls: CritOS@${ctl_rev}${ctl_dirty}"
 else
   echo "### controls: (unversioned copy — not under git; provenance unknown)"
+fi
+if [ "$scope" = runner ]; then
+  roots_me="${me_roots[*]}"; [ "$me_all" = 1 ] && roots_me="/ (the whole repository)"
+  echo "### scope: the runner's — ${own_names[*]}: its memory folder, its ids, the inbox entries it authored, the links of the files under its roots (${roots_me}${me_roots_note:+; $me_roots_note}); the 11 tree-wide checks are skipped — the whole battery is --all, or no name"
+else
+  echo "### scope: whole — every check over the whole tree (the steward's: at its daily close and at every pin)"
 fi
 echo
 
@@ -281,10 +358,12 @@ hdr 1 "broken relative links in .md (existence-checked per link; tracked + untra
 # deletion, yours or a neighbour's. Said once, here; every check reads the tree without it.
 while IFS= read -r -d '' f; do
   mem_owned "$f" || continue   # a neighbour's memory folder is read as committed: nothing is missing there
+  [ "$scope" = runner ] && ! under_me "$f" && continue
   [ -e "$f" ] || echo "TRACKED-MISSING  $f  (tracked by git, absent on disk — an uncommitted deletion, yours or a neighbour's: commit it or restore it; every check reads the tree without it)"
 done < <(git ls-files -z 2>/dev/null)
 any_broken=0
 while IFS= read -r f; do
+  [ "$scope" = runner ] && ! under_me "$f" && continue
   d=$(dirname "$f"); rd "$f"
   while IFS= read -r url; do
     [ -z "$url" ] && continue
@@ -316,11 +395,19 @@ else
     | grep -vE '^[^:]*(/doc/|/archive/)[^:]*:' \
     | grep -vE '(^|/)skills/crit-doc-lint/' \
     | grep -v 'doc-lint:allow path-in-code' || true)
+  if [ "$scope" = runner ] && [ -n "$p2_hits" ]; then p2_hits=$(printf '%s\n' "$p2_hits" | while IFS= read -r h2; do under_me "${h2%%:*}" && printf '%s\n' "$h2"; done); fi
   if [ -n "$p2_hits" ]; then printf '%s\n' "$p2_hits" | sed 's/^/PATH-IN-CODE  /'; else echo "(none)"; fi
 fi
 
 hdr 3 "ORPHAN docs: tracked .md that nothing links to (the 'no floating doc' rule)"
 # The reachability graph is built from TRACKED sources only: an uncommitted pointer can vanish.
+# Exempt (read by [3], [10] and [21]): docs found by CONVENTION — entry points, the memory triad, the three registers, the
+# pinned tier's own files, per-entity notes. A repo declares its own convention families in
+# `.claude/doc-lint-exempt` (one extended regex per line, matched against the path).
+exempt_re=""
+[ -f .claude/doc-lint-exempt ] && \
+  exempt_re=$(grep -vE '^[[:space:]]*(#|$)' .claude/doc-lint-exempt | paste -sd'|' -)
+if [ "$scope" = runner ]; then skip_tree; else   # a tree-wide check: the graph is the whole tree's
 targets=$(mktemp)
 while IFS= read -r f; do
   d=$(dirname "$f"); rd "$f"
@@ -331,12 +418,6 @@ while IFS= read -r f; do
     realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
   done < <(links_of "$RD")
 done < <(tracked_md) | sort -u > "$targets"
-# Exempt: docs found by CONVENTION — entry points, the memory triad, the three registers, the
-# pinned tier's own files, per-entity notes. A repo declares its own convention families in
-# `.claude/doc-lint-exempt` (one extended regex per line, matched against the path).
-exempt_re=""
-[ -f .claude/doc-lint-exempt ] && \
-  exempt_re=$(grep -vE '^[[:space:]]*(#|$)' .claude/doc-lint-exempt | paste -sd'|' -)
 any_orphan=0
 while IFS= read -r f; do
   case "$(basename "$f")" in
@@ -389,12 +470,14 @@ while IFS= read -r f; do
 done < <(tracked_md)
 rm -f "$targets" "$dispatch"
 [ "$any_byuse" = 0 ] && echo "(no document linked only from an index: every reachable doc has a reader sent to it)"
+fi   # [3]
 
 hdr 4 "DANGLING skill references in the agentic docs"
 # Installed = the machine's skills + the repo's own + the ones bundled with Claude Code (not on
 # disk). Scope: the skill layer only (SKILL.md files and CLAUDE.md) — the text the model reads to
 # choose a skill; elsewhere a /token is usually a URL or an API path.
 # In the CritOS repository itself, the skills it ships count as present.
+if [ "$scope" = runner ]; then skip_tree; else   # a tree-wide check: the skill layer
 own_skills=""; [ -f system/VERSION ] && [ -f releases.manifest ] && own_skills=skills
 installed=$( { ls -1 ~/.claude/skills 2>/dev/null; ls -1 .claude/skills 2>/dev/null; [ -n "$own_skills" ] && ls -1 "$own_skills" 2>/dev/null; } | sed 's#/##' | sort -u)
 builtins="config hooks clear compact help agents rewind model init review resume
@@ -415,6 +498,7 @@ for f in $scan; do
   done
 done
 [ "$any_dangling" = 0 ] && echo "(none — every /skill referenced is installed)"
+fi   # [4]
 
 hdr 5 "INBOX hygiene (ping-pong · no closure criterion · diffused ownership)"
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -426,14 +510,15 @@ elif [ -z "$inbox" ]; then
 elif ! command -v node >/dev/null 2>&1; then
   echo "(node not available — inbox audit skipped; the other checks ran)"
 else
-  node "$here/inbox-audit.mjs" "$inbox" $(ls .critos/shared/archive/HANDOFFS-archive-*.md 2>/dev/null)
+  DOC_LINT_AUTHOR="$me_author" node "$here/inbox-audit.mjs" "$inbox" $(ls .critos/shared/archive/HANDOFFS-archive-*.md 2>/dev/null)
 fi
 
 hdr 6 "STALE-Rx: open ROADMAP rows nobody has touched in >=10 days"
 # The net under the lead's flip duty. A flagged row is not "done": re-verify it with its lead;
 # re-verifying touches the row, which resets its clock.
 rmf="$RMF"
-if [ -z "$rmf" ]; then
+if [ "$scope" = runner ]; then skip_tree; rmf=""
+elif [ -z "$rmf" ]; then
   echo "(no ROADMAP register in this repo — skipped)"
 else
   blame_tmp=$(mktemp)
@@ -478,7 +563,7 @@ elif [ -z "$inbox" ]; then
 elif ! command -v node >/dev/null 2>&1; then
   echo "(node not available — token audit skipped; the other checks ran)"
 else
-  node "$here/token-audit.mjs" "$inbox"
+  DOC_LINT_AUTHOR="$me_author" node "$here/token-audit.mjs" "$inbox"
 fi
 
 hdr 8 "STATUS-CHRONICLE (WARN): a memory STATUS.md that stopped being a snapshot"
@@ -562,9 +647,10 @@ hdr 10 "DANGLING-WIKI-LINK (WARN): a [[slug]] that resolves nowhere reachable"
 # only there read green on the one machine that has it (contract-system § 3, the auto-memory
 # row). Archives are records and are not scanned; this skill's own docs quote the syntax.
 wl_tmp=$(mktemp); wl_declared=$(mktemp)
-mgrep '*.md' -hoE '\[\[[A-Za-z0-9][A-Za-z0-9._-]*\]\]' -- ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' \
+[ "$scope" = runner ] || mgrep '*.md' -hoE '\[\[[A-Za-z0-9][A-Za-z0-9._-]*\]\]' -- ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' \
   | sed -E 's/^\[\[//; s/\]\]$//' | sort -u > "$wl_tmp"
-if [ ! -s "$wl_tmp" ]; then
+if [ "$scope" = runner ]; then skip_tree; rm -f "$wl_tmp" "$wl_declared"
+elif [ ! -s "$wl_tmp" ]; then
   echo "(no [[slug]] links in this repo — skipped)"
   rm -f "$wl_tmp" "$wl_declared"
 else
@@ -596,7 +682,8 @@ fi
 # (the test suite plants one, so the leg is seen firing on every machine).
 am_root="${CRITOS_AUTO_MEMORY:-$HOME/.claude/projects}"
 am_names=$(ls -1 "$am_root"/*/memory/*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.md$//' | grep -vxE 'MEMORY|README' | sort -u)
-if [ -z "$am_names" ]; then
+if [ "$scope" = runner ]; then :   # skipped with the first leg
+elif [ -z "$am_names" ]; then
   echo "(no auto-memory note on this machine under $am_root — the citation leg cannot fire here; not a clean none elsewhere)"
 else
   am_re=$(printf '%s\n' "$am_names" | sed -E 's/[.[\*^$|]/\\&/g' | paste -sd'|' -)
@@ -753,7 +840,8 @@ hdr 14 "PIN-DRIFT: the pinned system tier vs its declared release"
 # pinned at an older release verifies against its own release. A release candidate
 # (`1.2.0-rc.1`) is a version of its own, with its own entries. The manifest is found from where
 # this control lives — the project keeps no pointer to CritOS.
-if [ ! -f .critos/system/VERSION ]; then
+if [ "$scope" = runner ]; then skip_tree
+elif [ ! -f .critos/system/VERSION ]; then
   if [ -f system/VERSION ] && [ -f releases.manifest ]; then
     echo "(this repo is CritOS itself — its system is the release, nothing pinned; skipped)"
   else
@@ -801,7 +889,8 @@ hdr 15 "DEFINITION-PATH: a path in an agent definition, beyond the law-fixed add
 # Only the two classes that are wrong without judgment: a .md path (a doc map) and an absolute
 # path (a machine, not a perimeter). Perimeter-versus-interior depth is the steward's review.
 def_files=$(git ls-files '.critos/project/agents/agent-*.md' '.claude/agents/agent-*.md' 2>/dev/null)
-if [ -z "$def_files" ]; then
+if [ "$scope" = runner ]; then skip_tree
+elif [ -z "$def_files" ]; then
   echo "(no agent definitions in this repo — skipped)"
 else
   any_defpath=0
@@ -837,6 +926,7 @@ else
   while IFS= read -r f; do
     case "$f" in */archive/*|archive/*|*/release/*|release/*) continue ;; esac
     grep -qxF "$f" "$retired_set" && continue
+    [ "$scope" = runner ] && ! under_me "$f" && continue
     d=$(dirname "$f"); rd "$f"
     while IFS= read -r url; do
       [ -z "$url" ] && continue
@@ -859,7 +949,8 @@ hdr 17 "COLD-LIVE-TOKEN: a live lifecycle token buried in cold storage"
 # that merely quotes the grammar is counted and reported on one line, never listed: on a real
 # archive the quotes outnumber the entries, and a list nobody can triage hides the one that matters.
 cold17=$(ls .critos/shared/archive/HANDOFFS-archive-*.md 2>/dev/null)
-if [ -z "$cold17" ]; then
+if [ "$scope" = runner ]; then skip_tree
+elif [ -z "$cold17" ]; then
   echo "(no HANDOFFS archives in this repo — skipped)"
 else
   any17=$(grep -nE '\[(OPEN\b|PARKED-OWNED\b)' $cold17 /dev/null 2>/dev/null || true)
@@ -875,7 +966,8 @@ fi
 
 hdr 18 "DEFINITION-SHAPE: an agent definition outside the template's section shape"
 # Four mandatory sections, plus the optional '5 · Standing directives' (contract-agent § 1).
-if [ -z "$def_files" ]; then
+if [ "$scope" = runner ]; then skip_tree
+elif [ -z "$def_files" ]; then
   echo "(no agent definitions in this repo — skipped)"
 else
   any_shape18=0
@@ -901,7 +993,8 @@ fi
 hdr 19 "DEFINITION-ACTOR: a definition naming an actor other than itself"
 # The one legal id is the definition's own (the filename's); a neighbour is named by its DOMAIN
 # and the roster resolves it.
-if [ -z "$def_files" ]; then
+if [ "$scope" = runner ]; then skip_tree
+elif [ -z "$def_files" ]; then
   echo "(no agent definitions in this repo — skipped)"
 else
   any_actor19=0
@@ -925,7 +1018,8 @@ hdr 20 "SHELF-INDEX: a rostered shelf whose index does not resolve, or whose fol
 #   transitively. A link from a non-index sibling does not count.
 # Any other entry point is legal and its completeness is the owner's (a declared bound). A cell
 # with no link and not "—" is a finding, unless it names another repo.
-if [ -z "$ROSTER" ]; then
+if [ "$scope" = runner ]; then skip_tree
+elif [ -z "$ROSTER" ]; then
   echo "(no roster in this repo — skipped)"
 else
   shelf_col=$(awk -F'|' '$2 ~ /^[[:space:]]*#[[:space:]]*$/ && tolower($0) ~ /shelf/ { for(i=1;i<=NF;i++) if (tolower($i) ~ /shelf/) {print i; exit} }' "$ROSTER" | head -1)
@@ -1021,7 +1115,7 @@ declared21=$(mktemp); prefixes21=$(mktemp)
 # one tracked and new); a registered repo's as its tree, one level, read-only
 logs21_home() {
   { { git ls-files '*DECISIONS*.md' '*LESSONS*.md'; git ls-files --others --exclude-standard -- '*DECISIONS*.md' '*LESSONS*.md'; } 2>/dev/null | grep -v '^\.critos/memory/'
-    mem_ls '.critos/memory/*DECISIONS*.md'; mem_ls '.critos/memory/*LESSONS*.md'
+    mem_ls_all '.critos/memory/*DECISIONS*.md'; mem_ls_all '.critos/memory/*LESSONS*.md'
     for o in ${owned[@]+"${owned[@]}"}; do [ -d "$o" ] && git ls-files --others --exclude-standard -- "$o/*DECISIONS*.md" "$o/*LESSONS*.md" 2>/dev/null; done; } | sort -u
 }
 { printf '%s\n' "$root"; constellation "$root"; } | while IFS= read -r r21; do
@@ -1055,6 +1149,7 @@ else
   any21=0
   while IFS= read -r id21; do
     [ -z "$id21" ] && continue
+    [ "$scope" = runner ] && ! [[ "$id21" =~ $me_id_re ]] && continue   # the runner's ids: its sequences, the families homed with it
     grep -qxF "$id21" "$declared21" && continue
     if [ -s "$prefixes21" ] && grep -qxF "$(printf '%s' "$id21" | sed -E 's/[0-9]+$//')" "$prefixes21"; then continue; fi
     if [ -n "$exempt_re" ] && printf '%s\n' "$id21" | grep -qE "$exempt_re"; then continue; fi
@@ -1077,7 +1172,8 @@ hdr 22 "ROOTS: every tracked file under a domain's root or a ruled surface; no r
 # Files are read tracked + untracked-not-ignored, like [1]: a new file is read while its author
 # is looking, and a newborn scaffold is not DANGLING before its first commit.
 # UNROOTED is listed per top-level folder, three names each: the count is the finding.
-if [ -z "$ROSTER" ]; then
+if [ "$scope" = runner ]; then skip_tree
+elif [ -z "$ROSTER" ]; then
   echo "(no roster in this repo — skipped)"
 else
   roots_col=$(awk -F'|' '$2 ~ /^[[:space:]]*#[[:space:]]*$/ { for(i=1;i<=NF;i++) if (tolower($i) ~ /roots/) {print i; exit} }' "$ROSTER" | head -1)
@@ -1172,6 +1268,7 @@ else
     case "$head23" in *→*) ;; *) continue ;; esac
     date23=$(printf '%s' "$e23" | grep -oE '^- [0-9]{4}-[0-9]{2}-[0-9]{2}' | cut -c3-)
     from23=$(printf '%s' "${head23%%→*}" | grep -oE 'AGENT [0-9]+' | head -1 | sed 's/^AGENT //')
+    [ "$scope" = runner ] && { is_me "$from23" || continue; }   # the entries the runner authored
     if [ "$from23" = "0" ]; then
       echo "INBOX-ACTOR  $date23 — sender AGENT 0: the reserved address of upstream RECEIVES a raise, it never writes here (contract-agent § 5); an answer from upstream is a release, or the user's words"
       any23=1
@@ -1203,7 +1300,7 @@ hdr 24 "FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a
 #   - an aging mark                    `**Marked YYYY-MM-DD` · `**Rotated YYYY-MM-DD` · `**FACT-FLIP YYYY-MM-DD`
 # Bound, declared: a wrong stamp written anywhere else (prose, a cell) is not seen.
 today24=$(date -u +%F)
-files24=$( { mem_ls '.critos/memory/*.md'; git ls-files '.critos/shared/*.md' 2>/dev/null; } | sort -u)
+files24=$( { mem_ls '.critos/memory/*.md'; [ "$scope" = runner ] || git ls-files '.critos/shared/*.md' 2>/dev/null; } | sort -u)
 if [ -z "$files24" ]; then
   echo "(no memory log, STATUS or register in this repo — skipped)"
 else
@@ -1293,7 +1390,7 @@ else
   while IFS= read -r af; do
     rd "$af"; [ -f "$RD" ] || continue
     awk -v IDC="$id_core" -v ROT="$rot_re" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$RD"
-  done < <(mem_ls '.critos/memory/a*/archive/*.md') | sort -u > "$heads26"
+  done < <(mem_ls_all '.critos/memory/a*/archive/*.md') | sort -u > "$heads26"
   # NO-CARRIER, per live entry
   while IFS= read -r lg; do
     rd "$lg"; [ -f "$RD" ] || continue
@@ -1308,6 +1405,7 @@ else
   # (a heading in the stub's form is a pointer in the wrong shape — [25]'s finding, not an entry)
   # CARRIES-FORM, per line read
   while IFS=$'\t' read -r f26 l26 e26 id26 k26 v26 t26 d26 r26; do
+    [ "$scope" = runner ] && ! in_me "$f26" && continue
     case "$k26" in
       bad) echo "CARRIES-FORM  $f26:$l26  $(printf '%s' "$v26" | cut -c1-80) — the shape: - \`<id>\` · <rule> · binds: <lane>[ · tier N[ — <detector>]]  or  · settled: <state>[ — <why>]$(born 1.2.0)" >> "$out26" ;;
       settled) printf '%s' "$v26" | grep -Eq "^(done|superseded by \`?($id_core)\`?|consolidated in \`?($id_core)\`?)( — .*)?$" \
@@ -1318,6 +1416,7 @@ else
   # field; a binds: line with neither prints `tier ?` in the index and is a finding on the line
   awk -F'\t' '$5 == "binds" && $7 == "?" { print $1 ":" $2 "\t" $4 }' "$lines26" \
     | while IFS=$'\t' read -r uw uid; do
+        [ "$scope" = runner ] && ! in_me "${uw%%:*}" && continue
         [ -n "$uid" ] && echo "UNTIERED  $uw  $uid — a rule in force declares its tier: \`tier N\` on the line, or the entry's **Enforcement:** field; this line has neither, and the index prints tier ?$(born 1.2.0)" >> "$out26"
       done
   # TWO-HOMES: an id has one home — the folder whose archive heads it. Headed in two folders'
@@ -1325,6 +1424,7 @@ else
   # mark is the owner's; a split's new owner carries what it inherits in its founding block)
   awk -F'\t' '{ k = $2; if (index(h[k], "\t" $1 "\t") == 0) { h[k] = h[k] "\t" $1 "\t"; n[k]++ } } END { for (k in h) if (n[k] > 1) { gsub(/\t\t/, ", ", h[k]); gsub(/^\t|\t$/, "", h[k]); print k "\t" h[k] } }' "$heads26" | sort > "$two26"
   while IFS=$'\t' read -r tid tf; do
+    if [ "$scope" = runner ]; then mine26=0; for o in ${owned[@]+"${owned[@]}"}; do case ", $tf," in *", $o,"*) mine26=1 ;; esac; done; [ "$mine26" = 1 ] || continue; fi
     [ -n "$tid" ] && echo "TWO-HOMES  $tid — headed in the archives of two folders ($tf): an id has one home, the folder whose archive heads it; a copy of an entry is not a second home$(born 1.2.0)" >> "$out26"
   done < "$two26"
   # The declared home of a family (`<regex> · home: a<N>` in id-families): a heading of the family
@@ -1339,7 +1439,7 @@ else
       hre=$(printf '%s' "$hbody" | sed -E 's/[[:space:]]*·[[:space:]]*home:.*$//')
       hhome=$(printf '%s' "$hbody" | sed -E 's/^.*home:[[:space:]]*//; s/[[:space:]]+$//')
       if ! printf '%s' "$hhome" | grep -qE '^a[0-9]+$' || [ ! -d ".critos/memory/$hhome" ]; then
-        echo "TWO-HOMES  .critos/project/id-families:$hln  $(printf '%s' "$hbody" | cut -c1-60) — the declared home \`$hhome\` is not a memory folder (.critos/memory/a<N>/): a family's home is a folder that exists$(born 1.2.0)" >> "$out26"
+        [ "$scope" = runner ] || echo "TWO-HOMES  .critos/project/id-families:$hln  $(printf '%s' "$hbody" | cut -c1-60) — the declared home \`$hhome\` is not a memory folder (.critos/memory/a<N>/): a family's home is a folder that exists$(born 1.2.0)" >> "$out26"
         continue
       fi
       { awk -F'\t' -v re="$hre" -v home=".critos/memory/$hhome" '$2 ~ re && $1 != home { print $3 "\t" $2 "\t" $1 }' "$heads26"
@@ -1350,6 +1450,7 @@ else
           awk -v IDC="$id_core" -v ROT="$rot_re" -v re="$hre" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); id = substr($0, RSTART, RLENGTH); if (id ~ re) print f ":" NR "\t" id "\t" d }' "$RD"
         done < <(logs12); } | sort -u \
       | while IFS=$'\t' read -r hwhere hid hfold; do
+          [ "$scope" = runner ] && ! in_me "$hfold" && continue
           [ -n "$hid" ] && echo "TWO-HOMES  $hwhere  $hid — headed in $hfold/, outside the family's declared home ($hhome, id-families:$hln): an id has one home, and a declared family is headed in its home only$(born 1.2.0)" >> "$out26"
         done
     done < <(grep -nE '·[[:space:]]*home:' .critos/project/id-families | grep -vE '^[0-9]+:[[:space:]]*#')
@@ -1386,6 +1487,7 @@ else
   # exists. An id with two homes is reported above, not here.
   while IFS=$'\t' read -r hf hid ha; do
     [ -n "$hid" ] || continue
+    [ "$scope" = runner ] && ! in_me "$hf" && continue
     awk -F'\t' -v i="$hid" '$1 == i' "$two26" | grep -q . && continue
     st26=$(awk -F'\t' -v d="$hf" -v i="$hid" '$1 == d && $2 == i {print $3; exit}' "$ptr26")
     loc26=$(awk -F'\t' -v d="$hf" -v i="$hid" '$1 == d && $2 == i {print $4; exit}' "$ptr26")
@@ -1403,7 +1505,7 @@ else
   { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"
     awk -F'\t' 'NR == FNR { home[$1 "\t" $2] = 1; next } $3 == "settled" && (($1 "\t" $2) in home) { print $2 "\tsettled" }' "$heads26" "$ptr26"; } | sort -u \
     | awk -F'\t' '{ s[$1] = s[$1] $2 ";" } END { for (i in s) if (index(s[i], "binds;") && index(s[i], "settled;")) print i }' | sort \
-    | while IFS= read -r cid; do echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id$(born 1.2.0)" >> "$out26"; done
+    | while IFS= read -r cid; do [ "$scope" = runner ] && ! [[ "$cid" =~ $me_id_re ]] && continue; echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id$(born 1.2.0)" >> "$out26"; done
   if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has one home and a live carrier, no id is carried two ways)"; fi
   rm -f "$lines26" "$ptr26" "$heads26" "$two26" "$out26"
   fi
@@ -1417,7 +1519,8 @@ hdr 27 "IN-FORCE: the generated law in force of every agent is fresh, and within
 if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the indexes cannot be checked (NOT a clean none)"
 else
-  out27=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --check 2>&1); rc27=$?
+  if [ "$scope" = runner ]; then out27=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --check "${owned[@]}" 2>&1); rc27=$?
+  else out27=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --check 2>&1); rc27=$?; fi
   if [ "$rc27" = 2 ]; then
     echo "SKIPPED — the in-force control could not run: $(printf '%s' "$out27" | head -1) — NOT a clean none"
   elif printf '%s\n' "$out27" | grep -qE '^(STALE|BUDGET)'; then
@@ -1460,18 +1563,20 @@ while IFS= read -r df; do
   [ -n "$df" ] && [ -f "$df" ] || continue
   case "$df" in
     .critos/checks/a[0-9]*/*) ;;
-    *) echo "DETECTOR-HEAD  $df — a detector lives in its agent's folder, .critos/checks/a<N>/ (one writer, rooted by construction)$(born 1.2.0)" >> "$out28"; continue ;;
+    *) [ "$scope" = runner ] || echo "DETECTOR-HEAD  $df — a detector lives in its agent's folder, .critos/checks/a<N>/ (one writer, rooted by construction)$(born 1.2.0)" >> "$out28"; continue ;;
   esac
   own28=$(printf '%s' "$df" | sed -E 's#^\.critos/checks/a([0-9]+)/.*#\1#')
+  # every detector's head resolves a claim; in the runner's scope only its own are reported on
+  o28="$out28"; [ "$scope" = runner ] && ! is_me "$own28" && o28=/dev/null
   enf28=$(head -n 12 "$df" | grep -oE 'Enforces:[[:space:]]*.*' | head -1 | sed -E 's/^Enforces:[[:space:]]*//')
   if [ -z "$enf28" ]; then
-    echo "DETECTOR-HEAD  $df — no \`Enforces: <id>, <id>\` in its first lines: the rule it detects is unreadable, so no tier-2 claim resolves to it$(born 1.2.0)" >> "$out28"
+    echo "DETECTOR-HEAD  $df — no \`Enforces: <id>, <id>\` in its first lines: the rule it detects is unreadable, so no tier-2 claim resolves to it$(born 1.2.0)" >> "$o28"
   else
     printf '%s' "$enf28" | grep -oE "$id_re" | sed "s|^|$df\t|" >> "$heads28"
   fi
   head -n 12 "$df" | grep -qE '(^|[[:space:]])(Runs|Repo):[[:space:]]*.*([A-Za-z]:[\\/]|/(c|home|Users)/)' \
-    && echo "DETECTOR-HEAD  $df — its head runs a machine path: a command in another repository of the project is named as .claude/repos declares it (TARGET)$(born 1.2.0)" >> "$out28"
-  grep -nE "\.critos/checks/a[0-9]+/" "$df" | grep -vE "\.critos/checks/a${own28}/" | head -1 | sed -E "s|^([0-9]+):.*|DETECTOR-CROSS-IMPORT  $df:\1 — reaches into another agent's folder: a detector imports nothing from a neighbour (one address, one owner)$(born 1.2.0)|" >> "$out28"
+    && echo "DETECTOR-HEAD  $df — its head runs a machine path: a command in another repository of the project is named as .claude/repos declares it (TARGET)$(born 1.2.0)" >> "$o28"
+  grep -nE "\.critos/checks/a[0-9]+/" "$df" | grep -vE "\.critos/checks/a${own28}/" | head -1 | sed -E "s|^([0-9]+):.*|DETECTOR-CROSS-IMPORT  $df:\1 — reaches into another agent's folder: a detector imports nothing from a neighbour (one address, one owner)$(born 1.2.0)|" >> "$o28"
 done < <( { git ls-files '.critos/checks/*'; git ls-files --others --exclude-standard -- '.critos/checks/*'; } 2>/dev/null | sort -u)
 # the tier-2 claims: Enforcement lines and Carries lines (both logs, live entries only)
 claims28=$(mktemp)
@@ -1492,6 +1597,7 @@ done < <(logs12) > "$claims28"
 [ -f "$inforce" ] && bash "$inforce" ${own_args[@]+"${own_args[@]}"} --lines 2>/dev/null | awk -F'\t' '$5 == "binds" && $7 == "2" { printf "%s\t%s\t%s\t%s\n", $1, $2, $4, $8 }' >> "$claims28"
 while IFS=$'\t' read -r f28 l28 id28 det28; do
   [ -n "$id28" ] || continue
+  [ "$scope" = runner ] && ! in_me "$f28" && continue
   hit=0
   for leg in "${product_legs[@]}"; do
     printf '%s' "$det28" | grep -qwF -- "$leg" && { hit=1; break; }
@@ -1504,7 +1610,8 @@ if [ -s "$out28" ]; then sort -u "$out28"; else echo "(none — every tier-2 cla
 rm -f "$heads28" "$out28" "$claims28"
 [ -n "$t_n" ] && echo "(elapsed [$t_n]: $(( $(date +%s) - t_prev ))s)"
 echo
-echo "### doc-lint done — 28 checks in $(( $(date +%s) - t_start ))s · controls: CritOS@${ctl_rev:-unversioned}${ctl_dirty:-}"
+scope_tag=whole; [ "$scope" = runner ] && scope_tag="${own_names[*]} (the runner's; 11 tree-wide checks skipped)"
+echo "### doc-lint done — 28 checks in $(( $(date +%s) - t_start ))s · scope: $scope_tag · controls: CritOS@${ctl_rev:-unversioned}${ctl_dirty:-}"
 
 # ---- multi-repo: repeat the whole battery in every repo this one registers ----------------------
 # `.claude/repos`: one path per line, relative to this repo's root ('#' comments). One level only:
@@ -1523,6 +1630,6 @@ if [ -z "${DOC_LINT_NO_CONSTELLATION:-}" ]; then
       echo "(registered in .claude/repos but MISSING on disk: $r)"
       continue
     fi
-    (cd "$r" && DOC_LINT_NO_CONSTELLATION=1 DOC_LINT_CHILD=1 bash "$self_abs" ${own_args[@]+"${own_args[@]}"})
+    (cd "$r" && DOC_LINT_NO_CONSTELLATION=1 DOC_LINT_CHILD=1 bash "$self_abs" ${own_args[@]+"${own_args[@]}"} $([ "$all" = 1 ] && echo --all))
   done < <(constellation "$root")
 fi

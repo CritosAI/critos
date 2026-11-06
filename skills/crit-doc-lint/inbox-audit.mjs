@@ -10,7 +10,13 @@
 //   MULTI-OWNER   an [OPEN] addressed to several agents: one owner, the rest are FYI.
 //
 // Usage: node inbox-audit.mjs <inbox> [<archive>...]
+//   DOC_LINT_AUTHOR=A2[,A3]  the runner's scope: only the entries those agents authored, and the
+//                            volleys they took part in (the battery's runner scope)
 import fs from "node:fs";
+
+const author = (process.env.DOC_LINT_AUTHOR || "").split(",").map((a) => a.trim()).filter(Boolean);
+const mine = (a) => !author.length || author.includes(a);
+const scopeNote = author.length ? `, of the entries ${author.join(", ")} authored` : "";
 
 const files = process.argv.slice(2).filter((f) => fs.existsSync(f));
 if (!files.length) process.exit(0);
@@ -49,6 +55,7 @@ for (const [ref, es] of Object.entries(byRef)) {
   const ordered = es.slice().sort((a, b) => (a.date < b.date ? -1 : 1));
   const seq = ordered.map((e) => e.from);
   if (new Set(seq).size < 2) continue;
+  if (author.length && !seq.some(mine)) continue;
   let flips = 0;
   for (let i = 1; i < seq.length; i++) if (seq[i] !== seq[i - 1]) flips++;
   if (flips < 2) continue;
@@ -75,17 +82,17 @@ for (const p of pong.filter((p) => p.open > 0)) {
 }
 
 // --- NO-DONE-WHEN
-for (const e of entries.filter((e) => e.open && !e.doneWhen)) {
+for (const e of entries.filter((e) => e.open && !e.doneWhen && mine(e.from))) {
   console.log(`NO-DONE-WHEN  ${e.date}  ${e.from} → ${e.owners.join("+") || "?"}  —  [OPEN] with no observable closure criterion`);
   console.log(`           → Add "Done when: <observable>". Without it the recipient cannot know when to flip the token, so it goes stale and the work gets re-litigated.`);
   found++;
 }
 
 // --- MULTI-OWNER
-for (const e of entries.filter((e) => e.open && e.owners.length > 1)) {
+for (const e of entries.filter((e) => e.open && e.owners.length > 1 && mine(e.from))) {
   console.log(`MULTI-OWNER  ${e.date}  ${e.from} → ${e.owners.join(" / ")}  —  [OPEN] addressed to ${e.owners.length} agents`);
   console.log(`           → One owner, the rest FYI. Shared responsibility is nobody's: each assumes the other will act.`);
   found++;
 }
 
-if (!found) console.log("(none — inbox hygiene clean)");
+if (!found) console.log(`(none — inbox hygiene clean${scopeNote})`);

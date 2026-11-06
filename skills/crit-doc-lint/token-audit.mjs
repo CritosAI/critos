@@ -8,7 +8,11 @@
 // Runs on the live inbox only: archives are cold storage.
 //
 // Usage: node token-audit.mjs <inbox>
+//   DOC_LINT_AUTHOR=A2[,A3]  the runner's scope: only the entries those agents authored
 import fs from "node:fs";
+
+const author = (process.env.DOC_LINT_AUTHOR || "").split(",").map((a) => a.trim()).filter(Boolean);
+const scopeNote = author.length ? `, of the entries ${author.join(", ")} authored` : "";
 
 // The closed vocabulary. Live: the recipient still owes something. Settled: a record.
 const LIVE = ["OPEN", "PARKED-OWNED"];
@@ -27,6 +31,10 @@ for (const line of lines) {
   if (!m) continue;
   const colon = line.indexOf(":");
   if (colon < 0) continue;
+  if (author.length) {   // the runner's scope: the sender, before the arrow
+    const from = ((line.slice(0, colon).split("→")[0] || "").match(/AGENT \d+/) || [""])[0].replace("AGENT ", "A");
+    if (!author.includes(from)) continue;
+  }
   const rest = line.slice(colon + 1);
   // The token is read ONLY at its syntactic position — the first "[" after the colon — never
   // by searching the line: an entry may quote a token in its prose. The lead before it may be
@@ -65,7 +73,7 @@ for (const u of unbolded) {
 }
 
 if (!bad.length) {
-  if (!unbolded.length) console.log("(none — every lifecycle token is in the closed vocabulary)");
+  if (!unbolded.length) console.log(`(none — every lifecycle token is in the closed vocabulary${scopeNote})`);
   else console.log(`\n${unbolded.length} entr${unbolded.length === 1 ? "y" : "ies"} carry a valid but UNBOLDED token (format defect; still counted as live).`);
   process.exit(0);
 }

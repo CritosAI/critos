@@ -58,7 +58,11 @@ symptom in a neighbour's.
    invocation: A1 is invoked only for a bounded read-only service — an audit, a lint, an index).
    **Same round, not at checkpoint**: a landed effort whose row stays open re-litigates as "still to
    do", and the lead is the only actor who knows it landed.
-4. **Run the deterministic checks** on what you changed, and **fact-flip on the spot** (§4).
+4. **Run the deterministic checks** on what you changed, and **fact-flip on the spot** (§4). The
+   battery runs as yourself (`--own a<N>`) and reads your scope — your memory folder, your ids,
+   the inbox entries you authored, the links of the files under your roots — skipping the
+   tree-wide checks and saying so; the whole battery, every check over the whole tree (`--all`,
+   or no name), is the steward's: at its daily close and at every pin.
 5. **Refresh the generated indexes** — the atlas and your `IN-FORCE.md` — if you appended or
    changed an ADR or a lesson, as yourself (`--own a<N>`): a generator writes only in the folders
    its runner owns and reads every other folder as committed (`contract-memory § 6`). An index
