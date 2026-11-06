@@ -20,7 +20,8 @@
 #   [8] STATUS-CHRONICLE  (WARN) a STATUS.md over the line budget or stacking dated AS-OF sections;
 #       NOTE-CHRONICLE    (WARN) a per-entity note stacking dated headings — a diary, not a photograph
 #   [9] STALE-STATUS      a STATUS.md whose last commit is >=14 days old; STALE-STAMP a STATUS
-#                         whose Last updated day is older than the day of its last commit (UTC)
+#                         whose Last updated day (the stamp bold or plain) is older than the day
+#                         of its last commit (UTC)
 #  [10] DANGLING-WIKI-LINK (WARN) a [[slug]] that resolves nowhere the repo can reach — never
 #                         against the auto-memory; AUTO-MEMORY-CITED (WARN) a tracked .md citing
 #                         a note of this machine's auto-memory
@@ -69,7 +70,8 @@
 #                         heading outside its declared home (`· home: a<N>` in id-families),
 #                         or a declared home that is no memory folder, likewise; HEADED-TWICE an
 #                         id headed more than once inside its home (live logs and archives
-#                         together; a heading carrying ROTATED is a stub, not an entry); UNTIERED a
+#                         together; a heading in the stub's form, `— ROTATED YYYY-MM-DD to`, is a
+#                         stub, not an entry); UNTIERED a
 #                         binds: line with no tier on the line and none in its entry's field
 #  [27] IN-FORCE-STALE    an agent's generated IN-FORCE.md missing or differing from a fresh
 #                         generation; IN-FORCE-BUDGET (WARN) one past 300 lines
@@ -100,16 +102,23 @@
 #           calls — they read every other folder as committed and write nothing anywhere
 #           (contract-memory § 6); without it they read every folder at HEAD.
 set -uo pipefail
-own_args=()
+own_args=(); own_names=()
 while [ $# -gt 0 ]; do
   case "$1" in
-    --own) own_args+=(--own "$2"); shift 2 ;;
-    --me) own_args+=(--own "a$2"); shift 2 ;;
+    --own) own_args+=(--own "$2"); own_names+=("$2"); shift 2 ;;
+    --me) own_args+=(--own "a$2"); own_names+=("a$2"); shift 2 ;;
     *) shift ;;
   esac
 done
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "doc-lint: not inside a git repository. If Claude Code was opened ABOVE the repo, none of the repo's .claude/ (steward, hooks) is loaded - reopen it at the repo root." >&2; exit 1; }
 cd "$root" || exit 1
+# An --own names a memory folder that exists — in the tree, or at HEAD: one line and exit 2 otherwise,
+# never a battery that runs on as nobody's (contract-session § 6, the INSTRUMENT bound).
+for o in ${own_names[@]+"${own_names[@]}"}; do
+  case "$o" in a[0-9]|a[0-9][0-9]|a[0-9][0-9][0-9]) ;; *) echo "doc-lint: --own $o is not an owner's name (a<N>)" >&2; exit 2 ;; esac
+  [ -d ".critos/memory/$o" ] || [ -n "$(git ls-tree -d --name-only HEAD -- ".critos/memory/$o" 2>/dev/null | head -1)" ] \
+    || { echo "doc-lint: --own $o names no memory folder — .critos/memory/$o/ is neither in the tree nor at HEAD" >&2; exit 2; }
+done
 
 # ---- layout ------------------------------------------------------------------------------------
 INBOX=""; ROSTER=""; RMF=""
@@ -197,6 +206,10 @@ if [ -f .critos/project/id-families ]; then
   [ -n "$fam" ] && id_core="$id_core|$fam"
 fi
 id_re="\\b($id_core)\\b"
+# A rotation pointer's stub form — `— ROTATED YYYY-MM-DD to` — is what every reader of an archive or
+# of a log's headings skips: a heading in this form is a stub of the old pointer shape, never an
+# entry; a heading whose title merely names the word is the entry it says it is.
+rot_re='— ROTATED 20[0-9]{2}-[0-9]{2}-[0-9]{2} to '
 
 hdr 1 "broken relative links in .md (existence-checked per link; tracked + untracked)"
 # First, the index vs the tree: a path git tracks that is absent from the disk — an uncommitted
@@ -463,9 +476,10 @@ else
     # STALE-STAMP: the head stamp is a claim a control reads. The `Last updated:` day against the
     # day of the file's last commit, both UTC: older is a finding — the head the boot trusts says
     # an older day than the file; newer is the writer mid-round (the tree ahead of its commit),
-    # not a finding; a day later than today is [24]'s. No stamp line: nothing to read here.
+    # not a finding; a day later than today is [24]'s. No stamp line: nothing to read here. The
+    # stamp is read bold (the template's form) or plain (the contract's), at the line's start.
     cday=$(date -u -d "@$ct" +%F 2>/dev/null || date -u -r "$ct" +%F 2>/dev/null)
-    sday=$(grep -m1 -oE '^\*\*Last updated:\*\*[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$sf" 2>/dev/null | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+    sday=$(grep -m1 -oE '^[*_]{0,2}Last updated:[*_]{0,2}[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$sf" 2>/dev/null | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}$')
     if [ -n "$cday" ] && [ -n "$sday" ] && [[ "$sday" < "$cday" ]]; then
       echo "STALE-STAMP  $sf — stamped $sday, last committed $cday (UTC): the head the boot trusts is older than the file; re-stamp with date -u when the file changes$(born 1.2.0)"
       any_stale_status=1
@@ -1143,8 +1157,9 @@ fi
 
 hdr 25 "FORMS: the rotation pointer and the archive's name, as the method writes them"
 # contract-memory § 2 fixes two forms the controls read. POINTER-FORM: a line of a live memory
-# log that marks a rotation — a list line or a heading carrying the word ROTATED, outside a
-# fence; a sentence of prose that names the word is not read — in any shape but
+# log that marks a rotation — a list line carrying the word ROTATED, or a heading in the stub's
+# form (`— ROTATED YYYY-MM-DD to`: a title that names the word is an entry), outside a fence; a
+# sentence of prose that names the word is not read — in any shape but
 #   - `<id>` — ROTATED YYYY-MM-DD to archive/<file> (<state>)
 # with the state one of `done` · `superseded by <id>` · `consolidated in <id>`; a heading is not a
 # pointer, a fourth state is not a state. ARCHIVE-NAME: a file under `.critos/memory/a<N>/archive/`
@@ -1162,7 +1177,7 @@ while IFS= read -r lg; do
     printf '%s' "$line25" | grep -Eq "$ptr_ok" && continue
     echo "POINTER-FORM  $lg:$ln25  $(printf '%s' "$line25" | cut -c1-90)$(born 1.2.0)"
     any25=1
-  done < <(awk '/^[[:space:]]*```/{f=!f;next} !f && (/^- / || /^#{1,4}[[:space:]]/) && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/{print NR ":" $0}' "$lg")
+  done < <(awk -v ROT="$rot_re" '/^[[:space:]]*```/{f=!f;next} !f && ((/^- / && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/) || (/^#{1,4}[[:space:]]/ && $0 ~ ROT)){print NR ":" $0}' "$lg")
 done < <(logs12)
 while IFS= read -r af; do
   [ -z "$af" ] && continue
@@ -1189,18 +1204,20 @@ if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the Carries blocks cannot be read (NOT a clean none)"
 else
   lines26=$(mktemp); ptr26=$(mktemp); heads26=$(mktemp); two26=$(mktemp); out26=$(mktemp)
-  bash "$inforce" ${own_args[@]+"${own_args[@]}"} --lines > "$lines26" 2>/dev/null
+  err26=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --lines 2>&1 > "$lines26"); rc26=$?
+  if [ "$rc26" != 0 ]; then echo "SKIPPED — the in-force control could not read the Carries lines (exit $rc26: ${err26:-no message}) — NOT a clean none"; rm -f "$lines26" "$ptr26" "$heads26" "$two26" "$out26"; else
   # the pointers of every live log, per folder: folder <TAB> id <TAB> settled|consolidated <TAB> log:line
   while IFS= read -r lg; do
     [ -f "$lg" ] || continue
     case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-    awk -v IDC="$id_core" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print d "\t" id "\t" st "\t" f ":" NR } }' "$lg"
+    awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print d "\t" id "\t" st "\t" f ":" NR } }' "$lg"
   done < <(logs12) | sort -u > "$ptr26"
-  # the ids headed in every archive, per folder: folder <TAB> id <TAB> archive (a heading that
-  # carries ROTATED is a stub of the old pointer form, never an entry: not read here)
+  # the ids headed in every archive, per folder: folder <TAB> id <TAB> archive (a heading in the
+  # stub's form, `— ROTATED YYYY-MM-DD to`, is a stub of the old pointer shape, never an entry: not
+  # read here; a title that names the word is read as the entry it is)
   while IFS= read -r af; do
     [ -f "$af" ] || continue
-    awk -v IDC="$id_core" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$af"
+    awk -v IDC="$id_core" -v ROT="$rot_re" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$af"
   done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null) | sort -u > "$heads26"
   # NO-CARRIER, per live entry
   while IFS= read -r lg; do
@@ -1211,9 +1228,9 @@ else
       ln26=${ent%%:*}; id26=${ent#*:}
       awk -F'\t' -v f="$lg" -v e="$id26" '$1 == f && $3 == e && $4 == e && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . \
         || echo "NO-CARRIER  $lg:$ln26  $id26 — a live entry carries at least its own rule: one line under **Carries.** (binds: <lane>, or settled: <state>)$(born 1.2.0)" >> "$out26"
-    done < <(awk -v IDC="$id_core" '/^[[:space:]]*```/{f=!f;next} !f && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print NR ":" substr($0, RSTART, RLENGTH) }' "$lg")
+    done < <(awk -v IDC="$id_core" -v ROT="$rot_re" '/^[[:space:]]*```/{f=!f;next} !f && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print NR ":" substr($0, RSTART, RLENGTH) }' "$lg")
   done < <(logs12)
-  # (a heading that carries ROTATED is a pointer in the wrong shape — [25]'s finding, not an entry)
+  # (a heading in the stub's form is a pointer in the wrong shape — [25]'s finding, not an entry)
   # CARRIES-FORM, per line read
   while IFS=$'\t' read -r f26 l26 e26 id26 k26 v26 t26 d26 r26; do
     case "$k26" in
@@ -1255,7 +1272,7 @@ else
           [ -f "$lg" ] || continue
           case "$lg" in *-archive-*|*/archive/*) continue ;; esac
           [ "$(dirname "$lg")" = ".critos/memory/$hhome" ] && continue
-          awk -v IDC="$id_core" -v re="$hre" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); id = substr($0, RSTART, RLENGTH); if (id ~ re) print f ":" NR "\t" id "\t" d }' "$lg"
+          awk -v IDC="$id_core" -v ROT="$rot_re" -v re="$hre" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); id = substr($0, RSTART, RLENGTH); if (id ~ re) print f ":" NR "\t" id "\t" d }' "$lg"
         done < <(logs12); } | sort -u \
       | while IFS=$'\t' read -r hwhere hid hfold; do
           [ -n "$hid" ] && echo "TWO-HOMES  $hwhere  $hid — headed in $hfold/, outside the family's declared home ($hhome, id-families:$hln): an id has one home, and a declared family is headed in its home only$(born 1.2.0)" >> "$out26"
@@ -1268,7 +1285,7 @@ else
     echo "TWO-HOMES  $ploc  $pid — pointed from $pf/, whose archive does not head it: an id is pointed from its home only, the folder whose archive heads it (the mark is the owner's; a split's new owner carries what it inherits in its founding block, never by pointer)$(born 1.2.0)" >> "$out26"
   done < "$ptr26"
   # HEADED-TWICE: one id, one heading inside its home. The headings of a folder's live logs and
-  # archives together, a heading carrying ROTATED excluded: an id headed more than once in one
+  # archives together, a heading in the stub's form excluded: an id headed more than once in one
   # folder is a finding naming the places. An increment written as a heading (ADDENDUM, STEP n,
   # AMENDED) is a dated line in the entry's body or a new entry; a stub of the old pointer form is
   # deleted, never archived; two entries under one string are the collision the owner tells apart.
@@ -1276,11 +1293,11 @@ else
   { while IFS= read -r lg; do
       [ -f "$lg" ] || continue
       case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-      awk -v IDC="$id_core" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$lg"
+      awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$lg"
     done < <(logs12)
     while IFS= read -r af; do
       [ -f "$af" ] || continue
-      awk -v IDC="$id_core" -v f="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$af"
+      awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$af"
     done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null); } | sort -u > "$all26"
   awk -F'\t' '{ k = $1 "\t" $2; n[k]++; w[k] = w[k] (w[k] ? ", " : "") $3 } END { for (k in n) if (n[k] > 1) print k "\t" n[k] "\t" w[k] }' "$all26" | sort \
     | while IFS=$'\t' read -r hf hid hn hw; do
@@ -1314,6 +1331,7 @@ else
     | while IFS= read -r cid; do echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id$(born 1.2.0)" >> "$out26"; done
   if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has one home and a live carrier, no id is carried two ways)"; fi
   rm -f "$lines26" "$ptr26" "$heads26" "$two26" "$out26"
+  fi
 fi
 
 hdr 27 "IN-FORCE: the generated law in force of every agent is fresh, and within its budget"
@@ -1324,8 +1342,10 @@ hdr 27 "IN-FORCE: the generated law in force of every agent is fresh, and within
 if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the indexes cannot be checked (NOT a clean none)"
 else
-  out27=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --check 2>/dev/null)
-  if printf '%s\n' "$out27" | grep -qE '^(STALE|BUDGET)'; then
+  out27=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --check 2>&1); rc27=$?
+  if [ "$rc27" = 2 ]; then
+    echo "SKIPPED — the in-force control could not run: $(printf '%s' "$out27" | head -1) — NOT a clean none"
+  elif printf '%s\n' "$out27" | grep -qE '^(STALE|BUDGET)'; then
     b27=$(born 1.2.0)
     printf '%s\n' "$out27" | sed -nE "s/^STALE  (.*)$/IN-FORCE-STALE  \1$b27/p; s/^BUDGET  (.*)$/IN-FORCE-BUDGET  \1/p"
   elif printf '%s\n' "$out27" | grep -q '^(no memory folder'; then
@@ -1383,10 +1403,10 @@ claims28=$(mktemp)
 while IFS= read -r lg; do
   [ -f "$lg" ] || continue
   case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-  awk -v IDC="$id_core" -v f="$lg" '
+  awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" '
     /^[[:space:]]*```/ { fence = !fence; next }
     fence { next }
-    $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); entry = substr($0, RSTART, RLENGTH); next }
+    $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); entry = substr($0, RSTART, RLENGTH); next }
     entry != "" && /^(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:/ {
       d = $0; sub(/^[^:]*:[*_]*[[:space:]]*/, "", d)
       if (d ~ /^[Tt]ier[ -]?2([^0-9]|$)/) { sub(/^[Tt]ier[ -]?2[^A-Za-z]*/, "", d); printf "%s\t%d\t%s\t%s\n", f, NR, entry, d } }

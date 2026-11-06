@@ -55,9 +55,10 @@ expels.* A `STATUS` that only grows is always this rule not being applied.
 answer is not history worth keeping, it is a **wrong answer**.
 
 - **Sections:** `Now true` · `Next (my domain)` · `Proposals` · `Cleanup pending` ·
-  `Last updated: YYYY-MM-DD`. No chronicle of past rounds. **At most one dated "as of" stamp** —
-  the file's own, and a claim a control reads: a stamp day older than the day of the file's last
-  commit is a finding (`[9]`) — re-stamp with `date -u` whenever the file changes.
+  `**Last updated:** YYYY-MM-DD` — the template's form, read bold or plain. No chronicle of past
+  rounds. **At most one dated "as of" stamp** — the file's own, and a claim a control reads: a
+  stamp day older than the day of the file's last commit is a finding (`[9]`) — re-stamp with
+  `date -u` whenever the file changes.
 - **`Next` is committed work only; what awaits a yes lives in `Proposals`.** The test, applied
   identically by anyone: *if nobody says yes, does it still have to happen?* Yes → `Next` (a
   parked item is committed work and carries its un-park trigger). No → `Proposals`: noticed,
@@ -133,7 +134,8 @@ code.
     outside the shape, or a state outside the three, is a finding (`[25]`); a heading is not a
     pointer, and a pointer is never an entry: it never rotates — a heading-shaped stub of the
     old form converts to the list line and is never archived, and every reader of an archive
-    skips a heading that carries ROTATED. **One id, one heading inside its home:** an entry is
+    skips a heading in the stub's form, `— ROTATED YYYY-MM-DD to` (a title that names the word
+    is an entry). **One id, one heading inside its home:** an entry is
     amended in its body — a dated line under its Status, `**Amended YYYY-MM-DD (<id>):**` naming
     the entry that amended it, or `**Marked YYYY-MM-DD, at rotation:**` — or by a new entry
     that cites it; a change of state moves in the heading's token and the Status paragraph,

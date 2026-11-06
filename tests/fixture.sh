@@ -39,11 +39,15 @@ printf '# gone\n' > docs/gone.md
 # archived entry, a retired id kept alive by the alias table in a log's head
 printf '\nDecided in ADR-A2-001, earlier in ADR-A2-000, once known as ADR-OLD-005, and ADR-LEG-042 of a retired sequence; lost: ADR-A2-777; lost too, in the LIVE sequence an alias line points at: ADR-A3-888.\n' >> README.md
 mkdir -p "$L/memory/a2/archive"
-printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n## D-008 — another of the scheme, carried by nothing\n## D-008 — ADDENDUM 2 — a second heading under one id (HEADED-TWICE)\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
+# [26] UNCARRIED, a second positive: an entry whose TITLE says the log rotated — a title, not a stub of
+#      the pointer form (`— ROTATED YYYY-MM-DD to`): every archive reader reads it as the entry it is,
+#      and nothing live carries it. And a heading of the Q- family, read only through id-families.
+printf '# archive\n## ADR-A2-000 — archived and still resolving\nit cites ADR-A2-888, which is history, not a live citation\n## D-007 — a decision of the scheme before the method\n## D-008 — another of the scheme, carried by nothing\n## D-008 — ADDENDUM 2 — a second heading under one id (HEADED-TWICE)\n## ADR-A2-006 — the round the log ROTATED, this entry stayed: a title, not a stub\n## Q-0001 — a decision of a third scheme, read through the families only\n' > "$L/memory/a2/archive/DECISIONS-archive-2026-08.md"
 # a declared id family: `D-NNN` is grammar, so D-007 (headed above) resolves and D-099 is lost;
 # its home is declared (a2), so D-009 headed in a3's archive is TWO-HOMES from the first heading;
-# the Z- family's declared home names no memory folder (a second TWO-HOMES, on the line)
-printf '# ids of the scheme before the method\n^D-[0-9]{3}$ · home: a2\n^Z-[0-9]{3}$ · home: a7\n' > "$L/project/id-families"
+# the Z- family's declared home names no memory folder (a second TWO-HOMES, on the line); the
+# Q- family is headed in a2's archive and carried by a pointer — the atlas lists it by the grammar
+printf '# ids of the scheme before the method\n^D-[0-9]{3}$ · home: a2\n^Z-[0-9]{3}$ · home: a7\n^Q-[0-9]{4}$ · home: a2\n' > "$L/project/id-families"
 printf 'Under the old scheme: D-007 holds, D-099 was never written.\n' >> README.md
 
 # [2] PATH-IN-CODE
@@ -125,6 +129,7 @@ EOF
   echo 'A ruling whose prose says an entry was ROTATED is a sentence, not a pointer.'
   # [26] a pointer consolidated in a live entry, whose binds: line sits under that entry: carried, no conflict
   echo '- `D-007` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (consolidated in `ADR-A2-001`)'
+  echo '- `Q-0001` — ROTATED 2026-08-01 to archive/DECISIONS-archive-2026-08.md (done)'
   echo "## ADR-A2-001 — first"; echo "**Status:** superseded by ADR-A2-002"; echo "**Enforcement:** tier 2 — the atlas"
   # [26] a block in shape (own id, binds), a settled line with a fourth state (CARRIES-FORM), and
   #      ADR-A2-000 carried as binds: beside its settled pointer (CARRIER-CONFLICT); ADR-A2-001 is
@@ -191,7 +196,13 @@ The certificate is valid to 2099-12-31 and the monthly run is scheduled after 20
 ' > "$L/memory/a3/STATUS.md"
 
 # [13] MEMORY-SHAPE: a folder that is not a<N> (notes/) and an unrostered a<N> (a9/)
-echo x > "$L/memory/notes/x.md"; echo x > "$L/memory/a9/STATUS.md"
+# [9] STALE-STAMP, a second positive: the stamp in the contract's plain form (the template writes it
+#     bold), older than the build's commit day — read in both forms
+echo x > "$L/memory/notes/x.md"; printf '# a9\nLast updated: 2026-07-01\n' > "$L/memory/a9/STATUS.md"
+# the atlas's tree view: an ignored folder under a memory folder is neither tracked nor could be —
+# it is not listed (the steward's measure once was)
+printf '%s\n' "$L/memory/a2/measure/" > .gitignore
+mkdir -p "$L/memory/a2/measure"; echo m > "$L/memory/a2/measure/x.txt"
 
 # [8] NOTE-CHRONICLE: a per-entity note stacking dated headings, in a folder of its kind; the
 #     kind's README.md beside it stacks them too and is not read; a note with one date is a photograph

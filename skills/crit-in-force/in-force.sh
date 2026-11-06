@@ -32,7 +32,9 @@
 #           --check          write nothing; per index say FRESH, STALE (differs from a fresh
 #                            generation, or missing) or BUDGET (past 300 lines, a warning;
 #                            `.claude/doc-lint-in-force-lines` overrides).
-#                            exit 1 = at least one STALE · 0 = every index fresh · 2 = cannot run
+#                            exit 1 = at least one STALE · 0 = every index fresh · 2 = cannot run —
+#                            a folder argument that is none, a bare name, an --own that names no
+#                            folder: one line naming the argument, never a silent zero
 #           --lines          write nothing; print every `Carries` line parsed, one per line, as
 #                            tab-separated fields: log · line · entry id · id · kind (binds,
 #                            settled, bad) · value (the lane, the state, or the raw line) · tier ·
@@ -66,7 +68,29 @@ if [ -f .critos/project/id-families ]; then
   fam=$(grep -vE '^[[:space:]]*(#|$)' .critos/project/id-families | sed -E 's/[[:space:]]*·[[:space:]]*home:.*$//; s/^\^//; s/\$$//' | paste -sd'|' -)
   [ -n "$fam" ] && id_core="$id_core|$fam"
 fi
+# A rotation pointer's stub form — `— ROTATED YYYY-MM-DD to` — is what every reader of an archive or
+# of a log's headings skips: a heading in this form is a stub of the old pointer shape, never an
+# entry; a heading whose title merely names the word is the entry it says it is.
+rot_re='— ROTATED 20[0-9]{2}-[0-9]{2}-[0-9]{2} to '
 
+# The arguments name memory folders that exist — in the tree, or at HEAD. A folder that is none,
+# a bare name where a folder is expected (`a2` is --own's word; the argument is the folder), or
+# an --own naming no folder is answered with one line and exit 2: a control that cannot answer
+# says so, never a silent zero (contract-session § 6, the INSTRUMENT bound).
+head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
+folder_exists() { [ -d "$1" ] || { [ "$head_ok" = 1 ] && [ -n "$(git ls-tree -d --name-only HEAD -- "$1" 2>/dev/null | head -1)" ]; }; }
+for o in ${folders[@]+"${folders[@]}"}; do
+  case "$o" in
+    a[0-9]*) echo "in-force: '$o' is a name, not a folder — name yours with --own $o, or pass .critos/memory/$o" >&2; exit 2 ;;
+    .critos/memory/a[0-9]*) ;;
+    *) echo "in-force: $o is not a memory folder (.critos/memory/a<N>/)" >&2; exit 2 ;;
+  esac
+  folder_exists "$o" || { echo "in-force: $o is not a memory folder — nothing in the tree, nothing at HEAD" >&2; exit 2; }
+done
+for o in ${own[@]+"${own[@]}"}; do
+  case "$o" in a[0-9]|a[0-9][0-9]|a[0-9][0-9][0-9]) ;; *) echo "in-force: --own $o is not an owner's name (a<N>)" >&2; exit 2 ;; esac
+  folder_exists ".critos/memory/$o" || { echo "in-force: --own $o names no memory folder — .critos/memory/$o/ is neither in the tree nor at HEAD" >&2; exit 2; }
+done
 
 # Owned folders: the runner's, read from the working tree and the only ones written; every other
 # memory folder is read as committed (HEAD) and never written — a generator cannot carry another
@@ -77,7 +101,6 @@ owned=()
 for o in ${own[@]+"${own[@]}"} ${folders[@]+"${folders[@]}"}; do
   o=${o%/}; case "$o" in a[0-9]*) o=".critos/memory/$o" ;; esac; owned+=("$o")
 done
-head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
 head_root=$(mktemp -d); trap 'rm -rf "$head_root"' EXIT
 is_owned() {   # $1 = a folder, or anything under it (its archive, its notes): owned with its memory folder
   local x t; t=$(printf '%s' "$1" | sed -nE 's#^(\.critos/memory/[^/]+)(/.*)?$#\1#p'); [ -n "$t" ] || t="$1"
@@ -166,10 +189,10 @@ lines_of() {   # $1 = folder -> the parsed lines of both logs, read where the fo
   local lg s; s=$(src_of "$1")
   for lg in DECISIONS.md LESSONS-LEARNED.md; do [ -f "$s/$lg" ] && parse_lines "$s/$lg" "$1/$lg"; done
 }
-entries_of() {   # $1 = log -> the ids of its live entries, in order (a heading carrying ROTATED is a
+entries_of() {   # $1 = log -> the ids of its live entries, in order (a heading in the stub's form is a
                  # pointer in the wrong shape, not an entry; the carrier check reads the same heads)
-  awk -v IDC="$id_core" '/^[[:space:]]*```/ { fence = !fence; next } fence { next }
-    $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && !/ROTATED/ { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$1"
+  awk -v IDC="$id_core" -v ROT="$rot_re" '/^[[:space:]]*```/ { fence = !fence; next } fence { next }
+    $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print substr($0, RSTART, RLENGTH) }' "$1"
 }
 carried_of() {   # $1 = folder, $2 = the parsed lines (a file) -> per log: carried <TAB> total <TAB> the uncarried ids
   local lg s; s=$(src_of "$1")

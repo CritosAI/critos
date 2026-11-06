@@ -27,10 +27,13 @@
 #   8. the version cited  every install line of the README and the install guide names the
 #                    release system/VERSION declares (tests/version-cited.sh): a page that
 #                    sends a newcomer to an older tag cannot be cut.
-#   9. the owner    a generator reads a folder it does not own as committed and writes only in
-#                    the folders its runner owns: a neighbour's uncommitted entry never reaches
-#                    what another owner writes, and an unchanged index is not rewritten
-#                    (tests/own.sh).
+#   9. the owner    a control reads a folder it does not own as committed — the generators and
+#                    the battery — and a generator writes only in the folders its runner owns: a
+#                    neighbour's uncommitted entry never reaches what another owner writes or
+#                    reports, an unchanged index is not rewritten, the atlas lists what git
+#                    tracks and reads the declared id families (tests/own.sh).
+#  10. the readers  a control that cannot answer says so, one line and exit 2 — a folder that is
+#                    none, a bare name, an --own naming no folder (tests/readers.sh).
 # To change an expectation on purpose: run with --update, review the diff, commit it WITH the
 # change that caused it.
 set -uo pipefail
@@ -91,4 +94,5 @@ bash "$here/install.sh" || fail=1
 bash "$here/commit-format.sh" || fail=1
 bash "$here/version-cited.sh" || fail=1
 bash "$here/own.sh" || fail=1
+bash "$here/readers.sh" || fail=1
 exit $fail

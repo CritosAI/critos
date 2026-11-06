@@ -29,7 +29,10 @@ as one) names yours — read from the working tree and the only ones written; ev
 folder is read at HEAD and never written, so your run cannot carry a neighbour's uncommitted
 state, and a neighbour's run cannot dirty your index. Without a name nothing is written and every
 folder is read at HEAD — a verification's run, nobody's. An index whose content did not change is
-not rewritten (`unchanged`), so its stamp says when the law last changed.
+not rewritten (`unchanged`), so its stamp says when the law last changed. A folder argument that
+is none, a bare name where a folder is expected (`a4` is `--own`'s word; the argument is
+`.critos/memory/a4`), or an `--own` naming no folder is answered with one line and exit 2 — in
+every mode, `--check` included: never a skip, never a silent zero.
 
 ## What it reads
 

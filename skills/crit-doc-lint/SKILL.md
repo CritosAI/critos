@@ -21,6 +21,9 @@ Run the mechanical documentation-hygiene checks and interpret the output.
 bash ~/.claude/skills/crit-doc-lint/doc-lint.sh --own a4    # as a4: the generators it calls read every other folder as committed
 ```
 
+An `--own` that names no memory folder — neither in the tree nor at HEAD — is answered with one
+line and exit 2, as are the generators' folder arguments: a control that cannot answer says so.
+
 Two rules hold for every check. A check that **could not run says `SKIPPED`**, never `(none)`: a
 zero produced by a broken pipeline is not evidence. And every finding is a **flag for its owner,
 never a gate**.
@@ -86,6 +89,7 @@ CritOS@…`. A slow run names the check that costs, not the run.
    the owner*, never *this is wrong*: a snapshot legitimately rests while its domain is quiet.
    **STALE-STAMP** — a `STATUS.md` whose `Last updated:` day is older than the day of its last
    commit, both UTC: the file changed after its head was stamped, and the boot trusts the head.
+   The stamp is read bold (the template's form) or plain, at the line's start.
    A stamp newer than the commit is the writer mid-round, not a finding; a day later than today
    is `[24]`'s. New in 1.2.0: a WARN at this pin, a finding from the next release.
 10. **DANGLING-WIKI-LINK (WARN)** — a `[[slug]]` that resolves nowhere reachable. A slug
@@ -201,8 +205,10 @@ CritOS@…`. A slow run names the check that costs, not the run.
 25. **POINTER-FORM** — a rotation pointer in a live memory log outside its one shape
     (`contract-memory § 2`): `- <id> — ROTATED YYYY-MM-DD to archive/<file> (<state>)`, the id
     in backticks, the state one of `done` · `superseded by <id>` · `consolidated in <id>`. A
-    line carrying ROTATED as a heading, or with a fourth state, is the finding; a sentence of
-    prose that names the word is not read, nor is the fenced shape in a log's head. Its second
+    list line carrying ROTATED outside the shape, a heading in the stub's form (`— ROTATED
+    YYYY-MM-DD to`), or a fourth state, is the finding; a heading whose title names the word
+    is an entry, a sentence of prose that names the word is not read, nor is the fenced shape
+    in a log's head. Its second
     leg, **ARCHIVE-NAME**: a file under
     `.critos/memory/a<N>/archive/` outside `DECISIONS-archive-YYYY-MM.md` and
     `LESSONS-LEARNED-archive-YYYY-MM.md` — a day file, a range, an older prefix, a `STATUS`.
@@ -224,8 +230,9 @@ CritOS@…`. A slow run names the check that costs, not the run.
     heading, with no second archive to compare, and a declared home that is no memory folder
     is a finding on the line; an undeclared family's home stays derived from the archives.
     **HEADED-TWICE**: one id, one heading inside its home — an id headed more than once in one
-    folder, its live logs and archives read together, a heading carrying ROTATED excluded (a
-    stub of the old pointer form is not an entry, and no archive reader counts it). An
+    folder, its live logs and archives read together, a heading in the stub's form excluded
+    (`— ROTATED YYYY-MM-DD to`: a stub of the old pointer shape is not an entry, and no archive
+    reader counts it; a title that names the word is the entry it says it is). An
     amendment is a dated line in the entry's body (`**Amended YYYY-MM-DD (<id>):**`) or a new
     entry that cites it; a change of state moves in the heading's token and the Status
     paragraph; a stub is deleted at its rotation, never archived. **UNTIERED**: a `binds:`

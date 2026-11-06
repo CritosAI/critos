@@ -6,7 +6,8 @@
 # a3's log gains an entry nobody committed; a run owned by a2 must leave a3's index untouched and
 # read a3 as committed (the new id absent from a3's law as checked, and from the atlas a2 writes);
 # a3's own run must see it; a second run of an unchanged index must write nothing; without a name
-# the law in force writes nothing and says so. And the battery
+# the law in force writes nothing and says so. The atlas lists what git tracks or could track —
+# never an ignored folder — and reads a heading of every declared id family. And the battery
 # reads the same way: as a3 it sees a3's uncommitted tier-2 claim (the line claims are read with
 # the owner, [28]) and, as a2 over the whole tree, the entry once a3 has committed it.
 # Usage:  bash tests/own.sh        (writes nothing outside a temporary folder)
@@ -46,6 +47,11 @@ out2=$(bash "$atl" --own a2 2>&1)
 grep -q 'ADR-A3-777' MEMORY-INDEX.md && bad "the atlas a2 writes lists a3's uncommitted id" || ok "the atlas a2 writes does not list a3's uncommitted id"
 grep -q 'ADR-A3-001' MEMORY-INDEX.md && ok "the atlas a2 writes lists a3's committed entry (read at HEAD, not empty)" || bad "the atlas a2 writes read a3 as empty"
 printf '%s\n' "$out2" | grep -q '^MEMORY-INDEX unchanged' && ok "the atlas unchanged: nothing written" || bad "the atlas should read unchanged: $out2"
+# 5. the atlas lists what git tracks or could track, never an ignored folder (the fixture ignores
+#    a2's measure/); and it reads a heading of a declared id family (the Q- family, headed in a2's
+#    archive) — the method's grammar plus the families, never a hard-coded prefix
+grep -q 'measure' MEMORY-INDEX.md && bad "the atlas lists an ignored folder (a2's measure/) in its tree view" || ok "the atlas lists no ignored folder"
+grep -q 'Q-0001' MEMORY-INDEX.md && ok "the atlas reads a heading of a declared id family (Q-0001)" || bad "the atlas does not list Q-0001, a heading of a declared id family"
 # 6. without a name: the law in force writes nothing and says so
 out3=$(bash "$inf" 2>&1)
 printf '%s\n' "$out3" | grep -q 'no folder owned' && ok "without --own the law in force writes nothing and says so" || bad "without --own: $(printf '%s' "$out3" | head -1)"

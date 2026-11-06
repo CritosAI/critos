@@ -18,6 +18,7 @@
 #                       exit 2 = STALE-COUNT  only counts or cells moved; every id still
 #                                             resolves. Regenerate at the round-close.
 #                       exit 0 = up to date.
+#           An --own that names no memory folder is answered with one line and exit 2.
 set -uo pipefail
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "memory-index: not inside a git repository. If Claude Code was opened ABOVE the repo, none of the repo's .claude/ (steward, hooks) is loaded - reopen it at the repo root." >&2; exit 1; }
 cd "$root" || exit 1
@@ -33,6 +34,28 @@ while [ $# -gt 0 ]; do
 done
 out="MEMORY-INDEX.md"
 
+# the id grammar: the method's, plus the families the project declares (contract-memory § 2);
+# a family line may name its home after the regex (`· home: a2`) — stripped before reading. A
+# heading is read by this grammar, never by a hard-coded prefix: a declared family is listed.
+id_core='(ADR|L)-[A-Za-z0-9]+-[0-9]{3,}'
+if [ -f .critos/project/id-families ]; then
+  fam=$(grep -vE '^[[:space:]]*(#|$)' .critos/project/id-families | sed -E 's/[[:space:]]*·[[:space:]]*home:.*$//; s/^\^//; s/\$$//' | paste -sd'|' -)
+  [ -n "$fam" ] && id_core="$id_core|$fam"
+fi
+head_re="^#{1,4}[[:space:]]*\`?($id_core)"
+# A rotation pointer's stub form — `— ROTATED YYYY-MM-DD to` — is what every reader of an archive or
+# of a log's headings skips: a heading in this form is a stub of the old pointer shape, never an
+# entry; a heading whose title merely names the word is the entry it says it is.
+rot_re='— ROTATED 20[0-9]{2}-[0-9]{2}-[0-9]{2} to '
+
+# An --own names a memory folder that exists — in the tree, or at HEAD: one line and exit 2 otherwise.
+head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
+for o in ${own[@]+"${own[@]}"}; do
+  case "$o" in a[0-9]|a[0-9][0-9]|a[0-9][0-9][0-9]) ;; *) echo "memory-index: --own $o is not an owner's name (a<N>)" >&2; exit 2 ;; esac
+  [ -d ".critos/memory/$o" ] || { [ "$head_ok" = 1 ] && [ -n "$(git ls-tree -d --name-only HEAD -- ".critos/memory/$o" 2>/dev/null | head -1)" ]; } \
+    || { echo "memory-index: --own $o names no memory folder — .critos/memory/$o/ is neither in the tree nor at HEAD" >&2; exit 2; }
+done
+
 # Owned folders: the runner's, read from the working tree and the only ones written; every other
 # memory folder is read as committed (HEAD) and never written — a generator cannot carry another
 # owner's uncommitted state (contract-memory § 6). The runner names its folders (--own a<N>, or a
@@ -42,7 +65,6 @@ owned=()
 for o in ${own[@]+"${own[@]}"} ${folders[@]+"${folders[@]}"}; do
   o=${o%/}; case "$o" in a[0-9]*) o=".critos/memory/$o" ;; esac; owned+=("$o")
 done
-head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
 head_root=$(mktemp -d); trap 'rm -rf "$head_root"' EXIT
 is_owned() {   # $1 = a folder, or anything under it (its archive, its notes): owned with its memory folder
   local x t; t=$(printf '%s' "$1" | sed -nE 's#^(\.critos/memory/[^/]+)(/.*)?$#\1#p'); [ -n "$t" ] || t="$1"
@@ -114,14 +136,17 @@ owner_of() {
     st="—"; de="—"; le="—"; s=$(src_of "$d")
     # `grep -c` prints 0 AND exits 1 on no match: swallow the status, never append a fallback.
     [ -f "$s/STATUS.md" ] && st="$(grep -c '' "$s/STATUS.md") ln"
-    [ -f "$s/DECISIONS.md" ] && de="$( { grep -E '^#{1,4}[[:space:]]*(ADR|D)-' "$s/DECISIONS.md" | grep -vc ROTATED || true; } 2>/dev/null) ADR"
+    [ -f "$s/DECISIONS.md" ] && de="$( { grep -E "$head_re" "$s/DECISIONS.md" | grep -vcE "$rot_re" || true; } 2>/dev/null) ADR"
     if [ -f "$s/LESSONS-LEARNED.md" ]; then
-      lc=$( { grep -E '^#{1,4}[[:space:]]*L-' "$s/LESSONS-LEARNED.md" | grep -vc ROTATED || true; } 2>/dev/null)
+      lc=$( { grep -E "$head_re" "$s/LESSONS-LEARNED.md" | grep -vcE "$rot_re" || true; } 2>/dev/null)
       if [ "$lc" -gt 0 ]; then le="$lc lessons"
       else le="$(grep -c '' "$s/LESSONS-LEARNED.md") ln · **no L- ids**"   # a non-empty log with no ids is not "0 lessons"
       fi
     fi
-    other=$(ls -1 "$s" 2>/dev/null | grep -vE '^(STATUS|DECISIONS|LESSONS-LEARNED|README)\.md$' | paste -sd' ' - | cut -c1-60)
+    # the Other cell lists what git tracks or could track under the folder — an owned folder from the
+    # tree (tracked and new, never ignored), any other as committed — by its first path component
+    other=$( { if [ "$head_ok" = 0 ] || is_owned "$d"; then tracked_and_new "$d/*"; else git ls-tree -r --name-only HEAD -- "$d" 2>/dev/null; fi; } \
+      | sed -E "s#^$d/##" | cut -d/ -f1 | grep -vE '^(STATUS|DECISIONS|LESSONS-LEARNED|README)\.md$' | sort -u | paste -sd' ' - | cut -c1-60)
     printf '| [`%s`](%s) | %s | %s | %s | %s | %s |\n' "$d" "$d" "$(owner_of "$d")" "$st" "$de" "$le" "${other:-—}"
   done < <(memory_folders)
 
@@ -129,19 +154,21 @@ owner_of() {
   echo "## Decisions — every ADR, by ID"
   echo
   echo "Cite an ADR **by ID**, never by path (the ID is stable; paths move)."
-  # A heading that carries ROTATED is a stub of the old pointer form, never an entry: neither
-  # listed nor counted (contract-memory § 2). A title is copied as TEXT: a markdown link inside a heading is
+  # A heading in the stub's form (`— ROTATED YYYY-MM-DD to`) is a stub of the old pointer shape, never
+  # an entry: neither listed nor counted (contract-memory § 2); a title that names the word is an
+  # entry. A heading is read by the id grammar, the declared families included. A title is copied
+  # as TEXT: a markdown link inside a heading is
   # de-linked, because a relative link copied one folder up breaks, and the atlas is generated —
   # nobody may hand-fix it. The atlas holds addresses by LINE, never links inside titles.
   echo
   while IFS= read -r f; do
     [ -z "$f" ] && continue
     sf=$(src_file "$f")
-    n=$( { grep -E '^#{1,4}[[:space:]]*(ADR|D)-' "$sf" | grep -vc ROTATED || true; } 2>/dev/null)
+    n=$( { grep -E "$head_re" "$sf" | grep -vcE "$rot_re" || true; } 2>/dev/null)
     [ "$n" = 0 ] && continue
     echo "### \`$f\` — $n"
     echo
-    grep -nE '^#{1,4}[[:space:]]*(ADR|D)-' "$sf" | grep -v ROTATED \
+    grep -nE "$head_re" "$sf" | grep -vE "$rot_re" \
       | sed -E 's/^([0-9]+):#+[[:space:]]*/- L\1 · /' \
       | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g' \
       | sed -E 's/[[:space:]]+$//' | cut -c1-160
@@ -153,11 +180,11 @@ owner_of() {
   while IFS= read -r f; do
     [ -z "$f" ] && continue
     sf=$(src_file "$f")
-    n=$( { grep -E '^#{1,4}[[:space:]]*L-' "$sf" | grep -vc ROTATED || true; } 2>/dev/null)
+    n=$( { grep -E "$head_re" "$sf" | grep -vcE "$rot_re" || true; } 2>/dev/null)
     [ "$n" = 0 ] && continue
     echo "### \`$f\` — $n"
     echo
-    grep -nE '^#{1,4}[[:space:]]*L-' "$sf" | grep -v ROTATED \
+    grep -nE "$head_re" "$sf" | grep -vE "$rot_re" \
       | sed -E 's/^([0-9]+):#+[[:space:]]*/- L\1 · /' \
       | sed -E 's/\[([^]]*)\]\([^)]*\)/\1/g' \
       | sed -E 's/[[:space:]]+$//' | cut -c1-160
