@@ -1392,7 +1392,9 @@ while IFS= read -r lg; do
       if (d ~ /^[Tt]ier[ -]?2([^0-9]|$)/) { sub(/^[Tt]ier[ -]?2[^A-Za-z]*/, "", d); printf "%s\t%d\t%s\t%s\n", f, NR, entry, d } }
   ' "$lg"
 done < <(logs12) > "$claims28"
-[ -f "$inforce" ] && bash "$inforce" --lines 2>/dev/null | awk -F'\t' '$5 == "binds" && $7 == "2" { printf "%s\t%s\t%s\t%s\n", $1, $2, $4, $8 }' >> "$claims28"
+# the line claims, read as [26] reads them: with the owner — the runner's lines from the tree, every
+# other folder as committed; a bare call read every folder at HEAD and missed the runner's own round
+[ -f "$inforce" ] && bash "$inforce" ${own_args[@]+"${own_args[@]}"} --lines 2>/dev/null | awk -F'\t' '$5 == "binds" && $7 == "2" { printf "%s\t%s\t%s\t%s\n", $1, $2, $4, $8 }' >> "$claims28"
 while IFS=$'\t' read -r f28 l28 id28 det28; do
   [ -n "$id28" ] || continue
   hit=0
