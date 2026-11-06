@@ -98,9 +98,14 @@
 # never a gate. Interpretive audits (redundancy, real drift, taxonomy) are not in scope.
 #
 # Usage:  bash ~/.claude/skills/crit-doc-lint/doc-lint.sh [--own a<N>]
-#           --own a<N> (or --me <N>): the runner's folder, passed to the generators this battery
-#           calls — they read every other folder as committed and write nothing anywhere
-#           (contract-memory § 6); without it they read every folder at HEAD.
+#           --own a<N> (or --me <N>): the runner's folder — read from the working tree, by every
+#           check and by the generators this battery calls; every other memory folder is read as
+#           COMMITTED, its logs, archives, STATUS and notes as HEAD holds them (contract-memory
+#           § 6): a run sees the repository as its runner may commit it, and a finding in a
+#           neighbour's folder is on committed state, that owner's debt at its own round.
+#           Without a name every memory folder is read as committed — a verification's run,
+#           nobody's. The shared surfaces — the inbox and its archives, the registers, the
+#           documents, the code, the pinned tier, the detectors — stay the tree.
 set -uo pipefail
 own_args=(); own_names=()
 while [ $# -gt 0 ]; do
@@ -131,7 +136,65 @@ inbox_retired=""
 if [ -n "$INBOX" ] && head -1 "$INBOX" | grep -qE '⚰|RETIRED'; then
   inbox_retired="$INBOX"; INBOX=""
 fi
-mem_files() { git ls-files ".critos/memory/*/$1" 2>/dev/null | sort -u; }
+# ---- the memory folders, and where each is read ---------------------------------------------
+# A control reads a memory folder its runner does not own as committed (contract-memory § 6). The
+# folders the runner names (--own a<N>) are read from the working tree; every other memory folder
+# is read as HEAD holds it — by every check, as by the generators the battery calls — and without
+# a name every memory folder is read as committed. The unowned folders are materialized once, one
+# git process per folder; a check reads the copy and reports the repository path. A repository
+# with no commit yet has nothing that could be another's: its tree is read.
+owned=()
+for o in ${own_names[@]+"${own_names[@]}"}; do owned+=(".critos/memory/$o"); done
+head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
+head_root=$(mktemp -d); head_list=$(mktemp); trap 'rm -rf "$head_root" "$head_list"' EXIT
+[ "$head_ok" = 1 ] && git ls-tree -r --name-only HEAD -- '.critos/memory/' 2>/dev/null > "$head_list"
+mem_owned() {   # $1 = a path: read from the tree? — outside the memory folders always; inside, when owned
+  local t="$1" x
+  [ "$head_ok" = 0 ] && return 0
+  case "$t" in .critos/memory/*) ;; *) return 0 ;; esac
+  t=${t#.critos/memory/}; t=".critos/memory/${t%%/*}"
+  for x in ${owned[@]+"${owned[@]}"}; do [ "$x" = "$t" ] && return 0; done
+  return 1
+}
+rd() { RD="$1"; mem_owned "$1" || RD="$head_root/$1"; }   # RD = where $1 is read: itself, or its HEAD copy
+materialize() {   # $1 = a memory folder: its HEAD copy under $head_root, once — one git process per folder;
+                  # the blobs' bytes, conversion off, as `git show` prints them
+  [ -d "$head_root/$1" ] && return 0
+  mkdir -p "$head_root/$1"
+  git -c core.autocrlf=false -c core.eol=lf archive --format=tar HEAD -- "$1" 2>/dev/null | tar -xf - -C "$head_root" 2>/dev/null
+  return 0
+}
+mem_dirs() {   # every memory folder, one per line: the owned ones from the tree, every other as committed
+  { for o in ${owned[@]+"${owned[@]}"}; do [ -d "$o" ] && printf '%s\n' "$o"; done
+    if [ "$head_ok" = 1 ]; then
+      sed -nE 's#^(\.critos/memory/[^/]+)/.*$#\1#p' "$head_list" | sort -u | while IFS= read -r d; do mem_owned "$d" || printf '%s\n' "$d"; done
+    else for d in .critos/memory/*/; do [ -d "$d" ] && printf '%s\n' "${d%/}"; done; fi; } | sort -u
+}
+mem_ls() {   # $1 = a pathspec under .critos/memory/ -> the paths it matches: an owned folder's as git ls-files
+             # lists them (the index), every other folder's as committed
+  { git ls-files "$1" 2>/dev/null | while IFS= read -r f; do mem_owned "$f" && printf '%s\n' "$f"; done
+    [ "$head_ok" = 1 ] && while IFS= read -r f; do [[ "$f" == $1 ]] && ! mem_owned "$f" && printf '%s\n' "$f"; done < "$head_list"; } | sort -u
+}
+mem_files() { mem_ls ".critos/memory/*/$1"; }
+if [ "$head_ok" = 1 ]; then while IFS= read -r d; do [ -n "$d" ] && ! mem_owned "$d" && materialize "$d"; done < <(mem_dirs); fi
+# A git grep over the repository as a run sees it: the tree outside the memory folders and inside the
+# owned ones, HEAD inside every other memory folder (a HEAD hit's `HEAD:` prefix is stripped). The
+# first argument is the positive pathspec (`.` or a glob such as `*.md`), then git grep's own
+# arguments, then `--` and the exclude pathspecs.
+mgrep() {
+  local pos="$1" a=() ex=() hex=() o opos; shift
+  while [ $# -gt 0 ]; do [ "$1" = "--" ] && { shift; ex=("$@"); break; }; a+=("$1"); shift; done
+  if [ "$head_ok" = 0 ]; then git grep "${a[@]}" -- "$pos" ${ex[@]+"${ex[@]}"} 2>/dev/null; return 0; fi
+  git grep "${a[@]}" -- "$pos" ':(exclude).critos/memory' ${ex[@]+"${ex[@]}"} 2>/dev/null
+  for o in ${owned[@]+"${owned[@]}"}; do
+    opos="$o"; [ "$pos" != . ] && opos="$o/$pos"
+    [ -d "$o" ] && git grep "${a[@]}" -- "$opos" ${ex[@]+"${ex[@]}"} 2>/dev/null
+    hex+=(":(exclude)$o")
+  done
+  opos=".critos/memory"; [ "$pos" != . ] && opos=".critos/memory/$pos"
+  git grep "${a[@]}" HEAD -- "$opos" ${hex[@]+"${hex[@]}"} ${ex[@]+"${ex[@]}"} 2>/dev/null | sed 's/^HEAD://'
+  return 0
+}
 
 _ver=""
 if [ -d .critos ]; then
@@ -177,8 +240,10 @@ links_of()   { strip_code "$1" | grep -oE '\]\([^)#][^)]*\)' 2>/dev/null | sed -
 # Untracked .md are link SOURCES too: a new doc's links are checked while its author is looking.
 # The tracked .md ON THE DISK: a tracked path absent from it (an uncommitted deletion) is said
 # once by [1] and read by nothing — a dead awk prints a none it has not earned.
-tracked_md() { git ls-files '*.md' | while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done; }
-md_link_sources() { { tracked_md; git ls-files --others --exclude-standard -- '*.md'; } | sort -u; }
+# The memory files among them where the run reads them (an unowned folder as committed), the
+# repository path printed: a reader calls `rd` for the path to open.
+tracked_md() { { git ls-files '*.md' | grep -v '^\.critos/memory/'; mem_ls '.critos/memory/*.md'; } | while IFS= read -r f; do rd "$f"; [ -f "$RD" ] && printf '%s\n' "$f"; done; }
+md_link_sources() { { tracked_md; git ls-files --others --exclude-standard -- '*.md' | while IFS= read -r f; do mem_owned "$f" && printf '%s\n' "$f"; done; } | sort -u; }
 # The repos this one registers in `.claude/repos`, one absolute path per line.
 constellation() {
   local f="$1/.claude/repos" line
@@ -215,11 +280,12 @@ hdr 1 "broken relative links in .md (existence-checked per link; tracked + untra
 # First, the index vs the tree: a path git tracks that is absent from the disk — an uncommitted
 # deletion, yours or a neighbour's. Said once, here; every check reads the tree without it.
 while IFS= read -r -d '' f; do
+  mem_owned "$f" || continue   # a neighbour's memory folder is read as committed: nothing is missing there
   [ -e "$f" ] || echo "TRACKED-MISSING  $f  (tracked by git, absent on disk — an uncommitted deletion, yours or a neighbour's: commit it or restore it; every check reads the tree without it)"
 done < <(git ls-files -z 2>/dev/null)
 any_broken=0
 while IFS= read -r f; do
-  d=$(dirname "$f")
+  d=$(dirname "$f"); rd "$f"
   while IFS= read -r url; do
     [ -z "$url" ] && continue
     case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
@@ -229,7 +295,7 @@ while IFS= read -r f; do
       echo "BROKEN  $f  ->  $url"
       any_broken=1
     fi
-  done < <(links_of "$f")
+  done < <(links_of "$RD")
 done < <(md_link_sources)
 [ "$any_broken" = 0 ] && echo "(none — all relative links resolve)"
 
@@ -257,13 +323,13 @@ hdr 3 "ORPHAN docs: tracked .md that nothing links to (the 'no floating doc' rul
 # The reachability graph is built from TRACKED sources only: an uncommitted pointer can vanish.
 targets=$(mktemp)
 while IFS= read -r f; do
-  d=$(dirname "$f")
+  d=$(dirname "$f"); rd "$f"
   while IFS= read -r url; do
     [ -z "$url" ] && continue
     case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
     u=${url%%#*}; [ -z "$u" ] && continue
     realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
-  done < <(links_of "$f")
+  done < <(links_of "$RD")
 done < <(tracked_md) | sort -u > "$targets"
 # Exempt: docs found by CONVENTION — entry points, the memory triad, the three registers, the
 # pinned tier's own files, per-entity notes. A repo declares its own convention families in
@@ -299,13 +365,13 @@ while IFS= read -r f; do
     .critos/system/*|*.tmpl) continue ;;
   esac
   case "$(basename "$f")" in README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|MEMORY.md) continue ;; esac
-  d=$(dirname "$f")
+  d=$(dirname "$f"); rd "$f"
   while IFS= read -r url; do
     [ -z "$url" ] && continue
     case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
     u=${url%%#*}; [ -z "$u" ] && continue
     realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
-  done < <(links_of "$f")
+  done < <(links_of "$RD")
 done < <(tracked_md) | sort -u > "$dispatch"
 any_byuse=0
 while IFS= read -r f; do
@@ -428,11 +494,11 @@ if [ -z "$status_files" ]; then
 fi
 any_chronicle=0
 [ -n "$status_files" ] && while IFS= read -r sf; do
-  n=$(grep -c '' "$sf")
+  rd "$sf"; n=$(grep -c '' "$RD")
   asof_re='AS[ -]OF|SESSION (CLOSE|END)|CURRENT STATE'
   [ -f .claude/doc-lint-status-headings ] && \
     asof_re="$asof_re|$(grep -vE '^[[:space:]]*(#|$)' .claude/doc-lint-status-headings | paste -sd'|' -)"
-  asof=$(grep -cE "^#{1,4}[[:space:]].*($asof_re)[^A-Za-z]*[0-9]{4}-[0-9]{2}-[0-9]{2}" "$sf")
+  asof=$(grep -cE "^#{1,4}[[:space:]].*($asof_re)[^A-Za-z]*[0-9]{4}-[0-9]{2}-[0-9]{2}" "$RD")
   if [ "$n" -gt "$status_max" ] || [ "$asof" -gt 1 ]; then
     echo "STATUS-CHRONICLE  $sf — ${n} lines (budget ${status_max}), ${asof} dated AS-OF sections."
     echo "                  A STATUS is OVERWRITTEN, not prepended: keep what is TRUE NOW, let git hold the history."
@@ -447,14 +513,14 @@ done <<< "$status_files"
 # is not read. A date in prose qualifies evidence and is not a heading.
 any_note=0
 while IFS= read -r nf; do
-  [ -n "$nf" ] && [ -f "$nf" ] || continue
+  [ -n "$nf" ] || continue; rd "$nf"; [ -f "$RD" ] || continue
   [ "$(basename "$nf")" = README.md ] && continue
-  dated=$( { grep -cE '^#{1,4}[[:space:]].*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$nf" || true; } 2>/dev/null)
+  dated=$( { grep -cE '^#{1,4}[[:space:]].*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$RD" || true; } 2>/dev/null)
   if [ "${dated:-0}" -gt 1 ]; then
     echo "NOTE-CHRONICLE  $nf — ${dated} dated headings. A note is OVERWRITTEN when its entity is touched: present tense, one photograph; a date only where it qualifies evidence (contract-memory § 4)."
     any_note=1
   fi
-done < <(git ls-files '.critos/memory/a*/notes/*' 2>/dev/null | grep -E '\.md$')
+done < <(mem_ls '.critos/memory/a*/notes/*' | grep -E '\.md$')
 [ "$any_note" = 0 ] && echo "(no per-entity note reads as a diary)"
 
 hdr 9 "STALE-STATUS: a memory STATUS.md nobody has touched in >=14 days · STALE-STAMP: a head stamp older than the file's last commit"
@@ -468,6 +534,7 @@ else
   while IFS= read -r sf; do
     ct=$(git log -1 --format=%ct -- "$sf" 2>/dev/null)
     [ -z "$ct" ] && continue
+    rd "$sf"
     age=$(( (now9 - ct) / 86400 ))
     if [ "$age" -ge 14 ]; then
       echo "STALE-STATUS  $sf — last commit ${age}d ago. Re-verify with its owner: is this still true?"
@@ -479,7 +546,7 @@ else
     # not a finding; a day later than today is [24]'s. No stamp line: nothing to read here. The
     # stamp is read bold (the template's form) or plain (the contract's), at the line's start.
     cday=$(date -u -d "@$ct" +%F 2>/dev/null || date -u -r "$ct" +%F 2>/dev/null)
-    sday=$(grep -m1 -oE '^[*_]{0,2}Last updated:[*_]{0,2}[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$sf" 2>/dev/null | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+    sday=$(grep -m1 -oE '^[*_]{0,2}Last updated:[*_]{0,2}[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}' "$RD" 2>/dev/null | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}$')
     if [ -n "$cday" ] && [ -n "$sday" ] && [[ "$sday" < "$cday" ]]; then
       echo "STALE-STAMP  $sf — stamped $sday, last committed $cday (UTC): the head the boot trusts is older than the file; re-stamp with date -u when the file changes$(born 1.2.0)"
       any_stale_status=1
@@ -495,18 +562,17 @@ hdr 10 "DANGLING-WIKI-LINK (WARN): a [[slug]] that resolves nowhere reachable"
 # only there read green on the one machine that has it (contract-system § 3, the auto-memory
 # row). Archives are records and are not scanned; this skill's own docs quote the syntax.
 wl_tmp=$(mktemp); wl_declared=$(mktemp)
-git grep -hoE '\[\[[A-Za-z0-9][A-Za-z0-9._-]*\]\]' -- '*.md' ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' 2>/dev/null \
+mgrep '*.md' -hoE '\[\[[A-Za-z0-9][A-Za-z0-9._-]*\]\]' -- ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' \
   | sed -E 's/^\[\[//; s/\]\]$//' | sort -u > "$wl_tmp"
 if [ ! -s "$wl_tmp" ]; then
   echo "(no [[slug]] links in this repo — skipped)"
   rm -f "$wl_tmp" "$wl_declared"
 else
 {
-  git grep -hoE '^#{1,6}[[:space:]]+[A-Za-z0-9][A-Za-z0-9._-]*' -- '*.md' 2>/dev/null \
+  mgrep '*.md' -hoE '^#{1,6}[[:space:]]+[A-Za-z0-9][A-Za-z0-9._-]*' -- \
     | sed -E 's/^#+[[:space:]]+//'
-  # NUL-delimited: a file name may contain spaces.
-  git ls-files -z '*.md' 2>/dev/null | while IFS= read -r -d '' p; do b=${p##*/}; printf '%s\n' "${b%.md}"; done
-  git grep -hoE '^\|[[:space:]]*~{0,2}[A-Za-z][A-Za-z0-9._-]{0,23}~{0,2}[[:space:]]*\|' -- '*.md' 2>/dev/null \
+  { git ls-files '*.md' 2>/dev/null | grep -v '^\.critos/memory/'; mem_ls '.critos/memory/*.md'; } | while IFS= read -r p; do b=${p##*/}; printf '%s\n' "${b%.md}"; done
+  mgrep '*.md' -hoE '^\|[[:space:]]*~{0,2}[A-Za-z][A-Za-z0-9._-]{0,23}~{0,2}[[:space:]]*\|' -- \
     | sed -E 's/^\|[[:space:]]*//; s/[[:space:]]*\|$//; s/~~//g'
 } | sort -u > "$wl_declared"
 any_wl=0
@@ -514,7 +580,7 @@ while IFS= read -r s; do
   [ -z "$s" ] && continue
   grep -qxF "$s" "$wl_declared" && continue
   if [ -n "$exempt_re" ] && printf '%s\n' "$s" | grep -qE "$exempt_re"; then continue; fi
-  where=$(git grep -l -F "[[$s]]" -- '*.md' 2>/dev/null | head -3 | tr '\n' ' ')
+  where=$(mgrep '*.md' -l -F "[[$s]]" -- | head -3 | tr '\n' ' ')
   echo "DANGLING-WIKI-LINK  [[$s]] — declared nowhere reachable. Cited in: $where"
   any_wl=1
 done < "$wl_tmp"
@@ -539,7 +605,7 @@ else
     [ -n "$hit" ] || continue
     echo "AUTO-MEMORY-CITED  $hit — a note of the assistant's auto-memory, cited from a tracked file: the fact it holds lives in the repo, or the citation lies on every other machine (contract-system § 3)"
     any_am=1
-  done < <(git grep -noE "(\`|\[\[)($am_re)(\`|\]\])" -- '*.md' ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' ':(exclude).critos/system' ':(exclude)*.tmpl' 2>/dev/null | head -40)
+  done < <(mgrep '*.md' -noE "(\`|\[\[)($am_re)(\`|\]\])" -- ':(exclude)*archive*' ':(exclude)*skills/crit-doc-lint/*' ':(exclude).critos/system' ':(exclude)*.tmpl' | head -40)
   [ "$any_am" = 0 ] && echo "(no tracked file cites an auto-memory note of this machine)"
 fi
 
@@ -550,9 +616,9 @@ hdr 11 "TIER-3 LESSON: an accepted_rule that does not name its enforcement tier"
 # syntactic position — a line that STARTS with it — never anywhere in the body.
 tier3_out=$(
   mem_files LESSONS-LEARNED.md | while IFS= read -r lf; do
-      [ -f "$lf" ] || continue
+      rd "$lf"; [ -f "$RD" ] || continue
       shape=headings
-      [ "$( { grep -cE '^#{1,4}[[:space:]]+.*(L-[A-Za-z0-9]+-[0-9]|[0-9]{4}-[0-9]{2}-[0-9]{2})' "$lf" || true; } 2>/dev/null)" = 0 ] && shape=bullets
+      [ "$( { grep -cE '^#{1,4}[[:space:]]+.*(L-[A-Za-z0-9]+-[0-9]|[0-9]{4}-[0-9]{2}-[0-9]{2})' "$RD" || true; } 2>/dev/null)" = 0 ] && shape=bullets
       awk -v f="$lf" -v shape="$shape" '
         function flush(   t) {
           if (hdr == "") return
@@ -587,7 +653,7 @@ tier3_out=$(
           flush()
           if (undated > 0) printf "UNDATED-LESSON %s — %d accepted_rule entr%s skipped (no date)\n", f, undated, (undated == 1 ? "y" : "ies")
         }
-      ' "$lf"
+      ' "$RD"
     done
 )
 if [ -n "$tier3_out" ]; then
@@ -606,9 +672,9 @@ fi
 # mid-line, after other text, is reported too: every reader reads the line's start, so nothing
 # sees it — inline code spans are stripped first, so a line that quotes the label is not read.
 form11=$( { mem_files DECISIONS.md; mem_files LESSONS-LEARNED.md; } | while IFS= read -r lf; do
-  [ -f "$lf" ] || continue
+  rd "$lf"; [ -f "$RD" ] || continue
   num11=$(mktemp)
-  awk '/^[[:space:]]*```/{f=!f;next} !f{print NR ":" $0}' "$lf" > "$num11"
+  awk '/^[[:space:]]*```/{f=!f;next} !f{print NR ":" $0}' "$RD" > "$num11"
   grep -E '^[0-9]+:(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:' "$num11" \
     | grep -vE '^[0-9]+:\*\*Enforcement:\*\* tier [123]( — .*)?$' \
     | sed -E "s|^([0-9]+):(.{0,70}).*|ENFORCEMENT-FORM  $lf:\1  \2|"
@@ -636,13 +702,13 @@ log_max=1200
 logs12() { mem_files DECISIONS.md; mem_files LESSONS-LEARNED.md; }
 any_unrotated=0
 while IFS= read -r lg; do
-  [ -f "$lg" ] || continue
+  rd "$lg"; [ -f "$RD" ] || continue
   case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-  n=$(grep -c '' "$lg")
+  n=$(grep -c '' "$RD")
   [ "$n" -gt "$log_max" ] || continue
-  ents=$( { grep -cE '^#{1,4}[[:space:]]*(ADR|D|L)-' "$lg" || true; } 2>/dev/null)
-  if head -n 60 "$lg" | grep -qE 'DECLARED EXEMPTION[^A-Za-z]{0,8}ACTIVE'; then
-    why=$(head -n 60 "$lg" | grep -E 'DECLARED EXEMPTION[^A-Za-z]{0,8}ACTIVE' | head -1 | sed -E 's/^[>[:space:]*#]*//; s/\*\*//g' | cut -c1-150)
+  ents=$( { grep -cE '^#{1,4}[[:space:]]*(ADR|D|L)-' "$RD" || true; } 2>/dev/null)
+  if head -n 60 "$RD" | grep -qE 'DECLARED EXEMPTION[^A-Za-z]{0,8}ACTIVE'; then
+    why=$(head -n 60 "$RD" | grep -E 'DECLARED EXEMPTION[^A-Za-z]{0,8}ACTIVE' | head -1 | sed -E 's/^[>[:space:]*#]*//; s/\*\*//g' | cut -c1-150)
     echo "DECLARED-OVER  $lg — ${n} lines (budget ${log_max}), ${ents} entries — exemption declared in the log head."
     echo "               → ${why}"
     continue
@@ -655,9 +721,9 @@ done < <(logs12)
 # Aging by status (contract-memory § 2): an entry marked fully superseded or completed is
 # archivable whatever the line count. An info line, not a finding; "superseded in part" is not.
 while IFS= read -r lg; do
-  [ -f "$lg" ] || continue
+  rd "$lg"; [ -f "$RD" ] || continue
   case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-  arch=$( { grep -cE '^\*\*Status[^*]*\*\*:?.*(superseded by|completed [0-9]{4})' "$lg" || true; } 2>/dev/null)
+  arch=$( { grep -cE '^\*\*Status[^*]*\*\*:?.*(superseded by|completed [0-9]{4})' "$RD" || true; } 2>/dev/null)
   [ "${arch:-0}" -gt 0 ] && echo "ARCHIVABLE     $lg — ${arch} entr$( [ "$arch" = 1 ] && echo y || echo ies) marked fully superseded/completed still in the live log (aging trigger 1, contract-memory §2 — the owner archives, or A1 will)"
 done < <(logs12)
 [ "$any_unrotated" = 0 ] && echo "(none — every append-only memory log is within budget, or declares its overage in its own head)"
@@ -665,9 +731,9 @@ done < <(logs12)
 hdr 13 "MEMORY-SHAPE: one agent, one folder, one writer, one address"
 if [ -d .critos/memory ]; then
   any_shape=0
-  for d in .critos/memory/*/; do
-    [ -d "$d" ] || continue
-    b=$(basename "$d")
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    b=${d##*/}
     case "$b" in
       a[0-9]|a[0-9][0-9]) ;;
       *) echo "MEMORY-SHAPE  .critos/memory/$b — not an agent folder. The address IS the owner (a<N>); a folder named otherwise cannot be attributed by structure and falls back to a roster grep that can drift."; any_shape=1; continue ;;
@@ -676,7 +742,7 @@ if [ -d .critos/memory ]; then
     n=${b#a}
     grep -qE "^\|[[:space:]]*(A)?${n}[[:space:]]*\|" "$ROSTER" \
       || { echo "MEMORY-SHAPE  .critos/memory/$b exists but no row for A${n} in $ROSTER — an unrostered writer is an owner nobody can route to."; any_shape=1; }
-  done
+  done < <(mem_dirs)
   [ "$any_shape" = 0 ] && echo "(none — every memory folder is a<N> and every one of them is rostered)"
 else
   echo "(no .critos/memory/ in this repo — skipped)"
@@ -761,7 +827,7 @@ hdr 16 "RETIRED-REF: a live doc whose link resolves to a ⚰ RETIRED file"
 # it. Not sources: files under archive/ or release/, and the signposts themselves.
 retired_set=$(mktemp)
 while IFS= read -r rf; do
-  head -1 "$rf" 2>/dev/null | grep -qE '⚰|RETIRED' && printf '%s\n' "$rf"
+  rd "$rf"; head -1 "$RD" 2>/dev/null | grep -qE '⚰|RETIRED' && printf '%s\n' "$rf"
 done < <(tracked_md) > "$retired_set"
 if [ ! -s "$retired_set" ]; then
   echo "(no ⚰ RETIRED files in this repo — skipped)"
@@ -771,7 +837,7 @@ else
   while IFS= read -r f; do
     case "$f" in */archive/*|archive/*|*/release/*|release/*) continue ;; esac
     grep -qxF "$f" "$retired_set" && continue
-    d=$(dirname "$f")
+    d=$(dirname "$f"); rd "$f"
     while IFS= read -r url; do
       [ -z "$url" ] && continue
       case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
@@ -780,7 +846,7 @@ else
       { [ -n "$tgt" ] && grep -qxF "$tgt" "$retired_set"; } || continue
       echo "RETIRED-REF  $f  ->  $url  (the target's first line carries the retirement marker: a signpost, not a surface — repoint the reference, or mark the mention as history)"
       any_retref=1
-    done < <(links_of "$f")
+    done < <(links_of "$RD")
   done < <(md_link_sources)
   rm -f "$retired_set"
   [ "$any_retref" = 0 ] && echo "(none — no live doc leans on a retired file)"
@@ -951,13 +1017,21 @@ hdr 21 "CITED-ID: a decision or lesson id cited somewhere and declared nowhere"
 # seen at its two ends. An id of an UNREGISTERED repo is flagged: silence it in
 # `.claude/doc-lint-exempt`, or register the repo.
 declared21=$(mktemp); prefixes21=$(mktemp)
+# the logs of this repo where the run reads them (a memory folder not owned as committed; an owned
+# one tracked and new); a registered repo's as its tree, one level, read-only
+logs21_home() {
+  { { git ls-files '*DECISIONS*.md' '*LESSONS*.md'; git ls-files --others --exclude-standard -- '*DECISIONS*.md' '*LESSONS*.md'; } 2>/dev/null | grep -v '^\.critos/memory/'
+    mem_ls '.critos/memory/*DECISIONS*.md'; mem_ls '.critos/memory/*LESSONS*.md'
+    for o in ${owned[@]+"${owned[@]}"}; do [ -d "$o" ] && git ls-files --others --exclude-standard -- "$o/*DECISIONS*.md" "$o/*LESSONS*.md" 2>/dev/null; done; } | sort -u
+}
 { printf '%s\n' "$root"; constellation "$root"; } | while IFS= read -r r21; do
   [ -d "$r21" ] || continue
-  { git -C "$r21" ls-files '*DECISIONS*.md' '*LESSONS*.md'; git -C "$r21" ls-files --others --exclude-standard -- '*DECISIONS*.md' '*LESSONS*.md'; } 2>/dev/null | sort -u \
+  if [ "$r21" = "$root" ]; then logs21_home; else { git -C "$r21" ls-files '*DECISIONS*.md' '*LESSONS*.md'; git -C "$r21" ls-files --others --exclude-standard -- '*DECISIONS*.md' '*LESSONS*.md'; } 2>/dev/null | sort -u; fi \
   | while IFS= read -r lg21; do
-      [ -f "$r21/$lg21" ] || continue
-      grep -hoE "^#{1,4}[[:space:]]*$id_re" "$r21/$lg21" | grep -oE "$id_re"
-      awk '/^#{1,4}[[:space:]]*(ADR|L)-[A-Za-z0-9]+-[0-9]/{exit} {print}' "$r21/$lg21" | grep -oE "$id_re"
+      if [ "$r21" = "$root" ]; then rd "$lg21"; f21="$RD"; else f21="$r21/$lg21"; fi
+      [ -f "$f21" ] || continue
+      grep -hoE "^#{1,4}[[:space:]]*$id_re" "$f21" | grep -oE "$id_re"
+      awk '/^#{1,4}[[:space:]]*(ADR|L)-[A-Za-z0-9]+-[0-9]/{exit} {print}' "$f21" | grep -oE "$id_re"
     done
 done | sort -u > "$declared21"
 # retired prefixes: `PREFIX-NNN` on the LEFT of an arrow in a log's head, here and in every
@@ -965,25 +1039,26 @@ done | sort -u > "$declared21"
 # the LIVE sequence, and retiring it too would silence every typo in a live id.
 { printf '%s\n' "$root"; constellation "$root"; } | while IFS= read -r r21; do
   [ -d "$r21" ] || continue
-  git -C "$r21" ls-files '*DECISIONS*.md' '*LESSONS*.md' 2>/dev/null | while IFS= read -r lg21; do
-    [ -f "$r21/$lg21" ] || continue
-    awk '/^#{1,4}[[:space:]]*(ADR|L)-[A-Za-z0-9]+-[0-9]/{exit} {print}' "$r21/$lg21" \
+  if [ "$r21" = "$root" ]; then logs21_home; else git -C "$r21" ls-files '*DECISIONS*.md' '*LESSONS*.md' 2>/dev/null; fi | while IFS= read -r lg21; do
+    if [ "$r21" = "$root" ]; then rd "$lg21"; f21="$RD"; else f21="$r21/$lg21"; fi
+    [ -f "$f21" ] || continue
+    awk '/^#{1,4}[[:space:]]*(ADR|L)-[A-Za-z0-9]+-[0-9]/{exit} {print}' "$f21" \
       | grep -oE '\b(ADR|L)-[A-Za-z0-9]+-NNN\b[`*[:space:]]*(->|→)' | sed -E 's/NNN.*$//'
   done
 done | sort -u > "$prefixes21"
 if [ ! -s "$declared21" ]; then
   echo "(no decision or lesson log declares an id in this repo — skipped)"
 else
-  cited21=$(git grep -I -hoE "$id_re" -- . ':(exclude).critos/system' ':(exclude)*archive*' \
+  cited21=$(mgrep . -I -hoE "$id_re" -- ':(exclude).critos/system' ':(exclude)*archive*' \
       ':(exclude).claude/skills' ':(exclude).claude/agents/agent-1.md' ':(exclude)skills/crit-*' \
-      ':(exclude)*.tmpl' ':(exclude)MEMORY-INDEX.md' 2>/dev/null | sort -u)
+      ':(exclude)*.tmpl' ':(exclude)MEMORY-INDEX.md' | sort -u)
   any21=0
   while IFS= read -r id21; do
     [ -z "$id21" ] && continue
     grep -qxF "$id21" "$declared21" && continue
     if [ -s "$prefixes21" ] && grep -qxF "$(printf '%s' "$id21" | sed -E 's/[0-9]+$//')" "$prefixes21"; then continue; fi
     if [ -n "$exempt_re" ] && printf '%s\n' "$id21" | grep -qE "$exempt_re"; then continue; fi
-    where21=$(git grep -I -lw -F "$id21" -- . ':(exclude).critos/system' ':(exclude)*archive*' ':(exclude)MEMORY-INDEX.md' 2>/dev/null | head -3 | tr '\n' ' ')
+    where21=$(mgrep . -I -lw -F "$id21" -- ':(exclude).critos/system' ':(exclude)*archive*' ':(exclude)MEMORY-INDEX.md' | head -3 | tr '\n' ' ')
     echo "CITED-ID  $id21 — declared in no decision or lesson log (archives included). Cited in: $where21"
     any21=1
   done <<< "$cited21"
@@ -1128,12 +1203,12 @@ hdr 24 "FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a
 #   - an aging mark                    `**Marked YYYY-MM-DD` · `**Rotated YYYY-MM-DD` · `**FACT-FLIP YYYY-MM-DD`
 # Bound, declared: a wrong stamp written anywhere else (prose, a cell) is not seen.
 today24=$(date -u +%F)
-files24=$(git ls-files '.critos/memory/*.md' '.critos/shared/*.md' 2>/dev/null | sort -u)
+files24=$( { mem_ls '.critos/memory/*.md'; git ls-files '.critos/shared/*.md' 2>/dev/null; } | sort -u)
 if [ -z "$files24" ]; then
   echo "(no memory log, STATUS or register in this repo — skipped)"
 else
   out24=$(while IFS= read -r f24; do
-    [ -f "$f24" ] || continue
+    rd "$f24"; [ -f "$RD" ] || continue
     # The leg patterns are STRINGS, not regexp constants: a `/…/` passed as a function argument
     # is evaluated by gawk as `$0 ~ /…/` and arrives as 0 or 1 — three legs once searched a digit
     # and could not go red. Each leg has its own positive in the fixture; `Last updated:` is read
@@ -1150,7 +1225,7 @@ else
       /^#{1,4}[[:space:]]/ && /(ADR|L)-[A-Za-z0-9]+-[0-9]/ { all($0) }
       /^[*_[:space:]]*[Ll]ast updated:/ { all($0) }
       { after($0, RE_TOKEN); after($0, RE_VERDICT); after($0, RE_MARK) }
-    ' "$f24"
+    ' "$RD"
   done <<< "$files24")
   if [ -n "$out24" ]; then printf '%s\n' "$out24"; else echo "(none — no stamp later than $today24 UTC in a stamp position; dates in prose are not read)"; fi
 fi
@@ -1169,7 +1244,7 @@ any25=0
 idtok="\`?($id_core)\`?"
 ptr_ok="^- $idtok — ROTATED 20[0-9]{2}-[0-9]{2}-[0-9]{2} to archive/(DECISIONS|LESSONS-LEARNED)-archive-20[0-9]{2}-[0-9]{2}\.md \((done|superseded by $idtok|consolidated in $idtok)\)$"
 while IFS= read -r lg; do
-  [ -f "$lg" ] || continue
+  rd "$lg"; [ -f "$RD" ] || continue
   case "$lg" in *-archive-*|*/archive/*) continue ;; esac
   while IFS= read -r hit; do
     [ -z "$hit" ] && continue
@@ -1177,14 +1252,14 @@ while IFS= read -r lg; do
     printf '%s' "$line25" | grep -Eq "$ptr_ok" && continue
     echo "POINTER-FORM  $lg:$ln25  $(printf '%s' "$line25" | cut -c1-90)$(born 1.2.0)"
     any25=1
-  done < <(awk -v ROT="$rot_re" '/^[[:space:]]*```/{f=!f;next} !f && ((/^- / && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/) || (/^#{1,4}[[:space:]]/ && $0 ~ ROT)){print NR ":" $0}' "$lg")
+  done < <(awk -v ROT="$rot_re" '/^[[:space:]]*```/{f=!f;next} !f && ((/^- / && /(^|[^A-Za-z])ROTATED([^A-Za-z]|$)/) || (/^#{1,4}[[:space:]]/ && $0 ~ ROT)){print NR ":" $0}' "$RD")
 done < <(logs12)
 while IFS= read -r af; do
   [ -z "$af" ] && continue
   printf '%s' "$(basename "$af")" | grep -Eq '^(DECISIONS|LESSONS-LEARNED)-archive-20[0-9]{2}-[0-9]{2}\.md$' && continue
   echo "ARCHIVE-NAME  $af  (the archive is the log's own name, one file per month: DECISIONS-archive-YYYY-MM.md · LESSONS-LEARNED-archive-YYYY-MM.md; a STATUS is never archived)$(born 1.2.0)"
   any25=1
-done < <(git ls-files '.critos/memory/a*/archive/*' 2>/dev/null)
+done < <(mem_ls '.critos/memory/a*/archive/*')
 [ "$any25" = 0 ] && echo "(none — every pointer in shape with a state of the three, every archive under the log's name by month)"
 
 hdr 26 "CARRIES: every live entry carries its rule; nothing in force left the live log without a live carrier"
@@ -1208,27 +1283,27 @@ else
   if [ "$rc26" != 0 ]; then echo "SKIPPED — the in-force control could not read the Carries lines (exit $rc26: ${err26:-no message}) — NOT a clean none"; rm -f "$lines26" "$ptr26" "$heads26" "$two26" "$out26"; else
   # the pointers of every live log, per folder: folder <TAB> id <TAB> settled|consolidated <TAB> log:line
   while IFS= read -r lg; do
-    [ -f "$lg" ] || continue
+    rd "$lg"; [ -f "$RD" ] || continue
     case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-    awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print d "\t" id "\t" st "\t" f ":" NR } }' "$lg"
+    awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && /^- `?[^`]*`? — ROTATED / { if (match($0, IDC)) { id = substr($0, RSTART, RLENGTH); st = "settled"; if ($0 ~ /\(consolidated in /) st = "consolidated"; print d "\t" id "\t" st "\t" f ":" NR } }' "$RD"
   done < <(logs12) | sort -u > "$ptr26"
   # the ids headed in every archive, per folder: folder <TAB> id <TAB> archive (a heading in the
   # stub's form, `— ROTATED YYYY-MM-DD to`, is a stub of the old pointer shape, never an entry: not
   # read here; a title that names the word is read as the entry it is)
   while IFS= read -r af; do
-    [ -f "$af" ] || continue
-    awk -v IDC="$id_core" -v ROT="$rot_re" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$af"
-  done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null) | sort -u > "$heads26"
+    rd "$af"; [ -f "$RD" ] || continue
+    awk -v IDC="$id_core" -v ROT="$rot_re" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$RD"
+  done < <(mem_ls '.critos/memory/a*/archive/*.md') | sort -u > "$heads26"
   # NO-CARRIER, per live entry
   while IFS= read -r lg; do
-    [ -f "$lg" ] || continue
+    rd "$lg"; [ -f "$RD" ] || continue
     case "$lg" in *-archive-*|*/archive/*) continue ;; esac
     while IFS= read -r ent; do
       [ -n "$ent" ] || continue
       ln26=${ent%%:*}; id26=${ent#*:}
       awk -F'\t' -v f="$lg" -v e="$id26" '$1 == f && $3 == e && $4 == e && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . \
         || echo "NO-CARRIER  $lg:$ln26  $id26 — a live entry carries at least its own rule: one line under **Carries.** (binds: <lane>, or settled: <state>)$(born 1.2.0)" >> "$out26"
-    done < <(awk -v IDC="$id_core" -v ROT="$rot_re" '/^[[:space:]]*```/{f=!f;next} !f && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print NR ":" substr($0, RSTART, RLENGTH) }' "$lg")
+    done < <(awk -v IDC="$id_core" -v ROT="$rot_re" '/^[[:space:]]*```/{f=!f;next} !f && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print NR ":" substr($0, RSTART, RLENGTH) }' "$RD")
   done < <(logs12)
   # (a heading in the stub's form is a pointer in the wrong shape — [25]'s finding, not an entry)
   # CARRIES-FORM, per line read
@@ -1269,10 +1344,10 @@ else
       fi
       { awk -F'\t' -v re="$hre" -v home=".critos/memory/$hhome" '$2 ~ re && $1 != home { print $3 "\t" $2 "\t" $1 }' "$heads26"
         while IFS= read -r lg; do
-          [ -f "$lg" ] || continue
+          rd "$lg"; [ -f "$RD" ] || continue
           case "$lg" in *-archive-*|*/archive/*) continue ;; esac
           [ "$(dirname "$lg")" = ".critos/memory/$hhome" ] && continue
-          awk -v IDC="$id_core" -v ROT="$rot_re" -v re="$hre" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); id = substr($0, RSTART, RLENGTH); if (id ~ re) print f ":" NR "\t" id "\t" d }' "$lg"
+          awk -v IDC="$id_core" -v ROT="$rot_re" -v re="$hre" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); id = substr($0, RSTART, RLENGTH); if (id ~ re) print f ":" NR "\t" id "\t" d }' "$RD"
         done < <(logs12); } | sort -u \
       | while IFS=$'\t' read -r hwhere hid hfold; do
           [ -n "$hid" ] && echo "TWO-HOMES  $hwhere  $hid — headed in $hfold/, outside the family's declared home ($hhome, id-families:$hln): an id has one home, and a declared family is headed in its home only$(born 1.2.0)" >> "$out26"
@@ -1291,14 +1366,14 @@ else
   # deleted, never archived; two entries under one string are the collision the owner tells apart.
   all26=$(mktemp)
   { while IFS= read -r lg; do
-      [ -f "$lg" ] || continue
+      rd "$lg"; [ -f "$RD" ] || continue
       case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-      awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$lg"
+      awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" -v d="$(dirname "$lg")" '/^[[:space:]]*```/{fence=!fence;next} !fence && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$RD"
     done < <(logs12)
     while IFS= read -r af; do
-      [ -f "$af" ] || continue
-      awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$af"
-    done < <(git ls-files '.critos/memory/a*/archive/*.md' 2>/dev/null); } | sort -u > "$all26"
+      rd "$af"; [ -f "$RD" ] || continue
+      awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" f ":" NR }' "$RD"
+    done < <(mem_ls '.critos/memory/a*/archive/*.md'); } | sort -u > "$all26"
   awk -F'\t' '{ k = $1 "\t" $2; n[k]++; w[k] = w[k] (w[k] ? ", " : "") $3 } END { for (k in n) if (n[k] > 1) print k "\t" n[k] "\t" w[k] }' "$all26" | sort \
     | while IFS=$'\t' read -r hf hid hn hw; do
         echo "HEADED-TWICE  $hid — headed $hn times in $hf/ ($hw): one id, one heading inside its home — an amendment is a dated line in the entry's body (**Amended YYYY-MM-DD (<id>):**) or a new entry that cites it; a stub of the old pointer form is deleted, never archived$(born 1.2.0)" >> "$out26"
@@ -1401,7 +1476,7 @@ done < <( { git ls-files '.critos/checks/*'; git ls-files --others --exclude-sta
 # the tier-2 claims: Enforcement lines and Carries lines (both logs, live entries only)
 claims28=$(mktemp)
 while IFS= read -r lg; do
-  [ -f "$lg" ] || continue
+  rd "$lg"; [ -f "$RD" ] || continue
   case "$lg" in *-archive-*|*/archive/*) continue ;; esac
   awk -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" '
     /^[[:space:]]*```/ { fence = !fence; next }
@@ -1410,7 +1485,7 @@ while IFS= read -r lg; do
     entry != "" && /^(-[[:space:]]+)?[*_]{0,2}[Ee]nforcement[*_]{0,2}:/ {
       d = $0; sub(/^[^:]*:[*_]*[[:space:]]*/, "", d)
       if (d ~ /^[Tt]ier[ -]?2([^0-9]|$)/) { sub(/^[Tt]ier[ -]?2[^A-Za-z]*/, "", d); printf "%s\t%d\t%s\t%s\n", f, NR, entry, d } }
-  ' "$lg"
+  ' "$RD"
 done < <(logs12) > "$claims28"
 # the line claims, read as [26] reads them: with the owner — the runner's lines from the tree, every
 # other folder as committed; a bare call read every folder at HEAD and missed the runner's own round

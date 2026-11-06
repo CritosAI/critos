@@ -9,7 +9,8 @@
 # the law in force writes nothing and says so. The atlas lists what git tracks or could track —
 # never an ignored folder — and reads a heading of every declared id family. And the battery
 # reads the same way: as a3 it sees a3's uncommitted tier-2 claim (the line claims are read with
-# the owner, [28]) and, as a2 over the whole tree, the entry once a3 has committed it.
+# the owner, [28]); as a2 over the whole tree it sees nothing of a3's uncommitted entry — no
+# finding at a line past that file's HEAD — and sees the entry once a3 has committed it.
 # Usage:  bash tests/own.sh        (writes nothing outside a temporary folder)
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; repo="$(cd "$here/.." && pwd)"
@@ -64,6 +65,10 @@ grep -q 'ADR-A3-777' MEMORY-INDEX.md && ok "the atlas a3 writes lists its own un
 #    passes the owner to its --lines call) — the tier-2 claim that names nothing is a finding
 l3=$(lint --own a3)
 printf '%s\n' "$l3" | grep -q '^TIER-2-UNDETECTED .*ADR-A3-777' && ok "as a3 the battery reads a3's uncommitted tier-2 line claim ([28])" || bad "as a3 the battery does not see a3's uncommitted tier-2 line claim: [28] read the line claims at HEAD"
+# 9. as a2 over the whole tree, a3 is read as committed by every check: nothing of the uncommitted
+#    entry is reported — no NO-CARRIER at a line past that file's HEAD, no claim
+l2=$(lint --own a2 --all)
+printf '%s\n' "$l2" | grep -q 'ADR-A3-777' && bad "as a2 the battery reports a3's uncommitted entry: $(printf '%s' "$l2" | grep ADR-A3-777 | head -1 | cut -c1-80)" || ok "as a2 the battery reports nothing of a3's uncommitted entry (read as committed)"
 # 10. once a3 commits its entry, a2's whole run reports the claim
 git add .critos/memory/a3 >/dev/null 2>&1 && git -c user.name=t -c user.email=t@example.invalid commit -qm "a3's entry" -- .critos/memory/a3 >/dev/null 2>&1
 l2c=$(lint --own a2 --all)

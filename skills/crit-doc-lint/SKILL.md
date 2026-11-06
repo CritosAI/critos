@@ -21,8 +21,16 @@ Run the mechanical documentation-hygiene checks and interpret the output.
 bash ~/.claude/skills/crit-doc-lint/doc-lint.sh --own a4    # as a4: the generators it calls read every other folder as committed
 ```
 
-An `--own` that names no memory folder — neither in the tree nor at HEAD — is answered with one
-line and exit 2, as are the generators' folder arguments: a control that cannot answer says so.
+**Who the run is.** A control reads a memory folder its runner does not own as committed
+(`contract-memory § 6`): the folder `--own a<N>` names is read from the working tree, by every
+check and by the generators the battery calls; every other memory folder is read as HEAD holds
+it — logs, archives, STATUS, notes — so a finding in a neighbour's folder is on committed state,
+that owner's debt at its own round, and nothing a neighbour has not committed reaches your run.
+Without a name every memory folder is read as committed: a verification's run, nobody's. The
+shared surfaces — the inbox and its archives, the registers, the documents, the code, the pinned
+tier, the detectors — stay the tree: there, who breaks finds at once. An `--own` that names no
+memory folder — neither in the tree nor at HEAD — is answered with one line and exit 2, as are
+the generators' folder arguments: a control that cannot answer says so.
 
 Two rules hold for every check. A check that **could not run says `SKIPPED`**, never `(none)`: a
 zero produced by a broken pipeline is not evidence. And every finding is a **flag for its owner,

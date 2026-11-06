@@ -269,7 +269,12 @@ runner owns.** The runner names them (`--own a<N>`): those are read from the wor
 other memory folder is read at HEAD and never written — an owner cannot commit another's
 uncommitted state through a generated file. Without a name every folder is read at HEAD and only
 the atlas is written: a verification's run, nobody's. An unchanged content is not written, so the
-stamp says when the law last changed, not when someone last looked.
+stamp says when the law last changed, not when someone last looked. **And a control reads a
+memory folder its runner does not own as committed** — the checks as the generators: the named
+folders from the tree, every other as HEAD holds it, without a name every memory folder as
+committed; a finding there is on committed state, that owner's debt at its own round. The shared
+surfaces — the inbox and its archives, the registers, the documents, the code, the pinned tier,
+the detectors — stay the tree, where who breaks finds at once.
 
 **And the discipline is general to every index a project keeps, the hand-written ones included: an
 index points at its target; it never describes it.** A description in an index is a copy that will
