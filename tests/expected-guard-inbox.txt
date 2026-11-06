@@ -1,22 +1,30 @@
 PASS         Edit: a new entry of mine on a clean tree
 PASS         Edit: another file
-ASK:CAREFUL  Edit: my entry while the tree carries a neighbour's uncommitted entry
-ASK:CAREFUL  Write: the whole file, my entry added beside the neighbour's
+ASK:CAREFUL  Edit: my entry while the tree carries a neighbour's uncommitted entry  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
+ASK:CAREFUL  Write: the whole file, my entry added beside the neighbour's  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
 PASS         Edit: the head only, beside the neighbour's entry (prose is not read)
-ASK:CAREFUL  Bash: a shell write beside the neighbour's entry (its hand unreadable)
+ASK:CAREFUL  Bash: a shell write beside the neighbour's entry (its hand unreadable)  [AGENT 4 (a new entry)]
 PASS         Bash: a read of the inbox beside the neighbour's entry
 PASS         Bash: git diff of the inbox beside the neighbour's entry
-ASK:CAREFUL  Bash: a shell write while only my own entry is uncommitted
+ASK:CAREFUL  Bash: a shell write while only my own entry is uncommitted  [AGENT 2 (a new entry)]
 PASS         commit by pathspec: one hand
-ASK:CAREFUL  commit by pathspec: two hands in the working tree
-ASK:CAREFUL  commit by pathspec with -C: two hands
+ASK:CAREFUL  commit by pathspec: two hands in the working tree  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
+ASK:CAREFUL  commit by pathspec with -C: two hands  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
 PASS         commit by pathspec of another file while the inbox carries two hands
 PASS         commit by pathspec: one flipped token (the recipient's hand)
-ASK:CAREFUL  commit by pathspec: a flip by the recipient and a new entry by another
+ASK:CAREFUL  commit by pathspec: a flip by the recipient and a new entry by another  [AGENT 2 (a new entry); AGENT 3 (a flipped token)]
 PASS         commit by pathspec: one sub-line
-ASK:CAREFUL  commit by pathspec: a sub-line of one agent and an entry of another
+ASK:CAREFUL  commit by pathspec: a sub-line of one agent and an entry of another  [AGENT 2 (a new entry); AGENT 7 (a sub-line)]
 PASS         commit from the index: my hunk alone staged, the neighbour's left in the tree
-ASK:CAREFUL  commit by pathspec after staging my hunk: the tree still carries two
-ASK:CAREFUL  commit from the index: my hunk staged beside another path
-ASK:CAREFUL  commit from the index: two hands staged
+ASK:CAREFUL  commit by pathspec after staging my hunk: the tree still carries two  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
+ASK:CAREFUL  commit from the index: my hunk staged beside another path  []
+ASK:CAREFUL  commit from the index: two hands staged  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
 PASS         commit from the index: nothing of the inbox staged
+PASS         identity: the committed inbox unchanged, two pairs of one head
+PASS         Edit: my entry on a clean tree whose HEAD holds two pairs of one head
+PASS         Bash: sed -n reads the inbox on a clean tree
+PASS         Bash: sed -n reads the inbox beside the neighbour's entry
+ASK:CAREFUL  Bash: sed -ni beside the neighbour's entry (a write in a cluster, its hand unreadable)  [AGENT 4 (a new entry)]
+PASS         commit by pathspec: one flip among two entries of one head (the recipient's hand, once)
+PASS         commit by pathspec: a third entry of the day after two are committed (the sender's hand)
+ASK:CAREFUL  commit by pathspec: a third entry of the day and a flip of the second (two hands)  [AGENT 4 (a new entry); AGENT 6 (a flipped token)]

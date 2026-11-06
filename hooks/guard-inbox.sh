@@ -6,10 +6,13 @@
 # `.critos/shared/HANDOFFS.md` — is written and committed only when its uncommitted diff is ONE
 # actor's, yours.
 #
-# The actors of a diff of the inbox, read from the entry grammar (contract-shared § 1):
+# The actors of a diff of the inbox, read from the entry grammar (contract-shared § 1) — every
+# CHANGED line to its hand, an unchanged line to nobody, whatever its head:
 #   a NEW entry        `- YYYY-MM-DD — AGENT N → …`      its sender, N
 #   a FLIPPED entry    the same head, another body        its recipient, M — only the recipient flips
 #   a NEW sub-line     `  - YYYY-MM-DD — AGENT K: …`     the agent it names, K
+# Entries share a head — a day, a sender, a recipient — as often as an agent writes twice in a
+# day: a line is matched whole first, and only a line absent from the old text is read by its head.
 #
 # Two edges, one predicate:
 #   the WRITE    Edit, Write, MultiEdit on the inbox, or a shell command that would write it: the
@@ -23,8 +26,9 @@
 #
 # It never denies: it returns permissionDecision "ask", so the user decides in context.
 # Declared bound: entry lines only — a carry of prose outside an entry (a head edit) is not seen,
-# and a flip by a non-recipient reads as the recipient's. Without node the payload is read
-# crudely and the guard errs toward asking, never toward passing.
+# and a flip by a non-recipient reads as the recipient's; a `sed` without -i is a read, as the
+# other text tools are, and a redirection behind a text tool is not seen. Without node the
+# payload is read crudely and the guard errs toward asking, never toward passing.
 set -uo pipefail
 
 payload=$(cat)
@@ -75,23 +79,33 @@ inbox_of() {
   [ -f "$r/$INBOX_REL" ] && printf '%s' "$r/$INBOX_REL"
 }
 # actors_between OLD NEW — the hands a change from OLD to NEW carries: `<N>\t<what>` per line.
-# OLD is read whole first; NEW is the main pass. The head of an entry is its text up to the first
-# colon (the participants); the same head with another body is a flip, and the recipient's.
+# OLD is read whole first; NEW is the main pass. An entry line found verbatim in OLD is unchanged,
+# whatever its head. A line absent from OLD is read by its head — its text up to the first colon,
+# the day and the participants, shared by every entry an agent writes to one recipient in a day:
+# per head, the appeared lines replace the vanished ones first (flips, the recipient's), and the
+# rest are new entries (the sender's). The identity (OLD = NEW) is nobody's hand.
 actors_between() {
   awk -v OLD="$1" '
     function agent(s) { if (match(s, /AGENT [0-9]+/)) return substr(s, RSTART + 6, RLENGTH - 6); return "" }
     function head(s,  i) { i = index(s, ":"); return (i ? substr(s, 1, i) : s) }
+    function recipient(s,  i) { i = index(s, "→"); return (i ? agent(substr(s, i)) : "") }
     BEGIN {
       E = "^- [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] — AGENT [0-9]+ → "
       S = "^[ \t]+- [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] — AGENT [0-9]+:"
-      while ((getline l < OLD) > 0) { if (l ~ E) old[head(l)] = l; else if (l ~ S) subold[l] = 1 }
+      while ((getline l < OLD) > 0) { if (l ~ E) oldline[l]++; else if (l ~ S) subold[l] = 1 }
       close(OLD)
     }
-    $0 ~ E { h = head($0)
-             if (!(h in old)) { a = agent($0); if (a != "") printf "%s\ta new entry\n", a }
-             else if (old[h] != $0) { i = index($0, "→"); if (i) { a = agent(substr($0, i)); if (a != "") printf "%s\ta flipped token\n", a } }
-             next }
+    $0 ~ E { if ($0 in oldline) { seen[$0]++; next }
+             appeared[head($0)]++; next }
     $0 ~ S { if (!($0 in subold)) { a = agent($0); if (a != "") printf "%s\ta sub-line\n", a } }
+    END {
+      for (l in oldline) { d = oldline[l] - ((l in seen) ? seen[l] : 0); if (d > 0) vanished[head(l)] += d }
+      for (h in appeared) {
+        f = (h in vanished) ? vanished[h] : 0; if (f > appeared[h]) f = appeared[h]
+        if (f > 0) { a = recipient(h); if (a != "") printf "%s\ta flipped token\n", a }
+        if (appeared[h] - f > 0) { a = agent(h); if (a != "") printf "%s\ta new entry\n", a }
+      }
+    }
   ' "$2" | sort -u
 }
 head_of() {   # $1 = inbox path -> the committed version into $tmp/head (empty when not in HEAD)
@@ -141,6 +155,10 @@ printf '%s\n' "$cmd" | sed -E 's/(\|\||&&|;|\||&)/\n/g' | while IFS= read -r seg
   seg=$(printf '%s' "$seg" | sed -E 's/^[[:space:](]+//')
   [ -n "$seg" ] || continue
   printf '%s' "$seg" | grep -Eq "^(${TEXT_TOOLS})([[:space:]]|\$)" && continue
+  # sed reads unless it edits in place: -i, --in-place, or an i in a cluster of short options
+  if printf '%s' "$seg" | grep -Eq '^sed([[:space:]]|$)'; then
+    printf '%s' "$seg" | grep -Eq '(^|[[:space:]])(-[a-zA-Z]*i|--in-place)' || continue
+  fi
   if printf '%s' "$seg" | grep -Eq '^git(\.exe)?([[:space:]]+(-C[[:space:]]+[^[:space:]]+|-c[[:space:]]+[^[:space:]]+|--no-pager|--git-dir=[^[:space:]]*|--work-tree=[^[:space:]]*|-P))*[[:space:]]+commit([[:space:]]|$)'; then
     head_of "$inbox"
     case "$seg" in

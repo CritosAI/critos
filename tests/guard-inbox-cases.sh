@@ -12,12 +12,13 @@ set -uo pipefail
 HOOK="$1"; REPO="$2"; L=".critos"
 INB="$L/shared/HANDOFFS.md"; A="$REPO/$INB"
 
-verdict() {   # $1 = label, stdin = the payload; the hook runs with cwd = $REPO
-  local out kind
+verdict() {   # $1 = label, stdin = the payload; the hook runs with cwd = $REPO; an ask names its hands
+  local out kind hands
   out=$(cd "$REPO" && bash "$HOOK" 2>/dev/null)
   if printf '%s' "$out" | grep -q '"permissionDecision":"ask"'; then
     kind=$(printf '%s' "$out" | sed -E 's/.*"permissionDecisionReason":"([A-Z]+).*/\1/')
-    printf 'ASK:%-8s %s\n' "$kind" "$1"
+    hands=$(printf '%s' "$out" | grep -oE 'AGENT [0-9]+ \([a-z, -]+\)' | sort -u | paste -sd';' - | sed 's/;/; /g')
+    printf 'ASK:%-8s %s  [%s]\n' "$kind" "$1" "$hands"
   else
     printf 'PASS         %s\n' "$1"
   fi
@@ -86,4 +87,33 @@ set_tree "$e4" "$e2"; ( cd "$REPO" && git add -- "$INB" )
 pay_bash 'git commit -m "x"' | verdict "commit from the index: two hands staged"
 restore
 pay_bash 'git commit -m "x"' | verdict "commit from the index: nothing of the inbox staged"
+# ---- the identity and the duplicate heads: a line first, its head second ------------------------
+# Entries share a head — a day, a sender, a recipient — as often as an agent writes twice in a
+# day. Two such pairs committed: the unchanged inbox is nobody's hand; a flip among them is the
+# recipient's, once; a third entry of the day after two are committed is the sender's; sed reads
+# unless -i. (At 1.2.0-rc.4 the reader keyed an entry by its head and an unchanged inbox read as
+# eight hands — a pilot's observation.)
+restore
+d1='- 2026-09-17 — AGENT 4 → AGENT 6: **[OPEN — the first of the day. Done when: read]** [docs/c.md]'
+d2='- 2026-09-17 — AGENT 4 → AGENT 6: **[OPEN — the second of the day. Done when: read]** [docs/d.md]'
+d3='- 2026-09-17 — AGENT 4 → AGENT 6: **[OPEN — the third of the day. Done when: read]** [docs/e.md]'
+g1='- 2026-09-18 — AGENT 2 → AGENT 3: **[OPEN — the first to three. Done when: read]** [docs/f.md]'
+g2='- 2026-09-18 — AGENT 2 → AGENT 3: **[OPEN — the second to three. Done when: read]** [docs/g.md]'
+set_tree "$g1" "$g2" "$d1" "$d2"
+( cd "$REPO" && git add -- "$INB" && git -c user.name=fixture -c user.email=fixture@example.invalid commit -qm "two pairs of one head" )
+committed=$(cd "$REPO" && git show "HEAD:$INB"); body=$(printf '%s\n' "$committed" | tail -n +2)
+pay_bash "git commit -m \"x\" -- $INB" | verdict "identity: the committed inbox unchanged, two pairs of one head"
+pay_edit "$A" '# inbox' "# inbox
+$e2" | verdict "Edit: my entry on a clean tree whose HEAD holds two pairs of one head"
+pay_bash "sed -n '1,5p' $INB" | verdict "Bash: sed -n reads the inbox on a clean tree"
+set_tree "$e4"
+pay_bash "sed -n '1,5p' $INB" | verdict "Bash: sed -n reads the inbox beside the neighbour's entry"
+pay_bash "sed -ni '1,5p' $INB" | verdict "Bash: sed -ni beside the neighbour's entry (a write in a cluster, its hand unreadable)"
+flip2=$(printf '%s\n' "$committed" | sed 's/\*\*\[OPEN — the second of the day\. Done when: read\]\*\*/**[ABSORBED 2026-09-17 by A6 — read]**/')
+printf '%s\n' "$flip2" > "$A"
+pay_bash "git commit -m \"x\" -- $INB" | verdict "commit by pathspec: one flip among two entries of one head (the recipient's hand, once)"
+{ printf '# inbox\n'; printf '%s\n' "$d3"; printf '%s\n' "$body"; } > "$A"
+pay_bash "git commit -m \"x\" -- $INB" | verdict "commit by pathspec: a third entry of the day after two are committed (the sender's hand)"
+{ printf '# inbox\n'; printf '%s\n' "$d3"; printf '%s\n' "$flip2" | tail -n +2; } > "$A"
+pay_bash "git commit -m \"x\" -- $INB" | verdict "commit by pathspec: a third entry of the day and a flip of the second (two hands)"
 restore
