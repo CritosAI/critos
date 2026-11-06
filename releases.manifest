@@ -134,3 +134,11 @@
 1.2.0-rc.5  53a1bd89858914f886e689d3c0ea144ea9c9b21c  VERSION
 1.2.0-rc.5  a5d5cbd8d23b56d13197f20ef52750a57f00c157  CHANGELOG.md
 1.2.0-rc.5  73a82f91793f0b7f89282ad38d09565bcd1129a7  README.md
+1.2.0-rc.6  4e6ac25375c582d3f1afedb77984daa819576cc9  contract-system.md
+1.2.0-rc.6  e055cacbfee2ad879d274590e3382c066f97dce9  contract-agent.md
+1.2.0-rc.6  c9fa93485d5661c70a7ae1a309518bb9d0cb8635  contract-session.md
+1.2.0-rc.6  de3f42421eaf6c4f8de5a53b8d8954146bec45c0  contract-memory.md
+1.2.0-rc.6  7ecb34a3cc4d81bb0adc3e7419fe490cd97f3677  contract-shared.md
+1.2.0-rc.6  d843a337a7fcd807938595713aae2346a7a0d0d9  VERSION
+1.2.0-rc.6  1083434eba557efbd1da6e0feaf07ece1ce113be  CHANGELOG.md
+1.2.0-rc.6  73a82f91793f0b7f89282ad38d09565bcd1129a7  README.md
