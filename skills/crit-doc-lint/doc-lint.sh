@@ -163,7 +163,8 @@ fi
 owned=()
 for o in ${own_names[@]+"${own_names[@]}"}; do owned+=(".critos/memory/$o"); done
 head_ok=1; git rev-parse -q --verify HEAD >/dev/null 2>&1 || head_ok=0
-head_root=$(mktemp -d); head_list=$(mktemp); trap 'rm -rf "$head_root" "$head_list"' EXIT
+head_root=$(mktemp -d); head_list=$(mktemp); links_all=$(mktemp); src_all=$(mktemp)
+trap 'rm -rf "$head_root" "$head_list" "$links_all" "$src_all"' EXIT
 [ "$head_ok" = 1 ] && git ls-tree -r --name-only HEAD -- '.critos/memory/' 2>/dev/null > "$head_list"
 in_me() {   # $1 = a path (or a folder): under one of the runner's memory folders?
   local t="$1" x
@@ -333,6 +334,23 @@ constellation() {
   done < "$f"
 }
 decode() { local u="$1"; u=${u//%20/ }; u=${u//%28/(}; u=${u//%29/)}; u=${u//%26/&}; u=${u//%27/\'}; printf '%s' "$u"; }
+# The same, without a process: DEC is the decoded url. And a path normalized as `realpath -m
+# --relative-to=.` prints it, without a process: RN. The links legs walk thousands of links on a
+# large tree, and a process per link was most of their cost ([1] [3] [16]).
+dec() { DEC="$1"; DEC=${DEC//%20/ }; DEC=${DEC//%28/(}; DEC=${DEC//%29/)}; DEC=${DEC//%26/&}; DEC=${DEC//%27/\'}; }
+relnorm() {
+  local IFS=/ seg; local -a p=() out=()
+  read -ra p <<< "$1"
+  for seg in "${p[@]}"; do
+    case "$seg" in
+      ''|.) ;;
+      ..) if [ "${#out[@]}" -gt 0 ] && [ "${out[-1]}" != ".." ]; then unset 'out[-1]'; else out+=(".."); fi ;;
+      *) out+=("$seg") ;;
+    esac
+  done
+  RN=""; for seg in ${out[@]+"${out[@]}"}; do RN="${RN:+$RN/}$seg"; done
+  [ -n "$RN" ] || RN=.
+}
 
 # ---- the id grammar -----------------------------------------------------------------------------
 # A decision or lesson id is `ADR-<scope>-NNN` or `L-<scope>-NNN` (contract-memory § 2, § 3). A
@@ -361,21 +379,31 @@ while IFS= read -r -d '' f; do
   [ "$scope" = runner ] && ! under_me "$f" && continue
   [ -e "$f" ] || echo "TRACKED-MISSING  $f  (tracked by git, absent on disk — an uncommitted deletion, yours or a neighbour's: commit it or restore it; every check reads the tree without it)"
 done < <(git ls-files -z 2>/dev/null)
+# The links of every markdown source, read ONCE for [1], [3] and [16] — file <TAB> url <TAB> t|u
+# (tracked, or untracked and read while its author is looking) — by one awk over the sources where
+# the run reads them, code spans and fenced blocks stripped: one process for the tree, not three
+# per file and one per link.
+{ tracked_md | while IFS= read -r f; do rd "$f"; printf '%s\t%s\tt\n' "$f" "$RD"; done
+  git ls-files --others --exclude-standard -- '*.md' 2>/dev/null | while IFS= read -r f; do mem_owned "$f" && [ -f "$f" ] && printf '%s\t%s\tu\n' "$f" "$f"; done; } | sort -u > "$src_all"
+awk -F'\t' '{ f = $1; p = $2; k = $3; fence = 0
+  while ((getline line < p) > 0) {
+    if (line ~ /^[[:space:]]*```/) { fence = !fence; continue }
+    if (fence) continue
+    gsub(/``[^`]*``/, "", line); gsub(/`[^`]*`/, "", line)
+    while (match(line, /\]\([^)#][^)]*\)/)) { print f "\t" substr(line, RSTART + 2, RLENGTH - 3) "\t" k; line = substr(line, RSTART + RLENGTH) } }
+  close(p) }' "$src_all" > "$links_all"
 any_broken=0
-while IFS= read -r f; do
+while IFS=$'\t' read -r f url k; do
+  [ -n "$f" ] || continue
   [ "$scope" = runner ] && ! under_me "$f" && continue
-  d=$(dirname "$f"); rd "$f"
-  while IFS= read -r url; do
-    [ -z "$url" ] && continue
-    case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
-    u=${url%%#*}; [ -z "$u" ] && continue
-    u=$(decode "$u")
-    if [ ! -e "$d/$u" ]; then
-      echo "BROKEN  $f  ->  $url"
-      any_broken=1
-    fi
-  done < <(links_of "$RD")
-done < <(md_link_sources)
+  case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
+  u=${url%%#*}; [ -z "$u" ] && continue
+  dec "$u"; d=${f%/*}; [ "$d" = "$f" ] && d=.
+  if [ ! -e "$d/$DEC" ]; then
+    echo "BROKEN  $f  ->  $url"
+    any_broken=1
+  fi
+done < "$links_all"
 [ "$any_broken" = 0 ] && echo "(none — all relative links resolve)"
 
 hdr 2 "top-level doc/*.md paths hard-coded in code (fragile breadcrumbs)"
@@ -408,27 +436,42 @@ exempt_re=""
 [ -f .claude/doc-lint-exempt ] && \
   exempt_re=$(grep -vE '^[[:space:]]*(#|$)' .claude/doc-lint-exempt | paste -sd'|' -)
 if [ "$scope" = runner ]; then skip_tree; else   # a tree-wide check: the graph is the whole tree's
-targets=$(mktemp)
-while IFS= read -r f; do
-  d=$(dirname "$f"); rd "$f"
-  while IFS= read -r url; do
-    [ -z "$url" ] && continue
-    case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
-    u=${url%%#*}; [ -z "$u" ] && continue
-    realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
-  done < <(links_of "$RD")
-done < <(tracked_md) | sort -u > "$targets"
-any_orphan=0
-while IFS= read -r f; do
-  case "$(basename "$f")" in
+# The targets every tracked source links (the reachability graph), and the targets the DISPATCHING
+# sources link (the second leg, below): one pass over the links table, no process per link.
+targets=$(mktemp); dispatch=$(mktemp); tg3=(); dp3=()
+while IFS=$'\t' read -r f url k; do
+  [ "$k" = t ] || continue
+  case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
+  u=${url%%#*}; [ -z "$u" ] && continue
+  dec "$u"; d=${f%/*}; [ "$d" = "$f" ] && d=.
+  relnorm "$d/$DEC"; tg3+=("$RN")
+  case "$f" in
+    */archive/*|archive/*|*-archive-*) continue ;;
+    .critos/memory/*/STATUS.md|.critos/memory/*/DECISIONS.md|.critos/memory/*/LESSONS-LEARNED.md|.critos/memory/*/IN-FORCE*.md) continue ;;
+    .critos/shared/HANDOFFS.md|.critos/shared/ROADMAP.md|MEMORY-INDEX.md|*/MEMORY-INDEX.md) continue ;;
+    .critos/system/*|*.tmpl) continue ;;
+  esac
+  case "${f##*/}" in README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|MEMORY.md) continue ;; esac
+  dp3+=("$RN")
+done < "$links_all"
+printf '%s\n' ${tg3[@]+"${tg3[@]}"} | grep '.' | sort -u > "$targets"
+printf '%s\n' ${dp3[@]+"${dp3[@]}"} | grep '.' | sort -u > "$dispatch"
+# the candidates — every tracked .md outside the conventions — against the graph, as sets: one
+# grep for the declared families, one comm for the difference, no process per file
+cand3=$(mktemp)
+tracked_md | while IFS= read -r f; do
+  case "${f##*/}" in
     README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|SKILL.md|MEMORY.md) continue ;;
     STATUS.md|DECISIONS.md|LESSONS-LEARNED.md|IN-FORCE.md|IN-FORCE.*.md) continue ;;
     HANDOFFS.md|ROADMAP.md|CONTRACTS.md|VERSION|CHANGELOG.md) continue ;;
   esac
   case "$f" in .critos/memory/*/notes/*) continue ;; esac
-  if [ -n "$exempt_re" ] && printf '%s\n' "$f" | grep -qE "$exempt_re"; then continue; fi
-  grep -qxF "$f" "$targets" || { echo "ORPHAN  $f  (no tracked .md points at it — register it in its index, or archive it)"; any_orphan=1; }
-done < <(tracked_md)
+  printf '%s\n' "$f"
+done | { if [ -n "$exempt_re" ]; then grep -vE "$exempt_re"; else cat; fi; } | sort -u > "$cand3"
+any_orphan=0
+while IFS= read -r f; do
+  [ -n "$f" ] && { echo "ORPHAN  $f  (no tracked .md points at it — register it in its index, or archive it)"; any_orphan=1; }
+done < <(comm -23 "$cand3" "$targets")
 [ "$any_orphan" = 0 ] && echo "(none — every doc is reachable from an index)"
 # The second leg, ORPHAN-BY-USE (WARN): linked is not read. A document earns its place when a
 # surface that DISPATCHES a reader names it — a SKILL.md, an agent definition, the roster, the
@@ -437,38 +480,24 @@ done < <(tracked_md)
 # archives, the inbox and the roadmap, the generated indexes. One hop, declared: a namer is not
 # itself checked for being read. The pinned tier and the project tier are read by the boot and
 # are not candidates; the same exemptions as ORPHAN apply.
-dispatch=$(mktemp)
-while IFS= read -r f; do
-  case "$f" in
-    */archive/*|archive/*|*-archive-*) continue ;;
-    .critos/memory/*/STATUS.md|.critos/memory/*/DECISIONS.md|.critos/memory/*/LESSONS-LEARNED.md|.critos/memory/*/IN-FORCE*.md) continue ;;
-    .critos/shared/HANDOFFS.md|.critos/shared/ROADMAP.md|MEMORY-INDEX.md|*/MEMORY-INDEX.md) continue ;;
-    .critos/system/*|*.tmpl) continue ;;
-  esac
-  case "$(basename "$f")" in README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|MEMORY.md) continue ;; esac
-  d=$(dirname "$f"); rd "$f"
-  while IFS= read -r url; do
-    [ -z "$url" ] && continue
-    case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
-    u=${url%%#*}; [ -z "$u" ] && continue
-    realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null
-  done < <(links_of "$RD")
-done < <(tracked_md) | sort -u > "$dispatch"
-any_byuse=0
-while IFS= read -r f; do
-  case "$(basename "$f")" in
+# (the dispatching targets were collected above, in the one pass over the links table)
+cand3b=$(mktemp)
+tracked_md | while IFS= read -r f; do
+  case "${f##*/}" in
     README.md|CLAUDE.md|CLAUDE.global.md|AGENTS.md|SKILL.md|MEMORY.md|MEMORY-INDEX.md) continue ;;
     STATUS.md|DECISIONS.md|LESSONS-LEARNED.md|IN-FORCE.md|IN-FORCE.*.md) continue ;;
     HANDOFFS.md|ROADMAP.md|CONTRACTS.md|VERSION|CHANGELOG.md) continue ;;
   esac
   case "$f" in .critos/memory/*/notes/*|.critos/system/*|.critos/project/*|*/archive/*|archive/*|*-archive-*) continue ;; esac
-  if [ -n "$exempt_re" ] && printf '%s\n' "$f" | grep -qE "$exempt_re"; then continue; fi
-  grep -qxF "$f" "$targets" || continue          # an ORPHAN already, above
-  grep -qxF "$f" "$dispatch" && continue
+  printf '%s\n' "$f"
+done | { if [ -n "$exempt_re" ]; then grep -vE "$exempt_re"; else cat; fi; } | sort -u > "$cand3b"
+any_byuse=0
+while IFS= read -r f; do   # reachable (not an ORPHAN above), and named by no dispatching surface
+  [ -n "$f" ] || continue
   echo "ORPHAN-BY-USE  $f  (linked only from an index or a history surface — no skill, definition, roster, contracts row or live document sends a reader here: a procedure an agent runs is a skill; a guide earns its place by a reader sent to it, or it is archived)"
   any_byuse=1
-done < <(tracked_md)
-rm -f "$targets" "$dispatch"
+done < <(comm -12 "$cand3b" "$targets" | comm -23 - "$dispatch")
+rm -f "$targets" "$dispatch" "$cand3" "$cand3b"
 [ "$any_byuse" = 0 ] && echo "(no document linked only from an index: every reachable doc has a reader sent to it)"
 fi   # [3]
 
@@ -914,30 +943,29 @@ fi
 hdr 16 "RETIRED-REF: a live doc whose link resolves to a ⚰ RETIRED file"
 # The link resolves, so [1] is green by design: the target exists and its own first line disowns
 # it. Not sources: files under archive/ or release/, and the signposts themselves.
+# the retired set — the first line of every tracked source, read by one awk — then one pass over
+# the links table with the set in memory: no process per file, none per link
 retired_set=$(mktemp)
-while IFS= read -r rf; do
-  rd "$rf"; head -1 "$RD" 2>/dev/null | grep -qE '⚰|RETIRED' && printf '%s\n' "$rf"
-done < <(tracked_md) > "$retired_set"
+awk -F'\t' '$3 == "t" { if ((getline line < $2) > 0 && line ~ /⚰|RETIRED/) print $1; close($2) }' "$src_all" | sort -u > "$retired_set"
 if [ ! -s "$retired_set" ]; then
   echo "(no ⚰ RETIRED files in this repo — skipped)"
   rm -f "$retired_set"
 else
   any_retref=0
-  while IFS= read -r f; do
+  declare -A ret16=(); while IFS= read -r r16; do [ -n "$r16" ] && ret16["$r16"]=1; done < "$retired_set"
+  while IFS=$'\t' read -r f url k; do
+    [ -n "$f" ] || continue
     case "$f" in */archive/*|archive/*|*/release/*|release/*) continue ;; esac
-    grep -qxF "$f" "$retired_set" && continue
+    [ -n "${ret16[$f]+x}" ] && continue
     [ "$scope" = runner ] && ! under_me "$f" && continue
-    d=$(dirname "$f"); rd "$f"
-    while IFS= read -r url; do
-      [ -z "$url" ] && continue
-      case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
-      u=${url%%#*}; [ -z "$u" ] && continue
-      tgt=$(realpath -m --relative-to=. "$d/$(decode "$u")" 2>/dev/null)
-      { [ -n "$tgt" ] && grep -qxF "$tgt" "$retired_set"; } || continue
-      echo "RETIRED-REF  $f  ->  $url  (the target's first line carries the retirement marker: a signpost, not a surface — repoint the reference, or mark the mention as history)"
-      any_retref=1
-    done < <(links_of "$RD")
-  done < <(md_link_sources)
+    case "$url" in http://*|https://*|mailto:*|\#*) continue ;; esac
+    u=${url%%#*}; [ -z "$u" ] && continue
+    dec "$u"; d=${f%/*}; [ "$d" = "$f" ] && d=.
+    relnorm "$d/$DEC"
+    [ -n "${ret16[$RN]+x}" ] || continue
+    echo "RETIRED-REF  $f  ->  $url  (the target's first line carries the retirement marker: a signpost, not a surface — repoint the reference, or mark the mention as history)"
+    any_retref=1
+  done < "$links_all"
   rm -f "$retired_set"
   [ "$any_retref" = 0 ] && echo "(none — no live doc leans on a retired file)"
 fi
@@ -1262,27 +1290,29 @@ elif [ -z "$ROSTER" ]; then
   echo "SKIPPED  the inbox has entries but there is no roster to read their actors against"
 else
   rostered23=$(grep -oE '^\|[[:space:]]*A[0-9]+[[:space:]]*\|' "$ROSTER" | grep -oE 'A[0-9]+' | sort -u)
-  any23=0
-  while IFS= read -r e23; do
-    head23=${e23%%:*}
-    case "$head23" in *→*) ;; *) continue ;; esac
-    date23=$(printf '%s' "$e23" | grep -oE '^- [0-9]{4}-[0-9]{2}-[0-9]{2}' | cut -c3-)
-    from23=$(printf '%s' "${head23%%→*}" | grep -oE 'AGENT [0-9]+' | head -1 | sed 's/^AGENT //')
-    [ "$scope" = runner ] && { is_me "$from23" || continue; }   # the entries the runner authored
-    if [ "$from23" = "0" ]; then
-      echo "INBOX-ACTOR  $date23 — sender AGENT 0: the reserved address of upstream RECEIVES a raise, it never writes here (contract-agent § 5); an answer from upstream is a release, or the user's words"
-      any23=1
-    elif [ -n "$from23" ] && ! printf '%s\n' "$rostered23" | grep -qxF "A$from23"; then
-      echo "INBOX-ACTOR  $date23 — sender AGENT $from23 is not in the roster: an entry no rostered actor authored is content with no owner (the membrane, contract-system § 0)"
-      any23=1
-    fi
-    for n23 in $(printf '%s' "${head23#*→}" | grep -oE 'AGENT [0-9]+' | sed 's/^AGENT //' | sort -u); do
-      [ "$n23" = 0 ] && continue
-      printf '%s\n' "$rostered23" | grep -qxF "A$n23" || { echo "INBOX-ACTOR  $date23 — recipient AGENT $n23 is not in the roster: a dead address, owed by nobody"; any23=1; }
-    done
-  done < <(grep -E '^- [0-9]{4}-[0-9]{2}-[0-9]{2}' "$INBOX")
-  [ "$any23" = 0 ] && echo "(none — every live entry's sender is a rostered actor, every recipient rostered or AGENT 0)"
-  [ "$any23" = 1 ] && echo "               → a settled entry listed above is history: rotate it to the archive (A1); a live one is content with no owner"
+  # one pass over the inbox: the rostered set and the runner's numbers in memory, no process per entry
+  out23=$(awk -v rostered="$(printf '%s ' $rostered23)" -v me="${me_nums[*]:-}" -v scope="$scope" '
+    BEGIN { n = split(rostered, r, " "); for (i = 1; i <= n; i++) if (r[i] != "") R[r[i]] = 1
+            m = split(me, mm, " "); for (i = 1; i <= m; i++) if (mm[i] != "") M[mm[i]] = 1 }
+    /^- [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ {
+      c = index($0, ":"); if (c == 0) next
+      head = substr($0, 1, c - 1); a = index(head, "→"); if (a == 0) next
+      date = substr($0, 3, 10); fromp = substr(head, 1, a - 1); top = substr(head, a + length("→"))
+      from = ""; if (match(fromp, /AGENT [0-9]+/)) from = substr(fromp, RSTART + 6, RLENGTH - 6)
+      if (scope == "runner" && !(from in M)) next   # the entries the runner authored
+      if (from == "0") print "INBOX-ACTOR  " date " — sender AGENT 0: the reserved address of upstream RECEIVES a raise, it never writes here (contract-agent § 5); an answer from upstream is a release, or the user'"'"'s words"
+      else if (from != "" && !(("A" from) in R)) print "INBOX-ACTOR  " date " — sender AGENT " from " is not in the roster: an entry no rostered actor authored is content with no owner (the membrane, contract-system § 0)"
+      split("", seen)
+      while (match(top, /AGENT [0-9]+/)) {
+        nn = substr(top, RSTART + 6, RLENGTH - 6); top = substr(top, RSTART + RLENGTH)
+        if (nn == "0" || (nn in seen)) continue
+        seen[nn] = 1
+        if (!(("A" nn) in R)) print "INBOX-ACTOR  " date " — recipient AGENT " nn " is not in the roster: a dead address, owed by nobody" } }
+  ' "$INBOX")
+  if [ -n "$out23" ]; then
+    printf '%s\n' "$out23"
+    echo "               → a settled entry listed above is history: rotate it to the archive (A1); a live one is content with no owner"
+  else echo "(none — every live entry's sender is a rostered actor, every recipient rostered or AGENT 0)"; fi
 fi
 
 hdr 24 "FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a register or their archives"
@@ -1376,6 +1406,9 @@ if [ ! -f "$inforce" ]; then
   echo "SKIPPED — the in-force control is not beside this one ($inforce): the Carries blocks cannot be read (NOT a clean none)"
 else
   lines26=$(mktemp); ptr26=$(mktemp); heads26=$(mktemp); two26=$(mktemp); out26=$(mktemp)
+  born26=$(born 1.2.0); mydirs26=$(printf '%s\n' ${owned[@]+"${owned[@]}"})
+  # inme(p): under one of the runner's folders — the awk twin of in_me, for the one-pass legs
+  awk_inme='function inme(p,  i) { for (i = 1; i <= nmd; i++) if (MD[i] != "" && (index(p, MD[i] "/") == 1 || p == MD[i])) return 1; return 0 }'
   err26=$(bash "$inforce" ${own_args[@]+"${own_args[@]}"} --lines 2>&1 > "$lines26"); rc26=$?
   if [ "$rc26" != 0 ]; then echo "SKIPPED — the in-force control could not read the Carries lines (exit $rc26: ${err26:-no message}) — NOT a clean none"; rm -f "$lines26" "$ptr26" "$heads26" "$two26" "$out26"; else
   # the pointers of every live log, per folder: folder <TAB> id <TAB> settled|consolidated <TAB> log:line
@@ -1391,27 +1424,26 @@ else
     rd "$af"; [ -f "$RD" ] || continue
     awk -v IDC="$id_core" -v ROT="$rot_re" -v a="$af" -v d="${af%/archive/*}" '$0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print d "\t" substr($0, RSTART, RLENGTH) "\t" a }' "$RD"
   done < <(mem_ls_all '.critos/memory/a*/archive/*.md') | sort -u > "$heads26"
-  # NO-CARRIER, per live entry
+  # NO-CARRIER, per live entry: one awk per log, the log's own lines in memory
   while IFS= read -r lg; do
     rd "$lg"; [ -f "$RD" ] || continue
     case "$lg" in *-archive-*|*/archive/*) continue ;; esac
-    while IFS= read -r ent; do
-      [ -n "$ent" ] || continue
-      ln26=${ent%%:*}; id26=${ent#*:}
-      awk -F'\t' -v f="$lg" -v e="$id26" '$1 == f && $3 == e && $4 == e && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . \
-        || echo "NO-CARRIER  $lg:$ln26  $id26 — a live entry carries at least its own rule: one line under **Carries.** (binds: <lane>, or settled: <state>)$(born 1.2.0)" >> "$out26"
-    done < <(awk -v IDC="$id_core" -v ROT="$rot_re" '/^[[:space:]]*```/{f=!f;next} !f && $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); print NR ":" substr($0, RSTART, RLENGTH) }' "$RD")
+    awk -F'\t' -v IDC="$id_core" -v ROT="$rot_re" -v f="$lg" -v born="$born26" '
+      FILENAME == ARGV[1] { if ($1 == f && $3 == $4 && ($5 == "binds" || $5 == "settled")) c[$3] = 1; next }
+      /^[[:space:]]*```/ { fence = !fence; next }
+      fence { next }
+      $0 ~ "^#{1,4}[[:space:]]*`?(" IDC ")" && $0 !~ ROT { match($0, IDC); id = substr($0, RSTART, RLENGTH)
+        if (!(id in c)) print "NO-CARRIER  " f ":" FNR "  " id " — a live entry carries at least its own rule: one line under **Carries.** (binds: <lane>, or settled: <state>)" born }
+    ' "$lines26" "$RD" >> "$out26"
   done < <(logs12)
   # (a heading in the stub's form is a pointer in the wrong shape — [25]'s finding, not an entry)
-  # CARRIES-FORM, per line read
-  while IFS=$'\t' read -r f26 l26 e26 id26 k26 v26 t26 d26 r26; do
-    [ "$scope" = runner ] && ! in_me "$f26" && continue
-    case "$k26" in
-      bad) echo "CARRIES-FORM  $f26:$l26  $(printf '%s' "$v26" | cut -c1-80) — the shape: - \`<id>\` · <rule> · binds: <lane>[ · tier N[ — <detector>]]  or  · settled: <state>[ — <why>]$(born 1.2.0)" >> "$out26" ;;
-      settled) printf '%s' "$v26" | grep -Eq "^(done|superseded by \`?($id_core)\`?|consolidated in \`?($id_core)\`?)( — .*)?$" \
-                 || echo "CARRIES-FORM  $f26:$l26  settled: $(printf '%s' "$v26" | cut -c1-60) — the state is one of done · superseded by <id> · consolidated in <id>$(born 1.2.0)" >> "$out26" ;;
-    esac
-  done < "$lines26"
+  # CARRIES-FORM, per line read: one pass
+  awk -F'\t' -v IDC="$id_core" -v scope="$scope" -v mine="$mydirs26" -v born="$born26" "$awk_inme"'
+    BEGIN { nmd = split(mine, MD, "\n"); ST = "^(done|superseded by `?(" IDC ")`?|consolidated in `?(" IDC ")`?)( — .*)?$" }
+    scope == "runner" && !inme($1) { next }
+    $5 == "bad" { print "CARRIES-FORM  " $1 ":" $2 "  " substr($6, 1, 80) " — the shape: - `<id>` · <rule> · binds: <lane>[ · tier N[ — <detector>]]  or  · settled: <state>[ — <why>]" born; next }
+    $5 == "settled" && $6 !~ ST { print "CARRIES-FORM  " $1 ":" $2 "  settled: " substr($6, 1, 60) " — the state is one of done · superseded by <id> · consolidated in <id>" born }
+  ' "$lines26" >> "$out26"
   # UNTIERED: a rule in force declares its tier — on its line, or by its entry's Enforcement:
   # field; a binds: line with neither prints `tier ?` in the index and is a finding on the line
   awk -F'\t' '$5 == "binds" && $7 == "?" { print $1 ":" $2 "\t" $4 }' "$lines26" \
@@ -1455,11 +1487,11 @@ else
         done
     done < <(grep -nE '·[[:space:]]*home:' .critos/project/id-families | grep -vE '^[0-9]+:[[:space:]]*#')
   fi
-  while IFS=$'\t' read -r pf pid pst ploc; do
-    [ -n "$pid" ] || continue
-    awk -F'\t' -v d="$pf" -v i="$pid" '$1 == d && $2 == i' "$heads26" | grep -q . && continue
-    echo "TWO-HOMES  $ploc  $pid — pointed from $pf/, whose archive does not head it: an id is pointed from its home only, the folder whose archive heads it (the mark is the owner's; a split's new owner carries what it inherits in its founding block, never by pointer)$(born 1.2.0)" >> "$out26"
-  done < "$ptr26"
+  # a pointer outside its home: one join of the pointers against the archives' headings
+  awk -F'\t' -v born="$born26" '
+    FILENAME == ARGV[1] { h[$1 "\t" $2] = 1; next }
+    $2 != "" && !(($1 "\t" $2) in h) { print "TWO-HOMES  " $4 "  " $2 " — pointed from " $1 "/, whose archive does not head it: an id is pointed from its home only, the folder whose archive heads it (the mark is the owner'"'"'s; a split'"'"'s new owner carries what it inherits in its founding block, never by pointer)" born }
+  ' "$heads26" "$ptr26" >> "$out26"
   # HEADED-TWICE: one id, one heading inside its home. The headings of a folder's live logs and
   # archives together, a heading in the stub's form excluded: an id headed more than once in one
   # folder is a finding naming the places. An increment written as a heading (ADDENDUM, STEP n,
@@ -1485,25 +1517,27 @@ else
   # split's founding block lives elsewhere); no pointer needs a Carries line of a live entry.
   # The finding lands on the pointer that demands, at its line — on the archive when no pointer
   # exists. An id with two homes is reported above, not here.
-  while IFS=$'\t' read -r hf hid ha; do
-    [ -n "$hid" ] || continue
-    [ "$scope" = runner ] && ! in_me "$hf" && continue
-    awk -F'\t' -v i="$hid" '$1 == i' "$two26" | grep -q . && continue
-    st26=$(awk -F'\t' -v d="$hf" -v i="$hid" '$1 == d && $2 == i {print $3; exit}' "$ptr26")
-    loc26=$(awk -F'\t' -v d="$hf" -v i="$hid" '$1 == d && $2 == i {print $4; exit}' "$ptr26")
-    [ "$st26" = settled ] && continue
-    if [ "$st26" = consolidated ]; then
-      awk -F'\t' -v i="$hid" '$4 == i && $5 == "binds"' "$lines26" | grep -q . && continue
-      echo "UNCARRIED  $loc26  $hid — its pointer says consolidated, and no live entry carries a binds: line for it (headed in $ha)$(born 1.2.0)" >> "$out26"; continue
-    fi
-    awk -F'\t' -v i="$hid" '$4 == i && ($5 == "binds" || $5 == "settled")' "$lines26" | grep -q . && continue
-    echo "UNCARRIED  $hid — headed in $ha and carried by nothing live: no pointer in $hf/, no Carries line (nothing leaves the live log without a live carrier)$(born 1.2.0)" >> "$out26"
-  done < "$heads26"
+  # one join: the two-homes ids, the pointers, the lines, then every archived heading
+  awk -F'\t' -v scope="$scope" -v mine="$mydirs26" -v born="$born26" "$awk_inme"'
+    BEGIN { nmd = split(mine, MD, "\n") }
+    FILENAME == ARGV[1] { if ($1 != "") two[$1] = 1; next }
+    FILENAME == ARGV[2] { st[$1 "\t" $2] = $3; loc[$1 "\t" $2] = $4; next }
+    FILENAME == ARGV[3] { if ($5 == "binds") b[$4] = 1; if ($5 == "binds" || $5 == "settled") any[$4] = 1; next }
+    { hf = $1; hid = $2; ha = $3
+      if (hid == "") next
+      if (scope == "runner" && !inme(hf)) next
+      if (hid in two) next
+      k = hf "\t" hid; s = st[k]
+      if (s == "settled") next
+      if (s == "consolidated") { if (hid in b) next; print "UNCARRIED  " loc[k] "  " hid " — its pointer says consolidated, and no live entry carries a binds: line for it (headed in " ha ")" born; next }
+      if (hid in any) next
+      print "UNCARRIED  " hid " — headed in " ha " and carried by nothing live: no pointer in " hf "/, no Carries line (nothing leaves the live log without a live carrier)" born }
+  ' "$two26" "$ptr26" "$lines26" "$heads26" >> "$out26"
   # CARRIER-CONFLICT: in force and settled at once — a binds: line against a settled: line, or
   # against the home's pointer in state done or superseded (a consolidated pointer is not
   # settled; a pointer outside its home is TWO-HOMES, not a disposition)
   { awk -F'\t' '$4 != "" && ($5 == "binds" || $5 == "settled") {print $4 "\t" $5}' "$lines26"
-    awk -F'\t' 'NR == FNR { home[$1 "\t" $2] = 1; next } $3 == "settled" && (($1 "\t" $2) in home) { print $2 "\tsettled" }' "$heads26" "$ptr26"; } | sort -u \
+    awk -F'\t' 'FILENAME == ARGV[1] { home[$1 "\t" $2] = 1; next } $3 == "settled" && (($1 "\t" $2) in home) { print $2 "\tsettled" }' "$heads26" "$ptr26"; } | sort -u \
     | awk -F'\t' '{ s[$1] = s[$1] $2 ";" } END { for (i in s) if (index(s[i], "binds;") && index(s[i], "settled;")) print i }' | sort \
     | while IFS= read -r cid; do [ "$scope" = runner ] && ! [[ "$cid" =~ $me_id_re ]] && continue; echo "CARRIER-CONFLICT  $cid — carried as in force (binds:) and as settled (a pointer, or a settled: line) at once: one disposition per id$(born 1.2.0)" >> "$out26"; done
   if [ -s "$out26" ]; then cat "$out26"; else echo "(none — every live entry carries its own rule, every archived id has one home and a live carrier, no id is carried two ways)"; fi
@@ -1595,17 +1629,19 @@ done < <(logs12) > "$claims28"
 # the line claims, read as [26] reads them: with the owner — the runner's lines from the tree, every
 # other folder as committed; a bare call read every folder at HEAD and missed the runner's own round
 [ -f "$inforce" ] && bash "$inforce" ${own_args[@]+"${own_args[@]}"} --lines 2>/dev/null | awk -F'\t' '$5 == "binds" && $7 == "2" { printf "%s\t%s\t%s\t%s\n", $1, $2, $4, $8 }' >> "$claims28"
-while IFS=$'\t' read -r f28 l28 id28 det28; do
-  [ -n "$id28" ] || continue
-  [ "$scope" = runner ] && ! in_me "$f28" && continue
-  hit=0
-  for leg in "${product_legs[@]}"; do
-    printf '%s' "$det28" | grep -qwF -- "$leg" && { hit=1; break; }
-  done
-  [ "$hit" = 1 ] && continue
-  awk -F'\t' -v i="$id28" '$2 == i' "$heads28" | grep -q . && continue
-  echo "TIER-2-UNDETECTED  $f28:$l28  $id28 — claims tier 2 and names no detector that exists: a leg of the product by its stable name, whole, or a file under .critos/checks/a<N>/ whose head says Enforces: $id28 (a word of a name is not the name; a number alone is not a name)$(born 1.2.0)" >> "$out28"
-done < "$claims28"
+# every claim against the legs and the heads in one pass: a leg is matched whole, as `grep -w` reads
+# it — at a word's boundary on both sides, a word being letters, digits and the underscore
+awk -F'\t' -v legs="$(printf '%s\n' "${product_legs[@]}")" -v scope="$scope" -v mine="$(printf '%s\n' ${owned[@]+"${owned[@]}"})" -v born="$(born 1.2.0)" '
+  function inme(p,  i) { for (i = 1; i <= nmd; i++) if (MD[i] != "" && (index(p, MD[i] "/") == 1 || p == MD[i])) return 1; return 0 }
+  BEGIN { nmd = split(mine, MD, "\n"); nl = split(legs, L, "\n")
+          for (i = 1; i <= nl; i++) if (L[i] != "") { e = L[i]; gsub(/[][\\.^$*+?(){}|]/, "\\\\&", e); LR[i] = "(^|[^A-Za-z0-9_])" e "([^A-Za-z0-9_]|$)" } }
+  FILENAME == ARGV[1] { if ($2 != "") H[$2] = 1; next }
+  { if ($3 == "") next
+    if (scope == "runner" && !inme($1)) next
+    for (i = 1; i <= nl; i++) if (LR[i] != "" && $4 ~ LR[i]) next
+    if ($3 in H) next
+    print "TIER-2-UNDETECTED  " $1 ":" $2 "  " $3 " — claims tier 2 and names no detector that exists: a leg of the product by its stable name, whole, or a file under .critos/checks/a<N>/ whose head says Enforces: " $3 " (a word of a name is not the name; a number alone is not a name)" born }
+' "$heads28" "$claims28" >> "$out28"
 if [ -s "$out28" ]; then sort -u "$out28"; else echo "(none — every tier-2 claim resolves to a detector, every detector in its folder with its head)"; fi
 rm -f "$heads28" "$out28" "$claims28"
 [ -n "$t_n" ] && echo "(elapsed [$t_n]: $(( $(date +%s) - t_prev ))s)"

@@ -55,6 +55,9 @@ The output opens with the layout it found and a **provenance stamp** —
 output. `+dirty` means the checkout the controls run from has uncommitted changes, so the output
 may match no release.
 
+The links legs read every markdown source once, into one table; the carrier, actor and
+detector checks join their inputs in one pass each — no process per link, per entry or per
+claim, so the cost of a run is proportional to the tree, not to the tree times its links.
 Every check's block ends with its elapsed seconds — `(elapsed [n]: 412s)` — and the run ends
 with the total, the scope and the stamp again: `### doc-lint done — 28 checks in 1830s · scope:
 whole · controls: CritOS@…`. A slow run names the check that costs, not the run.
