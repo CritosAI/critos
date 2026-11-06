@@ -37,6 +37,10 @@
 #  11. the scope    the owner's name chooses: as a2 the battery reads a2's scope — the tally of
 #                    tests/expected-findings-own-a2.txt, the eleven tree-wide checks skipped and
 #                    said, the stamp naming the scope; with --all the whole (tests/scope.sh).
+#  12. the constellation  the runner's name goes where it can own something: a satellite with a
+#                    memory layer reads the runner's scope, one without is read as nobody's,
+#                    every check whole, and the parent's exit is the last child's
+#                    (tests/constellation.sh).
 # To change an expectation on purpose: run with --update, review the diff, commit it WITH the
 # change that caused it.
 set -uo pipefail
@@ -99,4 +103,5 @@ bash "$here/version-cited.sh" || fail=1
 bash "$here/own.sh" || fail=1
 bash "$here/readers.sh" || fail=1
 if [ "$update" = 1 ]; then bash "$here/scope.sh" --update || fail=1; else bash "$here/scope.sh" || fail=1; fi
+bash "$here/constellation.sh" || fail=1
 exit $fail

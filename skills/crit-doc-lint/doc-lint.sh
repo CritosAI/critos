@@ -1666,6 +1666,20 @@ if [ -z "${DOC_LINT_NO_CONSTELLATION:-}" ]; then
       echo "(registered in .claude/repos but MISSING on disk: $r)"
       continue
     fi
-    (cd "$r" && DOC_LINT_NO_CONSTELLATION=1 DOC_LINT_CHILD=1 bash "$self_abs" ${own_args[@]+"${own_args[@]}"} $([ "$all" = 1 ] && echo --all))
+    # The runner's name goes where it can own something: a satellite with a memory layer, in the
+    # tree or at HEAD. One without is read as nobody's — every check whole, the repo-wide ones all
+    # there are — and the line below says so. The child's --own validation stays strict: a name
+    # given by hand in a repo with no layer, or naming a folder a satellite with a layer does not
+    # hold, is its exit 2. (At 1.2.0-rc.4 the name went through as given, and every close in a
+    # constellation ended in that exit 2 on a satellite with no layer — a pilot's observation.)
+    child_own=()
+    if [ "${#own_names[@]}" -gt 0 ]; then
+      if [ -d "$r/.critos/memory" ] || [ -n "$(git -C "$r" ls-tree -d --name-only HEAD -- .critos/memory 2>/dev/null | head -1)" ]; then
+        child_own=("${own_args[@]}")
+      else
+        echo "(no memory layer in this repo: $(printf -- '--own %s ' "${own_names[@]}")dropped — the run is nobody's, every check whole)"
+      fi
+    fi
+    (cd "$r" && DOC_LINT_NO_CONSTELLATION=1 DOC_LINT_CHILD=1 bash "$self_abs" ${child_own[@]+"${child_own[@]}"} $([ "$all" = 1 ] && echo --all))
   done < <(constellation "$root")
 fi

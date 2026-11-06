@@ -284,7 +284,11 @@ whole · controls: CritOS@…`. A slow run names the check that costs, not the r
 
 **Several repos.** If the repo registers others in **`.claude/repos`** (one path per line,
 relative to the repo root; `#` comments), the whole battery is repeated in each — read-only, one
-level: a registered repo's own registry is not followed.
+level: a registered repo's own registry is not followed. The runner's name goes where it can own
+something: `--own a<N>` is passed to a satellite with a memory layer (`.critos/memory/` in the tree
+or at HEAD); one without is read as nobody's — every check whole, the repo-wide ones all there are —
+and the parent says so in one line; a satellite with a layer but not that folder is the exit 2 of a
+name that names no folder.
 
 **Severity at birth** (`contract-system § 6`). A leg a release introduces reports as a **WARN**
 in a project pinned at that release — its line ends *(WARN — new in X.Y.Z: a finding from the
