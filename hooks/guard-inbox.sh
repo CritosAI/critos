@@ -116,6 +116,30 @@ describe() {   # stdin: `<N>\t<what>` lines -> "AGENT N (what), AGENT M (what)"
   awk -F'\t' '{ n[$1] = (n[$1] ? n[$1] ", " : "") $2 } END { s = ""; for (k in n) s = s (s ? "; " : "") "AGENT " k " (" n[k] ")"; print s }'
 }
 count_agents() { cut -f1 | sort -u | grep -c '.'; }
+# split_segments — stdin: the command; stdout: one segment per line, cut at ; | & && || and at a
+# newline OUTSIDE quotes only. A quoted run keeps its text and its quotes, so a commit message
+# holding a separator does not cut, and the pathspec read below is the same, quoted or not; a
+# quoted run spanning lines is joined with a space. A backslash escapes the next character.
+split_segments() {
+  awk '
+    { s = $0; n = length(s)
+      for (i = 1; i <= n; i++) { c = substr(s, i, 1)
+        if (q == "") {
+          if (c == "\"" || c == "\047") { q = c; out = out c }
+          else if (c == "\\") { out = out c substr(s, i + 1, 1); i++ }
+          else if (c == ";" || c == "|" || c == "&") { print out; out = "" }
+          else out = out c
+        } else {
+          out = out c
+          if (c == q) q = ""
+          else if (q == "\"" && c == "\\") { out = out substr(s, i + 1, 1); i++ }
+        }
+      }
+      if (q == "") { print out; out = "" } else out = out " "
+    }
+    END { if (out != "") print out }
+  '
+}
 
 # ---- the write edge: the editing tools ----------------------------------------------------------
 case "$tool" in
@@ -151,7 +175,7 @@ inbox=$(inbox_of "${cdir:-.}"); [ -n "$inbox" ] || exit 0
 root=$(dirname "$(dirname "$(dirname "$inbox")")")
 
 TEXT_TOOLS='grep|rg|ag|egrep|fgrep|echo|printf|cat|less|head|tail|awk|Select-String|findstr|Get-Content|diff|wc'
-printf '%s\n' "$cmd" | sed -E 's/(\|\||&&|;|\||&)/\n/g' | while IFS= read -r seg; do
+printf '%s\n' "$cmd" | split_segments | while IFS= read -r seg; do
   seg=$(printf '%s' "$seg" | sed -E 's/^[[:space:](]+//')
   [ -n "$seg" ] || continue
   printf '%s' "$seg" | grep -Eq "^(${TEXT_TOOLS})([[:space:]]|\$)" && continue

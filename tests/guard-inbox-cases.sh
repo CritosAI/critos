@@ -58,6 +58,12 @@ pay_bash "sed -i '1a $e4' $INB" | verdict "Bash: a shell write while only my own
 # ---- the commit edge: by pathspec (the working tree) ---------------------------------------------
 set_tree "$e2"
 pay_bash "git commit -m \"x\" -- $INB" | verdict "commit by pathspec: one hand"
+# a separator inside the quoted message is data: the command is split outside its quotes
+pay_bash "git commit -m \"a2: inbox - one hand; a semicolon | a pipe & an ampersand\" -- $INB" | verdict "commit by pathspec: one hand, the message holds ; | and & in double quotes"
+pay_bash "git commit -m 'one hand; a semicolon in single quotes' -- $INB" | verdict "commit by pathspec: one hand, a ; in single quotes"
+pay_bash "git diff --stat -- $INB && git commit -m \"one hand; chained after a read\" -- $INB" | verdict "commit by pathspec: one hand, chained after a read, a ; in the message"
+set_tree "$e4" "$e2"
+pay_bash "git commit -m \"two hands; still two\" -- $INB" | verdict "commit by pathspec: two hands, a ; in the message (still asks)"
 set_tree "$e4" "$e2"
 pay_bash "git commit -m \"x\" -- $INB" | verdict "commit by pathspec: two hands in the working tree"
 pay_bash "git -C \"$REPO\" commit -m \"x\" -- $INB" | verdict "commit by pathspec with -C: two hands"

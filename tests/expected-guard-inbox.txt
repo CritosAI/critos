@@ -8,6 +8,10 @@ PASS         Bash: a read of the inbox beside the neighbour's entry
 PASS         Bash: git diff of the inbox beside the neighbour's entry
 ASK:CAREFUL  Bash: a shell write while only my own entry is uncommitted  [AGENT 2 (a new entry)]
 PASS         commit by pathspec: one hand
+PASS         commit by pathspec: one hand, the message holds ; | and & in double quotes
+PASS         commit by pathspec: one hand, a ; in single quotes
+PASS         commit by pathspec: one hand, chained after a read, a ; in the message
+ASK:CAREFUL  commit by pathspec: two hands, a ; in the message (still asks)  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
 ASK:CAREFUL  commit by pathspec: two hands in the working tree  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
 ASK:CAREFUL  commit by pathspec with -C: two hands  [AGENT 2 (a new entry); AGENT 4 (a new entry)]
 PASS         commit by pathspec of another file while the inbox carries two hands
