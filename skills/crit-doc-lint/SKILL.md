@@ -221,12 +221,17 @@ whole · controls: CritOS@…`. A slow run names the check that costs, not the r
     `date -u` at the moment of stamping; the harness announces the machine's LOCAL day, which
     after 22:00 UTC is tomorrow; the registers sort by it). The positions: an inbox entry's
     head (`- YYYY-MM-DD —`), a lifecycle token's date (`[ABSORBED YYYY-MM-DD`,
-    `[PARKED-OWNED YYYY-MM-DD`), every date on a heading that carries an id, every date on a
+    `[PARKED-OWNED YYYY-MM-DD`), the ONE stamp of a heading that carries an id, read in its
+    place — right after the id, inside a parenthesis (`## L-… (…, YYYY-MM-DD) —`) or after an em
+    dash (`## L-… — YYYY-MM-DD —`); else after `— ROTATED` (a stub of the old pointer form); else
+    trailing at the line's end (`… — YYYY-MM-DD`) — the first date after the colon of a
     `Last updated:` line, a register verdict (`done|closed|parked|superseded|re-verified
     YYYY-MM-DD`), an aging mark (`**Marked`, `**Rotated`, `**FACT-FLIP YYYY-MM-DD`). **Dates in
-    prose are not read**: a live project carries the future on purpose — expiries, schedules,
-    deadlines, reminders — and a check that read every date token cried wolf thirty times on
-    zero wrong stamps. Bound, declared: a wrong stamp written anywhere else is not seen.
+    prose are not read, nor a date in a heading's title**: a live project carries the future on
+    purpose — expiries, schedules, deadlines, reminders, the day an event in a title names — and
+    a check that read every date token cried wolf thirty times on zero wrong stamps, then every
+    date on a heading four times on zero. Bound, declared: a wrong stamp written anywhere else
+    is not seen.
 25. **POINTER-FORM** — a rotation pointer in a live memory log outside its one shape
     (`contract-memory § 2`): `- <id> — ROTATED YYYY-MM-DD to archive/<file> (<state>)`, the id
     in backticks, the state one of `done` · `superseded by <id>` · `consolidated in <id>`. A

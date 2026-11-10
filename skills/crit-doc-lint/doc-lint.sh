@@ -52,9 +52,10 @@
 #                         upstream receives, it never writes), or whose recipient is neither
 #                         rostered nor AGENT 0 — settled entries included
 #  [24] FUTURE-DATE       a stamp later than today (UTC) in a STAMP POSITION of a memory log, a
-#                         STATUS, a register or their archives (an entry head, a token, an id
-#                         heading, Last updated, a verdict, an aging mark) — dates in prose are
-#                         plans and are not read
+#                         STATUS, a register or their archives (an entry head, a token, the stamp
+#                         of an id heading read in its place, the first date of Last updated, a
+#                         verdict, an aging mark) — a date in prose or in a heading's title is a
+#                         word, not a stamp, and is not read
 #  [25] POINTER-FORM      a rotation pointer in a live log outside its one shape, or with a state
 #                         outside the three (done · superseded by <id> · consolidated in <id>) —
 #                         a list line or a heading carrying the word; prose is not read;
@@ -1324,11 +1325,16 @@ hdr 24 "FUTURE-DATE: a stamp later than today (UTC) in a memory log, a STATUS, a
 # read every date token cried wolf thirty times on zero wrong stamps. The positions, declared:
 #   - an inbox entry's head            `- YYYY-MM-DD —`
 #   - a lifecycle token's date         `[ABSORBED YYYY-MM-DD` · `[PARKED-OWNED YYYY-MM-DD`
-#   - a heading that carries an id     `## ADR-… — … YYYY-MM-DD` · `## L-… (…, YYYY-MM-DD)` — every date on it
-#   - a `Last updated:` line           every date on it
+#   - a heading that carries an id     ONE stamp, read in its place, the first of these that holds a date:
+#                                        right after the id, inside a parenthesis `## L-… (…, YYYY-MM-DD) —` or
+#                                        after an em dash `## L-… — YYYY-MM-DD —`; else after `— ROTATED` (a stub
+#                                        of the old pointer form, wherever a rotation carried it); else trailing,
+#                                        `… — YYYY-MM-DD` at the line's end. A date elsewhere on the heading is a
+#                                        word of the title — an event, an expiry, a release day — and is not read
+#   - a `Last updated:` line           the first date after the colon (what follows is a time, a zone, a note)
 #   - a register verdict               `done|closed|parked|superseded|re-verified YYYY-MM-DD`
 #   - an aging mark                    `**Marked YYYY-MM-DD` · `**Rotated YYYY-MM-DD` · `**FACT-FLIP YYYY-MM-DD`
-# Bound, declared: a wrong stamp written anywhere else (prose, a cell) is not seen.
+# Bound, declared: a wrong stamp written anywhere else (prose, a cell, a heading's title) is not seen.
 today24=$(date -u +%F)
 files24=$( { mem_ls '.critos/memory/*.md'; [ "$scope" = runner ] || git ls-files '.critos/shared/*.md' 2>/dev/null; } | sort -u)
 if [ -z "$files24" ]; then
@@ -1338,19 +1344,31 @@ else
     rd "$f24"; [ -f "$RD" ] || continue
     # The leg patterns are STRINGS, not regexp constants: a `/…/` passed as a function argument
     # is evaluated by gawk as `$0 ~ /…/` and arrives as 0 or 1 — three legs once searched a digit
-    # and could not go red. Each leg has its own positive in the fixture; `Last updated:` is read
-    # only at a line's start, so an entry that QUOTES the phrase is not read.
+    # and could not go red. Each leg has its own positive in the fixture — the heading leg one per
+    # PLACE of the stamp, beside a title dated after a sound stamp that must not fire; `Last updated:`
+    # is read only at a line's start, so an entry that QUOTES the phrase is not read.
     awk -v today="$today24" -v f="$f24" '
       BEGIN { D = "20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
+              ID = "(ADR|L)-[A-Za-z0-9]+-[0-9]+"
               RE_TOKEN = "\\[(ABSORBED|PARKED-OWNED)[[:space:]]+" D
               RE_VERDICT = "(done|closed|parked|superseded|re-verified|DONE|CLOSED|PARKED|SUPERSEDED)[[:space:]]+" D
               RE_MARK = "\\*\\*(Marked|Rotated|FACT-FLIP)[[:space:]]+" D }
       function chk(d) { if (d > today && !seen[NR SUBSEP d]++) printf "FUTURE-DATE  %s:%d  %s — a stamp later than today (%s UTC): taken from the harness'"'"'s local day, not from date -u (contract-system § 5); the registers sort by it\n", f, NR, d, today }
-      function all(s) { while (match(s, D)) { chk(substr(s, RSTART, RLENGTH)); s = substr(s, RSTART + RLENGTH) } }
+      function first(s) { if (match(s, D)) chk(substr(s, RSTART, RLENGTH)) }
       function after(s, re,   m) { if (match(s, re)) { m = substr(s, RSTART, RLENGTH); if (match(m, D)) chk(substr(m, RSTART, RLENGTH)) } }
+      # stamp — the one stamp of a heading that carries an id, in its place (the head of this check
+      # lists the places, in this order); a date anywhere else on the heading is a word of the title.
+      function stamp(s,   t, p, i) {
+        if (!match(s, ID)) return
+        t = substr(s, RSTART + RLENGTH); sub(/^`/, "", t)
+        if (match(t, "^[[:space:]]*\\(")) { p = substr(t, RSTART + RLENGTH); i = index(p, ")"); if (i) p = substr(p, 1, i - 1); if (match(p, D)) { chk(substr(p, RSTART, RLENGTH)); return } }
+        if (match(t, "^[[:space:]]*—[[:space:]]*" D)) { first(t); return }
+        if (match(s, "— ROTATED[[:space:]]+" D)) { first(substr(s, RSTART)); return }
+        if (match(s, "—[[:space:]]*" D "[[:space:]]*$")) first(substr(s, RSTART))
+      }
       /^- 20[0-9][0-9]-[0-9][0-9]-[0-9][0-9][[:space:]]/ { chk(substr($0, 3, 10)) }
-      /^#{1,4}[[:space:]]/ && /(ADR|L)-[A-Za-z0-9]+-[0-9]/ { all($0) }
-      /^[*_[:space:]]*[Ll]ast updated:/ { all($0) }
+      /^#{1,4}[[:space:]]/ && /(ADR|L)-[A-Za-z0-9]+-[0-9]/ { stamp($0) }
+      /^[*_[:space:]]*[Ll]ast updated:/ { first(substr($0, index($0, ":") + 1)) }
       { after($0, RE_TOKEN); after($0, RE_VERDICT); after($0, RE_MARK) }
     ' "$RD"
   done <<< "$files24")

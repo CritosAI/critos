@@ -101,14 +101,16 @@ never a template section
 EOF
 
 # [8] STATUS-CHRONICLE (over the line budget)   [9] STALE-STATUS (the old commit date below) ·
-#     STALE-STAMP negative: stamped after the build's commit day — the writer mid-round, not a finding
-{ echo "# status"; echo "**Last updated:** 2026-08-02 09:00 UTC"; for i in $(seq 1 215); do echo "line $i"; done; } > "$L/memory/a2/STATUS.md"
+#     STALE-STAMP negative: stamped after the build's commit day — not [9]'s (the writer mid-round, or a
+#     wrong stamp: that one is [24]'s)   [24] FUTURE-DATE: a Last updated line's first date, read before the time
+{ echo "# status"; echo "**Last updated:** 2099-08-02 09:00 UTC"; for i in $(seq 1 215); do echo "line $i"; done; } > "$L/memory/a2/STATUS.md"
 
 # [11] TIER-3-LESSON · BAD-BOUND (a Bound: outside the eight)   [10] DANGLING-WIKI-LINK
-# [24] FUTURE-DATE (a lesson stamped 2099-01-01, with a legal Bound: TARGET beside it)
+# [24] FUTURE-DATE (a lesson stamped 2099-01-01 right after its id, with a legal Bound: TARGET beside it);
+#      a negative: a day in a TITLE after a sound stamp is a word, not a stamp (L-A2-001 must NOT fire)
 cat > "$L/memory/a2/LESSONS-LEARNED.md" <<EOF
 # lessons
-## L-A2-001 — 2026-09-01 — accepted_rule — always check twice
+## L-A2-001 — 2026-09-01 — accepted_rule — always check twice, until the key expires 2099-12-31
 no enforcement field here; see [[no-such-slug]]
 **Bound:** NOWHERE
 ## L-A2-002 — 2099-01-01 — observation — stamped from the harness's notice
@@ -182,16 +184,28 @@ printf '#!/usr/bin/env bash\n# Enforces: ADR-A2-000\n# a stray file outside any 
   echo ""
   # [26] UNTIERED: a rule in force with no tier on its line and no Enforcement: field in its entry
   echo "## ADR-A3-002 — untiered"; echo "**Carries.**"
-  echo '- `ADR-A3-002` · a rule with no tier anywhere · binds: fixture'; } > "$L/memory/a3/DECISIONS.md"
+  echo '- `ADR-A3-002` · a rule with no tier anywhere · binds: fixture'
+  # [24] FUTURE-DATE, the stamp of an id heading read in its PLACE: trailing (ADR-A3-003) · inside a
+  #      parenthesis after the id (ADR-A3-004); a negative: a title dated after a sound parenthesised
+  #      stamp (ADR-A3-005 must NOT fire). Each carries itself settled, so no other check counts them.
+  echo ""; echo "## ADR-A3-003 — stamped at the tail from the harness's notice — 2099-04-04"
+  echo "**Enforcement:** tier 3 — the fixture, tiered by the field"; echo "**Carries.**"; echo '- `ADR-A3-003` · the trailing stamp · settled: done'; echo ""
+  echo "## ADR-A3-004 (2099-05-05, accepted) — stamped in a parenthesis from the harness's notice"
+  echo "**Enforcement:** tier 3 — the fixture, tiered by the field"; echo "**Carries.**"; echo '- `ADR-A3-004` · the parenthesised stamp · settled: done'; echo ""
+  echo "## ADR-A3-005 (2026-08-01, accepted) — the certificate renews 2099-12-31: a day in the title is a word"
+  echo "**Enforcement:** tier 3 — the fixture, tiered by the field"; echo "**Carries.**"; echo '- `ADR-A3-005` · the day in the title · settled: done'; } > "$L/memory/a3/DECISIONS.md"
 
 mkdir -p "$L/memory/a3/archive"
-printf '# archive\n## ADR-A2-000 — a copy of an entry another folder heads\n## D-009 — a declared family headed outside its declared home\n' > "$L/memory/a3/archive/DECISIONS-archive-2026-08.md"
+# [24] a stub of the old pointer form, carried into the archive by a rotation (every archive reader skips
+#      it): its stamp is the date after ROTATED
+printf '# archive\n## ADR-A2-000 — a copy of an entry another folder heads\n## D-009 — a declared family headed outside its declared home\n## ADR-A3-006 — ROTATED 2099-06-06 to archive/DECISIONS-archive-2026-08.md (done)\n' > "$L/memory/a3/archive/DECISIONS-archive-2026-08.md"
 
 # status-check axis 1: a dated STATUS beside a DECISIONS log (a3)
 # [9] STALE-STAMP positive: stamped 2026-07-01, committed 2026-08-01 (the build's commit day)
-# [24] negative: a future date in PROSE is a plan, not a stamp — it must NOT fire
+# [24] negative: a future date in PROSE is a plan, not a stamp — it must NOT fire; nor a later date on
+#      the Last updated line itself (the first after the colon is the stamp)
 printf '# status
-**Last updated:** 2026-07-01
+**Last updated:** 2026-07-01 (the next review is due 2099-01-15)
 The certificate is valid to 2099-12-31 and the monthly run is scheduled after 2099-01-15.
 ' > "$L/memory/a3/STATUS.md"
 
@@ -221,7 +235,8 @@ printf 'The cluster facts are in `planted-note`, nowhere in this repo.\n' >> REA
 # [23] INBOX-ACTOR: AGENT 0 as a SENDER (upstream only receives) · AGENT 10, never rostered, as a
 #      sender twice and a recipient once (the volley below) — a raise TO AGENT 0 is legal
 # [24] FUTURE-DATE, one positive PER LEG: a token's date (the [ABSORBED 2099-… entry) · a register
-#      verdict (ROADMAP, below) · an aging mark (the a2 lessons) · an id heading (the a2 lessons);
+#      verdict (ROADMAP, below) · an aging mark (the a2 lessons) · an id heading, one per PLACE of its
+#      stamp (the a2 lessons, the a3 log and its archive) · a Last updated line (the a2 STATUS);
 #      and a negative: an entry that QUOTES "Last updated:" with a future date must NOT fire
 cat > "$L/shared/HANDOFFS.md" <<'EOF'
 # inbox
