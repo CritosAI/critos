@@ -54,7 +54,7 @@ bash "$here/fixture.sh" "$tmp/fx" "$repo/system" >/dev/null 2>&1 || { echo "FAIL
 # The auto-memory the citation leg reads is the fixture's own (planted beside it), never this
 # machine's: the leg is seen firing on every machine, and no note of yours reaches the tally.
 ( cd "$tmp/fx" && DOC_LINT_NO_CONSTELLATION=1 CRITOS_AUTO_MEMORY="$tmp/fx.auto-memory" bash "$repo/skills/crit-doc-lint/doc-lint.sh" 2>&1 ) > "$tmp/battery.txt"
-grep -E '^[A-Z][A-Za-z0-9-]+ ' "$tmp/battery.txt" | cut -d' ' -f1 | sort | uniq -c \
+grep -E '^[A-Z][A-Za-z0-9-]+ ' "$tmp/battery.txt" | cut -d' ' -f1 | LC_ALL=C sort | uniq -c \
   | awk '$2 == "PIN-DRIFT" { print "present PIN-DRIFT"; next } { print $1, $2 }' > "$tmp/findings.txt"
 # An interpreter diagnostic in the battery's output is a check reading something other than
 # what its text says (a gawk warning once meant three legs compared a boolean): the tally above

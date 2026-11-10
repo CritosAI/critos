@@ -19,7 +19,7 @@ bad() { echo "FAIL  scope  $1"; fail=1; }
 bash "$here/fixture.sh" "$tmp/fx" "$repo/system" >/dev/null 2>&1 || { echo "FAIL  scope  the fixture could not be built"; exit 1; }
 cd "$tmp/fx" || exit 1
 lint() { DOC_LINT_NO_CONSTELLATION=1 CRITOS_AUTO_MEMORY="$tmp/fx.auto-memory" bash "$repo/skills/crit-doc-lint/doc-lint.sh" "$@" 2>&1; }
-tally() { grep -E '^[A-Z][A-Za-z0-9-]+ ' "$1" | cut -d' ' -f1 | sort | uniq -c | awk '$2 == "PIN-DRIFT" { print "present PIN-DRIFT"; next } { print $1, $2 }'; }
+tally() { grep -E '^[A-Z][A-Za-z0-9-]+ ' "$1" | cut -d' ' -f1 | LC_ALL=C sort | uniq -c | awk '$2 == "PIN-DRIFT" { print "present PIN-DRIFT"; next } { print $1, $2 }'; }
 # 1. the runner's scope, as a2
 lint --own a2 > "$tmp/a2.txt"
 tally "$tmp/a2.txt" > "$tmp/a2.tally"
